@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, division, absolute_import
-from pytest_helper import (copy_locals_to_globals,
-        clear_locals_from_globals, show_globals, run_pytest_when_invoked_as_script)
+from pytest_helper import (locals_to_globals(),
+        clear_locals_from_globals, show_globals, script_run)
 import sys
 
 """
@@ -10,7 +10,7 @@ import sys
 """
 
 # Run test cases in this file when invoked as a script.
-run_pytest_when_invoked_as_script(test_subdir=True, import_pytest_functions=False)
+script_run(test_subdir=True, import_pytest_functions=False)
 
 # Run test cases when invoked as a script.
 #if __name__ == "__main__":
@@ -31,7 +31,7 @@ def set_up_test_copy_to_globals(request):
     monkey = 900
     df = dummy_fun
 
-    copy_locals_to_globals()
+    locals_to_globals()()
     def finalize(): clear_locals_from_globals()
     request.addfinalizer(finalize)
 
@@ -60,7 +60,7 @@ def test_another_copy_locals_to_globals(set_up_test_copy_to_globals):
 @fixture
 def setup_test_cleanup(request):
     b = 77
-    copy_locals_to_globals()
+    locals_to_globals()()
     def finalize(): clear_locals_from_globals()
     request.addfinalizer(finalize)
 

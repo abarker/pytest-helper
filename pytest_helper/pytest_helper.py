@@ -30,19 +30,26 @@ So, consider this:
 
 Update the docs, too.
 
+Note that the script is run twice unless this call is put near the top
+of the file (may be bad for long-running things).  You could always test
+the __name__="__main__" twice, it wouldn't really matter.  So keep
+checking it here in main function, but also make clear to users that they
+can put the code inside a test like that, too.
+
+Remember that using locals() and globals() is preferred for getting the
+variable dicts when within the same frame.
 """
 
 # TODO messes up when, for example, your current dir is test but you
 # then open (run?) pratt_parser.py as ../pratt_parser.py
 
-# do_imports not working quite right yet
 
-
-def run_pytest_when_invoked_as_script(testfile_path=None,
-                                      testfile_import_dirs=None,
-                                      test_subdir=False, # rename: testfile_import_parent
-                                      auto_import_pytest_functions=False,
-                                      exit=True):
+def script_run(testfile_path=None,
+                      testfile_import_dirs=None,
+                      test_subdir=False, # rename: testfile_import_parent
+                      auto_import_pytest_functions=False,
+                      module_name=None,
+                      exit=True):
 
     """Run pytest on the test file when the calling module is run as a script.
     
@@ -51,7 +58,10 @@ def run_pytest_when_invoked_as_script(testfile_path=None,
     directory of the script which calls this function.  (Using relative paths
     improves portability.)  If `testfile_path` is `None` then pytest will be
     run on the file of the calling script itself, i.e., the tests are assumed
-    to be in the same file as the code to test.
+    to be in the same file as the code to test.  Using relative paths and
+    `None` can fail in cases where Python's CWD is changed before this function
+    is called (most programs do not change CWD or return it to its previous
+    value).  In those cases you can still use an absolute pathname.
     
     The argument `testfile_import_dirs` should be a pathname or a list of
     pathnames of directories that the test file may need to import from and
@@ -63,15 +73,28 @@ def run_pytest_when_invoked_as_script(testfile_path=None,
     directory of the test file to the Python path (since test subdirectories
     are commonly used).
 
-    If `auto_import_pytest_functions` and `testfile_path` are both set then the
-    function will always import some pytest function names into the calling
-    module's namespace.  That avoids having to explicitly import things like
-    `skip` and `fail`.  It only runs when the function is called from the test
-    file itself, and in this it runs even when the file is not invoked as a
-    script (though it does not do the rest of the things if not run from a
-    script).
+
+    The `module_name` argument is a fallback in case the calling function's
+    module is not correctly located by introspection.  It is usually not
+    required (though it is slightly more efficient).  Use it as:
+    `module_name=__name__`.
 
     After the tests `sys.exit(0)` will be called unless `exit` is set false."""
+
+    if module_name:
+        calling_module_name = module_name
+    else:
+        calling_module_name, calling_module = get_calling_module(level=2)
+
+    if calling_module_name != "__main__":
+        return
+
+    #
+    # After this point we know this function is being called from a script.
+    #
+
+    if module_name:
+        calling_module = sys.modules[calling_module_name]
 
     if testfile_import_dirs is None:
         testfile_import_dirs = []
@@ -80,16 +103,8 @@ def run_pytest_when_invoked_as_script(testfile_path=None,
     if test_subdir:
         testfile_import_dirs.append("..")
 
-    calling_module_name, calling_module = get_calling_module(level=3)
-
-    if testfile_path is None and auto_import_pytest_functions:
-        do_auto_import_pytest_functions()
-
-    if calling_module_name != "__main__":
-        return
-
     if testfile_path is None:
-        testfile_path = calling_module.__file__ # may fail if CWD changed since start?
+        testfile_path = calling_module.__file__
     testfile_path = os.path.abspath(os.path.expanduser(testfile_path))
     testfile_dir = os.path.dirname(testfile_path)
     #sys.path.insert(0, testfile_dir) # Add testfile dir to sys.path NEEDED OR DELETE?
@@ -100,90 +115,118 @@ def run_pytest_when_invoked_as_script(testfile_path=None,
         else:
             if path[-1] != os.path.sep:
                 path += os.path.sep
-            joined_path = os.path.join(testfile_dir, path)
+            joined_path = os.path.abspath(os.path.join(testfile_dir, path))
             #sys.path.insert(0, testfile_dir + "/../")
-            #print("inserted this path", joined_path)
-            sys.path.insert(0, joined_path)
+            if joined_path not in sys.path:
+                sys.path.insert(0, os.path.abspath(joined_path))
 
     # Call pytest.
     py.test.main(["-v", testfile_path]) # needs pytest 2.0
 
     if exit: sys.exit(0)
 
-def do_auto_import_pytest_functions():
-    # Do the automatic imports into the test calling_module.
-    g = get_calling_fun_globals_dict(level=3)
-    print("name in g is", g["__name__"])
-    g["raises"] = raises
-    g["fail"] = fail
-    g["fixture"] = fixture
-    g["skip"] = skip
-    from pytest_helper import (copy_locals_to_globals,
-            clear_locals_from_globals, show_globals,
-            run_pytest_when_invoked_as_script)
-    g["copy_locals_to_globals"] = copy_locals_to_globals
-    g["clear_locals_from_globals"] = clear_locals_from_globals
-    g["show_globals"] = show_globals
+def auto_import(noclobber=True):
+    """ This function will import some pytest_helper and pytest attributes
+    into the calling module's global namespace.  That avoids having to
+    explicitly import things like `locals_to_globals,` `skip` and `fail`.  A
+    `PytestHelperException` will be raised if any of those globals already
+    exist, unless `noclobber` is set false.  This function runs whenever it is
+    called, without checking who is calling it."""
 
-# Run test cases when invoked as a script.
-#run_pytest_when_invoked_as_a_script("test_pytest_helper_functions.py")
+    def insert_in_dict(d, name, value):
+        if noclobber and name in d:
+            raise PytestHelperException("The pytest_helper function auto_import"
+                    "\nattempted an overwrite with noclobber set.  The attribute"
+                    " is: " + name)
+        d[name] = value
 
-#if __name__ == "__main__":
-#    import py.test
-#    py.test.main(["-v", "test_pytest_helper_functions.py"]) # needs pytest 2.0
-#    sys.exit(0)
-
-# Remember that using locals() and globals() is preferred for getting the
-# variable dicts when within the same frame.
+    g = get_calling_fun_globals_dict(level=2)
+    insert_in_dict(g, "script_run", script_run)
+    insert_in_dict(g, "pytest", py.test)
+    insert_in_dict(g, "raises", raises)
+    insert_in_dict(g, "fail", fail)
+    insert_in_dict(g, "fixture", fixture)
+    insert_in_dict(g, "skip", skip)
+    insert_in_dict(g, "locals_to_globals", locals_to_globals)
+    insert_in_dict(g, "clear_locals_from_globals", clear_locals_from_globals)
+    insert_in_dict(g, "show_globals", show_globals)
+    insert_in_dict(g, "PytestHelperException", PytestHelperException)
+    insert_in_dict(g, "LocalsToGlobalsError", LocalsToGlobalsError)
 
 #
 # Functions for copying locals to globals.
 #
 
-class pytest_helper_data(object):
-    last_copied = [] # Could probably be module variable, be careful though.
+last_copied_names = [] # Saves the most-recently copied attribute names. 
 
-def copy_locals_to_globals():
+def locals_to_globals(fun_locals=None, mod_globals=None, auto_clear=True):
+
     """Copy all local variables in the calling function's local scope to the
-    global scope of the module where that function was called.  Note that
-    directly modifying locals of a function does not work, only globals can be
-    modified.  Raises CopyLocalsToGlobalError on any attempt to overwrite
-    existing global data.  Also raises CopyLocalsToGlobalError if any variables
-    which were copied by a previous call still exist in the global scope."""
-    # If the list isn't empty the user forgot to clear it.
-    if pytest_helper_data.last_copied:
-        raise CopyLocalsToGlobalError("Failure to call clear_locals_from_globals()"
-                                      " for previous fixture.")
+    global scope of the module where that function was called.  Raises
+    `LocalsToGlobalsError` on any attempt to overwrite existing global data.  If
+    `auto_clear` is true (the default) it will automatically clear any
+    variables it set on the last run before setting the new ones.  If
+    `auto_clear` is false then `clear_locals_from_globals` must be explicitly
+    called before calling this function again (or else a `LocalsToGlobalsError`
+    will be raised).  The argument `fun_locals` can be used as a fallback to
+    pass the `locals()` dict from the function in case the introspection
+    technique does not work for some reason.  The `mod_globals` argument can
+    similarly be passed the `__name__` attribute of the calling module as a
+    fallback."""
 
-    fun_locals = get_calling_fun_locals_dict(2)
-    g = get_calling_fun_globals_dict(2)
+    #view_locals_up_stack(4) # debugging
+    level = 2
+
+    # If the list isn't empty assume the user forgot to clear it.
+    if last_copied_names:
+        if auto_clear:
+            clear_locals_from_globals()
+        else:
+            raise LocalsToGlobalsError("Failure to call clear_locals_from_globals()"
+                                      " after previous copy (auto_clear is False).")
+
+    if not fun_locals:
+        fun_locals = get_calling_fun_locals_dict(level)
+    if mod_globals:
+        funs_mod_globals = mod_globals
+    else:
+        funs_mod_globals = get_calling_fun_globals_dict(level)
+
     for k, v in fun_locals.items():
-        if k in g: raise CopyLocalsToGlobalError("Attempt to overwrite existing "
-                                                 "module-global variable.")
+        if k in funs_mod_globals:
+            raise LocalsToGlobalsError("Attempt to overwrite existing "
+                                      "module-global variable: " + k)
         # The below line should write to the dotted module name instead, to work
         # when run from a different module.
         #exec("global {0}\n{0}=v".format(k), globals(), locals())
-        g[k] = fun_locals[k] # works
-        pytest_helper_data.last_copied.append(k)
+        funs_mod_globals[k] = fun_locals[k] # works
+        last_copied_names.append(k)
 
 def clear_locals_from_globals():
-    """Clear all the variables that were added by copy_locals_to_globals."""
-    g = get_calling_fun_globals_dict(2)
-    for k in pytest_helper_data.last_copied:
+    """Clear all the variables that were added by locals_to_globals."""
+    level = 2
+    g = get_calling_fun_globals_dict(level)
+    for k in last_copied_names:
         del g[k]
-    pytest_helper_data.last_copied = []
+    last_copied_names = []
 
-class CopyLocalsToGlobalError(Exception):
+class PytestHelperException(Exception):
+    pass
+
+class LocalsToGlobalsError(PytestHelperException):
     pass
 
 #
 # Utility functions.
 #
 
-def view_locals_up_stack():
+"""Note that levels below include the level of the utility function itself.  So
+level 0 is the attribute of the utility function itself, level 1 is the calling
+function's attribute, etc."""
+
+def view_locals_up_stack(num_levels=4):
     """To get an idea of what things look like.  Run from somewhere and see."""
     print("Viewing local variable dict keys up the stack.\n")
-    num_levels = 4
     for i in reversed(range(num_levels)):
         calling_fun_frame = inspect.stack()[i][0]
         calling_fun_name = inspect.stack()[i][3]
@@ -227,13 +270,27 @@ def get_calling_module(level=2):
     the module and the module itself.  See stackoverflow.com/questions/1095543/
        level 1: Module for this function.
        level 2: Module for the function calling this one (what you usually want).
-       level 3: Module for the function the one calling this one.
+       level 3: Module for the function that called the one calling this one.
     """
-    calling_fun_globals = get_calling_fun_globals_dict(level=3) # TODO put in level when works
-    calling_module_name = calling_fun_globals["__name__"]
-    calling_module = sys.modules[calling_module_name]
-    #print("module vars are", calling_fun_globals)
-    return (calling_module_name, calling_module)
+    # Three lines below work when return does not do the __name__ attribute.
+    #calling_fun_globals = get_calling_fun_globals_dict(level=level+1)
+    #calling_module_name = calling_fun_globals["__name__"]
+    #calling_module = sys.modules[calling_module_name]
+
+    # Two lines below work.
+    frame = inspect.stack()[level]
+    calling_module = inspect.getmodule(frame[0])
+
+    # Four lines below work, using sys rather than inspect.
+    # Someone says this way works with pyinstaller, too, but I haven't tried it.
+    # Apparently sys._getframe is available with a performance hit in PyPy,
+    # but sys._current_frames is less widely available.
+    #f = list(sys._current_frames().values())[0]
+    #for i in range(level): f = f.f_back
+    #calling_module_name = f.f_globals['__name__']
+    #calling_module = sys.modules[calling_module_name]
+
+    return (calling_module.__name__, calling_module)
 
 #
 # Other functions.
@@ -290,6 +347,6 @@ def caller_name(skip=2):
 # Test this file when invoked as a script.
 #
 
-run_pytest_when_invoked_as_script("test/test_pytest_helper.py",
+script_run("test/test_pytest_helper.py",
                         test_subdir=True, exit=True)
 
