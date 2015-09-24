@@ -12,6 +12,24 @@ Helper functions for using pytest.
 
 Later improvement: allow multiple test files to be run, with optional list of testfiles.
 
+As of now things seem working, BUT need to change some naming and interface
+stuff.  The auto-import stuff must run regardless of whether run as a script.
+So, consider this:
+
+    Just have a single function, maybe just called run or something, which
+    takes a kwarg for whether or not to do the script thing, and a kwarg for
+    whether or not to do the auto-import thing.  Script can be default, and
+    auto-import not (since should ONLY be used in same file as tests are in).
+
+    Another possibility: have two functions, run and run_in_test, with the
+    latter always running the stuff but the former only when a script.
+    What about when code is test, though?  Then need to also only run for
+    scripts or put inside the __main__== conditional.  Should all
+    be keyworded or pull one out and make part of the call itself?  Is
+    the separation that clean?
+
+Update the docs, too.
+
 """
 
 # TODO messes up when, for example, your current dir is test but you
@@ -23,7 +41,7 @@ Later improvement: allow multiple test files to be run, with optional list of te
 def run_pytest_when_invoked_as_script(testfile_path=None,
                                       testfile_import_dirs=None,
                                       test_subdir=False, # rename: testfile_import_parent
-                                      import_pytest_functions=False,
+                                      auto_import_pytest_functions=False,
                                       exit=True):
 
     """Run pytest on the test file when the calling module is run as a script.
@@ -44,8 +62,16 @@ def run_pytest_when_invoked_as_script(testfile_path=None,
     Setting `test_subdir` to `True` is just an easy way to add the parent
     directory of the test file to the Python path (since test subdirectories
     are commonly used).
-    
-    After the tests sys.exit(0) will be called unless exit=False."""
+
+    If `auto_import_pytest_functions` and `testfile_path` are both set then the
+    function will always import some pytest function names into the calling
+    module's namespace.  That avoids having to explicitly import things like
+    `skip` and `fail`.  It only runs when the function is called from the test
+    file itself, and in this it runs even when the file is not invoked as a
+    script (though it does not do the rest of the things if not run from a
+    script).
+
+    After the tests `sys.exit(0)` will be called unless `exit` is set false."""
 
     if testfile_import_dirs is None:
         testfile_import_dirs = []
@@ -55,6 +81,10 @@ def run_pytest_when_invoked_as_script(testfile_path=None,
         testfile_import_dirs.append("..")
 
     calling_module_name, calling_module = get_calling_module(level=3)
+
+    if testfile_path is None and auto_import_pytest_functions:
+        do_auto_import_pytest_functions()
+
     if calling_module_name != "__main__":
         return
 
@@ -62,38 +92,38 @@ def run_pytest_when_invoked_as_script(testfile_path=None,
         testfile_path = calling_module.__file__ # may fail if CWD changed since start?
     testfile_path = os.path.abspath(os.path.expanduser(testfile_path))
     testfile_dir = os.path.dirname(testfile_path)
-    sys.path.insert(0, testfile_dir) # Add testfile dir to sys.path NEEDED OR DELETE?
+    #sys.path.insert(0, testfile_dir) # Add testfile dir to sys.path NEEDED OR DELETE?
 
     for path in testfile_import_dirs:
         if os.path.isabs(path):
             sys.path.insert(0, testfile_dir)
         else:
-            if path[-1] != os.pathsep:
-                path += os.pathsep
-            joined_path = os.path.join(testfiledir, path)
+            if path[-1] != os.path.sep:
+                path += os.path.sep
+            joined_path = os.path.join(testfile_dir, path)
             #sys.path.insert(0, testfile_dir + "/../")
+            #print("inserted this path", joined_path)
             sys.path.insert(0, joined_path)
-
-    # Do the automatic imports into the test calling_module.
-    # DO GLOBALS EVEN AFFECT THE PYTEST RUN???
-    if import_pytest_functions:
-        # TODO imports not tested yet, don't quite work
-        g = get_calling_fun_globals_dict(level=2)
-        g["raises"] = raises
-        g["fail"] = fail
-        g["fixture"] = fixture
-        g["skip"] = skip
-        from pytest_helper import (copy_locals_to_globals,
-                clear_locals_from_globals, show_globals,
-                run_pytest_when_invoked_as_script)
-        g["copy_locals_to_globals"] = copy_locals_to_globals
-        g["clear_locals_from_globals"] = clear_locals_from_globals
-        g["show_globals"] = show_globals
 
     # Call pytest.
     py.test.main(["-v", testfile_path]) # needs pytest 2.0
 
     if exit: sys.exit(0)
+
+def do_auto_import_pytest_functions():
+    # Do the automatic imports into the test calling_module.
+    g = get_calling_fun_globals_dict(level=3)
+    print("name in g is", g["__name__"])
+    g["raises"] = raises
+    g["fail"] = fail
+    g["fixture"] = fixture
+    g["skip"] = skip
+    from pytest_helper import (copy_locals_to_globals,
+            clear_locals_from_globals, show_globals,
+            run_pytest_when_invoked_as_script)
+    g["copy_locals_to_globals"] = copy_locals_to_globals
+    g["clear_locals_from_globals"] = clear_locals_from_globals
+    g["show_globals"] = show_globals
 
 # Run test cases when invoked as a script.
 #run_pytest_when_invoked_as_a_script("test_pytest_helper_functions.py")
@@ -261,5 +291,5 @@ def caller_name(skip=2):
 #
 
 run_pytest_when_invoked_as_script("test/test_pytest_helper.py",
-                        test_subdir=True, import_pytest_functions=True, exit=True)
+                        test_subdir=True, exit=True)
 
