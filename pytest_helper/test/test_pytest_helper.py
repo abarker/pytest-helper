@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
+"""
+These are older tests of the techniques used in pytest helper.  There are
+also a couple of experimental ways tried.
+
+"""
+
 from __future__ import print_function, division, absolute_import
-from pytest_helper import (locals_to_globals(),
-        clear_locals_from_globals, show_globals, script_run)
 import sys
 
-"""
+import pytest_helper
+pytest_helper.script_run(self_test=True)
+pytest_helper.auto_import()
+pytest_helper.sys_path(add_parent=True)
 
-
-"""
-
-# Run test cases in this file when invoked as a script.
-script_run(test_subdir=True, import_pytest_functions=False)
 
 # Run test cases when invoked as a script.
 #if __name__ == "__main__":
@@ -31,7 +33,7 @@ def set_up_test_copy_to_globals(request):
     monkey = 900
     df = dummy_fun
 
-    locals_to_globals()()
+    locals_to_globals()
     def finalize(): clear_locals_from_globals()
     request.addfinalizer(finalize)
 
@@ -60,7 +62,7 @@ def test_another_copy_locals_to_globals(set_up_test_copy_to_globals):
 @fixture
 def setup_test_cleanup(request):
     b = 77
-    locals_to_globals()()
+    locals_to_globals()
     def finalize(): clear_locals_from_globals()
     request.addfinalizer(finalize)
 
@@ -70,7 +72,7 @@ def test_cleanup(setup_test_cleanup):
     q = globals()["b"]
     with raises(KeyError):
         q = globals()["xx"]
-    show_globals()
+    #show_globals() # import from pytest_helper to use this debug fun
 
 
 ############ Below is experimental, testing different methods. ###############
