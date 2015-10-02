@@ -29,6 +29,11 @@ This package provides:
       script_run
       auto_import
       sys_path
+      save_abspath
+
+      locals_to_globals
+      clear_locals_from_globals
+
 
 Remember that using locals() and globals() is preferred for getting the
 variable dicts when within the same frame.
@@ -58,7 +63,7 @@ Possible later improvements:
 """
 
 def script_run(testfile_paths=None, self_test=False, pytest_args=None,
-               calling_mod_name=None, calling_mod_path=None):
+               calling_mod_name=None, calling_mod_path=None, exit=True):
     """Run pytest when the calling module is running as a script.
     Run pytest on the test file when the calling module is run as a script.
     
@@ -80,7 +85,10 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None,
     function's module is not correctly located by introspection.  It is usually
     not required (though it is slightly more efficient).  Use it as:
     `module_name=__name__`.  Similarly for `calling_mod_path`, but that should
-    be passed the pathname of the calling module's file."""
+    be passed the pathname of the calling module's file.
+    
+    If `exit` is set false then `sys.exit(0)` will be called after the tests
+    finish.  The default is to exit after the tests finish."""
 
     mod_info = get_calling_module_info(module_name=calling_mod_name,
                                        module_path=calling_mod_path, level=2)
@@ -95,21 +103,22 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None,
         testfile_paths = []
 
     if self_test:
-        testfile_paths.append(os.path.abspath(calling_mod_path))
+        testfile_paths.append(calling_mod_path)
 
     testfile_paths = [os.path.expanduser(p) for p in testfile_paths]
     testfile_paths = [expand_relative(p, calling_mod_dir) for p in testfile_paths]
-    testfile_dir = [os.path.dirname(p) for p in testfile_paths]
 
-    # Call pytest on the file.
-    for t in testfile_paths: #TODO fails for some reason....
+    # Generate calling string and call pytest on the file.
+    for t in testfile_paths:
         pytest_string = t
         if pytest_args:
             pytest_string = pytest_args + " " + pytest_string
-        #py.test.main(["-v", t]) # needs pytest 2.0
-        py.test.main(pytest_string) # needs pytest 2.0
 
-    if exit: sys.exit(0) # TODO not even defined?????????????????????????
+        # Call pytest; this requires pytest 2.0 or greater.
+        py.test.main(pytest_string)
+
+    if exit:
+        sys.exit(0)
     return
 
 def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
@@ -130,7 +139,8 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
     calling module."""
 
     if not calling_mod_dir:
-        calling_mod_dir = os.path.dirname(get_calling_module_info()[0])
+        calling_mod_dir = get_calling_module_info()[3]
+        print("in sys_path, calling_mod_dir is", calling_mod_dir)
 
     if dirs_to_add is None:
         dirs_to_add = []
@@ -152,7 +162,7 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
         else:
             joined_path = expand_relative(path, calling_mod_dir)
             if joined_path not in sys.path:
-                sys.path.insert(0, os.path.abspath(joined_path))
+                sys.path.insert(0, joined_path)
     return
 
 def auto_import(noclobber=True, level=2):
@@ -160,8 +170,8 @@ def auto_import(noclobber=True, level=2):
     the calling module's global namespace.  That avoids having to explicitly
     import things like `locals_to_globals`, `skip`, `raises`, and `fail`.  A
     `PytestHelperException` will be raised if any of those globals already
-    exist, unless `noclobber` is set false.  This function runs whenever it is
-    called, without checking who is calling it."""
+    exist, unless `noclobber` is set false."""
+    # TODO maybe have some options to turn on and off certain groups of autoimports.
 
     def insert_in_dict(d, name, value):
         """Insert (name, value) in dict d checking for noclobber."""
@@ -172,20 +182,35 @@ def auto_import(noclobber=True, level=2):
         d[name] = value
 
     g = get_calling_fun_globals_dict(level=level)
+
     # Pytest itself, imported as pytest, not py.test
     insert_in_dict(g, "pytest", py.test)
+
     # Functions from pytest.
     insert_in_dict(g, "raises", raises)
     insert_in_dict(g, "fail", fail)
     insert_in_dict(g, "fixture", fixture)
     insert_in_dict(g, "skip", skip)
+
     # Functions and classes from this module.
     insert_in_dict(g, "script_run", script_run)
     insert_in_dict(g, "sys_path", sys_path)
+    insert_in_dict(g, "save_abspath", save_abspath)
     insert_in_dict(g, "locals_to_globals", locals_to_globals)
     insert_in_dict(g, "clear_locals_from_globals", clear_locals_from_globals)
-    insert_in_dict(g, "PytestHelperException", PytestHelperException)
-    insert_in_dict(g, "LocalsToGlobalsError", LocalsToGlobalsError)
+    return
+
+def save_abspath():
+    """This function is only necessary in rare cases where Python's current
+    working directory (CWD) is changed between the time when pytest_helper is
+    loaded and when `script_run` or `sys_path` is called.  In those cases
+    expanding relative pathnames from before the CWD into absolute pathnames
+    will fail.  This function should be called before any function call or
+    import which changes the CWD and which doesn't change it back afterward.
+    Importing pytest_helper just after the system imports and then immediately
+    calling this function should work."""
+    get_calling_module_info(level=2) # This caches the module info.
+    return
 
 #
 # Functions for copying locals to globals.
@@ -318,6 +343,8 @@ utility function itself.  So level 0 is the attribute of the utility function
 itself, level 1 is the attribute of the calling function, level 2 is the
 function that called the calling function, etc."""
 
+module_info_cache = {} # Save module path info keyed on module name.
+
 def get_calling_module_info(level=2, module_name=None, module_path=None):
     """A higher-level routine to get information about the of a function back
     some number of levels in the call stack (the calling function).  Returns a
@@ -329,12 +356,20 @@ def get_calling_module_info(level=2, module_name=None, module_path=None):
         calling_module_dir)
     
     Any relative paths are converted to absolute paths and a check is made to
-    make sure that the module actually exists at the path.
+    make sure that the module actually exists at the path.  Absolute paths are
+    cached in a dict keyed on module names so we always get the pathname
+    calculated on the first call to this program from a given module.  The
+    latter is important in cases where the CWD is changed between the initial
+    loading time for a module and the time it (indirectly) calls this routine.
+    Such problems are rare, but if they occur you can use these two lines
+    near the top of the module (before any imports which might change CWD):
 
-    The module name and/or path can be supplied if introspection fails for some
-    reason (e.g., if the CWD changed after the module loaded and wasn't
-    returned to its earlier value) or just for slightly improved efficiency.
-    """
+       import pytest_helper
+       pytest_helper.get_calling_module_info(level=1)
+
+    The module name and/or path can be supplied via the keyword arguments if
+    introspection still fails for some reason (or just to slightly improve
+    efficiency)."""
 
     # TODO: make sure this works when the module is actually a package, run
     # from the package's __init__.py file (or however).  Maybe add more
@@ -348,19 +383,28 @@ def get_calling_module_info(level=2, module_name=None, module_path=None):
 
     if module_path:
         calling_module_path = module_path
+    elif calling_module_name in module_info_cache:
+        return module_info_cache[calling_module_name]
     else:
-        calling_module_path = os.path.abspath(calling_module.__file__) # may have CWD probs
+        calling_module_path = os.path.abspath(calling_module.__file__)
 
     calling_module_dir = os.path.dirname(calling_module_path)
 
-    # Do an error check and make sure that the detected module directory exists.
+    # Do an error check to make sure that the detected module directory exists.
     if not os.path.isdir(calling_module_dir):
         raise PytestHelperException("\n\nThe directory\n   {0}\ndoes of the detected"
                 "calling module does not exist.\nDid the Python CWD change without"
-                " being changed back?\nYou can set `module_name` and `module_path`"
-                " explicitly if necessary.".format(calling_module_dir))
+                " being changed back?\nYou can try importing pytest_helper near the"
+                " top of your file and then immediately calling\n"
+                "   pytest_helper.get_calling_module_info(level=1)\nafterward.  If"
+                " necessary you can set `module_name` and `module_path`"
+                "\nexplicitly from keyword arguments.".format(calling_module_dir))
 
-    return calling_module_name, calling_module, calling_module_path, calling_module_dir
+    module_info = (calling_module_name, calling_module,
+                   calling_module_path, calling_module_dir)
+
+    module_info_cache[calling_module_name] = module_info
+    return module_info
 
 def view_locals_up_stack(num_levels=4):
     """To get an idea of what things look like.  Run from somewhere and see."""
@@ -416,20 +460,22 @@ def get_calling_module(level=2):
     """Run this inside a function.  Get the module where the current function
     is being called from.  Returns a tuple (mod_name, module) with the name of
     the module and the module itself.  Note that the module name may be relative
-    (to the CWD when the module was loaded) or absolute.  For info on the
+    (to the CWD when the module was loaded) or absolute.  For some info on the
     introspection methods used, see stackoverflow.com/questions/1095543/.
        level 0: Module for this function.
        level 1: Module for the function calling this one (what you usually want).
        level 2: Module for the function that called the one calling this one.
     """
-    # Three lines below work when return does not do the __name__ attribute.
-    #calling_fun_globals = get_calling_fun_globals_dict(level=level+1)
-    #calling_module_name = calling_fun_globals["__name__"]
-    #calling_module = sys.modules[calling_module_name]
+    # Three lines below work, even when chdir is called; just get __name__ from
+    # the globals dict.
+    calling_fun_globals = get_calling_fun_globals_dict(level=level+2)
+    calling_module_name = calling_fun_globals["__name__"]
+    calling_module = sys.modules[calling_module_name]
 
-    # Two lines below work.
-    frame = inspect.stack()[level+1]
-    calling_module = inspect.getmodule(frame[0])
+    # Two lines below work.  They fail, though, when os.chdir("..") is called
+    # before this function is called.
+    #frame = inspect.stack()[level+1]
+    #calling_module = inspect.getmodule(frame[0])
 
     # Four lines below work, using sys rather than inspect.
     # Someone says this way works with pyinstaller, too, but I haven't tried it.
@@ -440,7 +486,7 @@ def get_calling_module(level=2):
     #calling_module_name = f.f_globals['__name__']
     #calling_module = sys.modules[calling_module_name]
 
-    return (calling_module.__name__, calling_module)
+    return calling_module.__name__, calling_module
 
 #
 # Test this file when invoked as a script.
