@@ -1,46 +1,57 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, division, absolute_import
-import os
-import sys
-
 """
 
-In order to run modules inside packages as scripts and have relative imports
-work, the `__package__` attribute of the module should be set.  This module is
-intended to be imported by modules which are run as scripts inside a package
-and which also might need to do relative imports.  
+Description
+-----------
+
+In order to run a module inside a package as a script and have relative imports
+work, the `__package__` attribute of the module should be set.  Importing this
+module sets the `__package__` attribute of the module `__main__`.  This module
+is intended to be imported by modules which might be run as a script inside a
+package which uses relative imports.
 
 To use the module, just import it before any of the non-system files, inside
 any module that you want to possibly run as a script.  Nothing else is
-required.  Any existing `__package__` attributes will remain unchanged.
+required.  This module needs to be imported before any relative imports or
+modules which use relative imports.  Any existing `__package__` attributes will
+remain unchanged.
 
-More details: If the program was not run from a script then nothing is done.
-If the module actually was run as a script then `__main__` is key in
-`sys.modules`.  In that case the `__package__` attribute for that module will
-be set.  The module needs to be imported before any relative imports or modules
-which use relative imports.  Note that successive imports will not re-run the
-module initialization, it is only run once.
+Further details
+---------------
 
-In order for a script to find this module to import, this module should either
-1) be saved somewhere which is guaranteed to be in the Python path, or else 2)
-a copy should be placed in the same directory as the script (which will usually
-be found, except perhaps in interactive sessions).  To be completely sure the
-script is found when it is in the same directory, even from interactive
-sessions, you can put these lines before the import:
+On initial import this module searches for the module `__main__` in
+`sys.modules`.  If that module is not found then the current runtime was not
+started from a script and nothing is done.  If module `__main__` is found then
+the current runtime was started from a script.  In that case the `__package__`
+attribute for the `__main__` module is computed and set in that module's
+namespace.  (If there already was a `__package__` attribute in the namespace
+then nothing is done.)  The package is then imported under the full package
+name and the module is also added to `sys.modules` under the full package name.
 
-    import sys, os
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+In order for a script to find this module to import it obviously must be saved
+somewhere which is in (or is added to) the Python path.  One such place is
+(usually) in the same directory as the script.  This package cannot be imported
+via a relative import.
 
-This module is based on the basic method described in the answers on this
-StackOverflow page: http://stackoverflow.com/questions/2943847/
+.. seealso:: 
 
-[Side note: As of 2007 Guido van Rossum viewed running scripts that are inside
-packages as an anti-pattern:
-    https://mail.python.org/pipermail/python-3000/2007-April/006793.html
-Nevertheless, I find it to be a convenient and useful pattern in certain
-situations.  GvR did later approve PEP 366, defining `__package__`.]
+    This module is based on the basic method described in the answers on this
+    StackOverflow page: http://stackoverflow.com/questions/2943847/
+
+.. note::
+
+    As of 2007 Guido van Rossum viewed running scripts that are inside packages
+    as an anti-pattern (see
+    https://mail.python.org/pipermail/python-3000/2007-April/006793.html).
+    Nevertheless, it can be a convenient and useful pattern in certain
+    situations.  He did later approve PEP 366 which defined the `__package__`
+    attribute to handle the situation.]
 
 """
+
+from __future__ import print_function, division, absolute_import
+import os
+import sys
 
 # Get the module named __main__ from sys.modules.
 main_found = True

@@ -12,6 +12,7 @@ import pytest_helper
 pytest_helper.script_run(self_test=True)
 pytest_helper.auto_import()
 pytest_helper.sys_path(add_parent=True)
+#pytest_helper.sys_path(add_gn_parent=0)
 
 
 # Run test cases when invoked as a script.

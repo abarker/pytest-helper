@@ -8,6 +8,8 @@ import pytest_helper
 # would do more.
 test_string = "in_child_dir"
 
+import set_package_attribute # Test setting the package attribute for scripts.
+from . import dummy_module # Works! now this doesn't give an error.
 
 ##
 ## Run tests.

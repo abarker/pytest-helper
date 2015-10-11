@@ -3,10 +3,11 @@
 from __future__ import print_function, division, absolute_import
 import pytest_helper
 from pytest_helper import PytestHelperException, LocalsToGlobalsError
-pytest_helper.save_abspath()
+pytest_helper.init() # Needed because of chdir call below.
 
 import os
-os.chdir("..") # Causes an error if save_abspath() is not called above.
+old_cwd = os.getcwd()
+os.chdir("..") # Causes an error if pytest_helper.init() is not called above.
 
 pytest_helper.script_run(self_test=True, pytest_args="-v -s")
 # More efficient to put below two lines after script_run (won't run twice).
@@ -17,7 +18,7 @@ pytest_helper.auto_import()
 # The import below defines test_string="egg".
 from in_child_dir import *
 
-os.chdir("test") # Return to prev dir so as not to mess up later tests.
+os.chdir(old_cwd) # Return to prev dir so as not to mess up later tests.
 
 @fixture
 def basic_setup():

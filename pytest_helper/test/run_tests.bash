@@ -8,7 +8,7 @@
 # test
 #     test_dir_tree/
 #         project_root_t/
-#             project_name_t/
+#             package_dir/
 #                 in_child_dir.py
 #                 __init__.py
 #                 in_same_dir.py
@@ -33,10 +33,10 @@ function run_test {
 # =================================
 
 # Run from the code file with absolute path.
-$testdir/test_dir_tree/project_root_t/project_name_t/in_child_dir.py
+$testdir/test_dir_tree/project_root_t/package_dir/in_child_dir.py
 
 # Run from the code file with relative path from its own dir.
-cd test_dir_tree/project_root_t/project_name_t
+cd test_dir_tree/project_root_t/package_dir
 run_test ./in_child_dir.py
 
 # Run from the code file with relative path from its subdir.
@@ -44,7 +44,7 @@ cd test
 run_test ../in_child_dir.py
 
 # Run from the test file with absolute path.
-run_test $testdir/test_dir_tree/project_root_t/project_name_t/test/test_in_child_dir.py
+run_test $testdir/test_dir_tree/project_root_t/package_dir/test/test_in_child_dir.py
 
 # Run from the test file with relative path from its own dir.
 run_test ./test_in_child_dir.py

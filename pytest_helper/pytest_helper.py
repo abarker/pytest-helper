@@ -1,21 +1,12 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, division, absolute_import
-import inspect
-import sys
-import os
-from py.test import raises, fail, fixture, skip
-import py.test
-
 """
+Description
+-----------
 
-Helper functions for using pytest.
+This module contains helper functions for using the pytest unit testing
+framework.
 
-This stuff here is unorganized and maybe out-of-date, but the docstrings
-below are correct.  Fix this stuff up, write a markdown description, too,
-at some point.  Maybe use some kind of literate auto-doc system like in
-scikit-learn modules, and generate a static page.
-
-Note that with script_run the script is run twice (at least the init) unless
+Note that with `script_run` the script is run twice (at least the init) unless
 the call is put near the top of the file (may be bad for long-running init
 things).
 
@@ -23,22 +14,6 @@ You could always test the __name__="__main__" twice, it wouldn't really matter.
 Can optionally add that around script_run.  So while it is checked for main
 inside it, make clear to users that they can put the code inside a test like
 that, too (for clarity or slight efficiency gain).
-
-This package provides:
-
-      script_run
-      auto_import
-      sys_path
-      save_abspath
-
-      locals_to_globals
-      clear_locals_from_globals
-
-
-Remember that using locals() and globals() is preferred for getting the
-variable dicts when within the same frame.
-
-Note it needs at least Pytest 2.0.
 
 Note one advantage of specifications of test files and dirs to import is that
 relative paths are always relative to the calling module location, not the
@@ -49,26 +24,23 @@ Note that problems with relative paths can arise due to starting scripts or
 the Python interpreter from different directories.  Interpreting all paths
 relative to the calling file's location eliminates this problem.
 
-Note that you can pass in directory names, too.
-
-Note that only the script_run routine is really dependent on pytest.
-
-Possible later improvements:
-   - Allow multiple test files to be run, with optional list of testfiles.
-   - Have an option named "show_commands" which just prints out the commands
-     that are run and then exits.  So people could easily go back to the
-     rote way if necessary on some system, and the curious could see what's
-     going on behind the scenes.
-
 """
 
+from __future__ import print_function, division, absolute_import
+import inspect
+import sys
+import os
+from py.test import raises, fail, fixture, skip
+import py.test
+
 def script_run(testfile_paths=None, self_test=False, pytest_args=None,
-               calling_mod_name=None, calling_mod_path=None, exit=True):
-    """Run pytest when the calling module is running as a script.
-    Run pytest on the test file when the calling module is run as a script.
+               calling_mod_name=None, calling_mod_path=None, exit=True,
+               always_run=False, level=2):
+    """Run pytest on the test file when the calling module is run as a script.
+    Using this function requires at least Pytest 2.0.
     
     The argument `testfile_paths` should be either the pathname to a file or
-    directory to run pytest on, or a list of such file paths and directory
+    directory to run pytest on, or else a list of such file paths and directory
     paths.  Any relative paths will be interpreted relative to the directory of
     the script which calls this function.
     
@@ -79,7 +51,8 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None,
     Using relative paths can fail in cases where Python's CWD is changed
     between the loading of the calling module and the call of this function.
     (Most programs do not change the CWD like that, or they return it to its
-    previous value.)  In those cases you can still use absolute pathnames.
+    previous value.)  In those cases you can use the `pytest_helper.init()`
+    function just after importing `pytest_helper` or else use absolute pathnames
     
     The `calling_mod_name` argument is a fallback in case the calling
     function's module is not correctly located by introspection.  It is usually
@@ -88,14 +61,22 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None,
     be passed the pathname of the calling module's file.
     
     If `exit` is set false then `sys.exit(0)` will be called after the tests
-    finish.  The default is to exit after the tests finish."""
+    finish.  The default is to exit after the tests finish (otherwise when
+    tests run from the top of a module are finished the rest of the file
+    will still be executed).
+    
+    If `always_run` is true then tests will be run regardless of whether or not
+    the function was called from a script.
+    
+    The parameter `level` is the level up the calling stack to look for the
+    calling module and should not usually need to be set."""
 
     mod_info = get_calling_module_info(module_name=calling_mod_name,
-                                       module_path=calling_mod_path, level=2)
+                                       module_path=calling_mod_path, level=level)
     calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
 
-    if calling_mod_name != "__main__": # Only run if __main__ is calling module.
-        return
+    if calling_mod_name != "__main__":
+        if not always_run: return
 
     if isinstance(testfile_paths, str):
         testfile_paths = [testfile_paths]
@@ -122,7 +103,7 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None,
     return
 
 def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
-              calling_mod_dir=None, level=2):
+             add_gn_parent=False, add_self=False, calling_mod_dir=None, level=2):
 
     """Add each directory in the list `dirs_to_add` to `sys.path` (but only if
     the absolute path isn't there already).  A single string representing a
@@ -130,13 +111,18 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
     interpreted relative to the directory of the calling module (i.e., the
     directory of the module that calls this function).
     
-    The keywords `add_parent` and `add_grandparent` are shortcuts that can be
-    used instead of putting the relative path on the list `dirs_to_add`.
+    The keyword arguments `add_parent` and `add_grandparent` are shortcuts that
+    can be used instead of putting the equivalent relative path on the list
+    `dirs_to_add`.  If the keyword argument `add_gn_parent` is set to a
+    non-negative integer `n` then the (grand)\ :sup:`n`\ parent is added to the
+    path, where (grand)\ :sup:`1`\ parent is the grandparent.  If `add_self` is
+    true then the directory of the calling module is added to the system
+    `sys.path` list.
     
     The parameter `calling_mod_dir` can be set as a fallback in case the
     introspection for finding the calling module's directory fails for some
-    reason.  The `level` is the level up the calling stack to look for the
-    calling module."""
+    reason.  The parameter `level` is the level up the calling stack to look
+    for the calling module and should not usually need to be set."""
 
     if not calling_mod_dir:
         calling_mod_dir = get_calling_module_info()[3]
@@ -150,10 +136,24 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
         dirs_to_add.append("..")
     if add_grandparent:
         dirs_to_add.append(os.path.join("..",".."))
+    if add_gn_parent:
+        try:
+            g_level = int(add_gn_parent)
+        except TypeError:
+            raise PytestHelperException("Non-integer argument to the add_gn_parent "
+                    "argument of the pytest_helper.sys_path function.")
+        if g_level < 0 or add_gn_parent is True:
+            raise PytestHelperException("Negative argument or literal True argument\n"
+                  "to the add_gn_parent parameter of the pytest_helper.sys_path"
+                  " function.\nIt must be a non-negative integer.")
+        parent_string = ".."
+        for i in range(g_level):
+            parent_string = os.path.join(parent_string, "..")
+        dirs_to_add.append(parent_string)
+    if add_self:
+        dirs_to_add.append(".")
 
     dirs_to_add = [os.path.expanduser(p) for p in dirs_to_add]
-
-    #sys.path.insert(0, calling_mod_dir) # Add testfile dir to sys.path NEEDED OR DELETE?
 
     for path in dirs_to_add:
         if os.path.isabs(path):
@@ -166,11 +166,19 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
     return
 
 def auto_import(noclobber=True, level=2):
-    """ This function will import some pytest_helper and pytest attributes into
-    the calling module's global namespace.  That avoids having to explicitly
+    """This function imports some pytest-helper and pytest attributes into
+    the calling module's global namespace.  This avoids having to explicitly
     import things like `locals_to_globals`, `skip`, `raises`, and `fail`.  A
     `PytestHelperException` will be raised if any of those globals already
-    exist, unless `noclobber` is set false."""
+    exist, unless `noclobber` is set false.
+    
+    The variables that are imported from this module are `locals_to_globals`,
+    and `clear_locals_from_globals`.
+    
+    The module `py.test` is imported as the single name `pytest`.  The
+    functions from pytest that are imported are `raises`, `fail`, `fixture`,
+    and `skip`."""
+    
     # TODO maybe have some options to turn on and off certain groups of autoimports.
 
     def insert_in_dict(d, name, value):
@@ -193,23 +201,42 @@ def auto_import(noclobber=True, level=2):
     insert_in_dict(g, "skip", skip)
 
     # Functions and classes from this module.
-    insert_in_dict(g, "script_run", script_run)
-    insert_in_dict(g, "sys_path", sys_path)
-    insert_in_dict(g, "save_abspath", save_abspath)
+    #insert_in_dict(g, "script_run", script_run)
+    #insert_in_dict(g, "sys_path", sys_path)
+    #insert_in_dict(g, "init", init)
     insert_in_dict(g, "locals_to_globals", locals_to_globals)
     insert_in_dict(g, "clear_locals_from_globals", clear_locals_from_globals)
     return
 
-def save_abspath():
-    """This function is only necessary in rare cases where Python's current
-    working directory (CWD) is changed between the time when pytest_helper is
-    loaded and when `script_run` or `sys_path` is called.  In those cases
-    expanding relative pathnames from before the CWD into absolute pathnames
-    will fail.  This function should be called before any function call or
-    import which changes the CWD and which doesn't change it back afterward.
-    Importing pytest_helper just after the system imports and then immediately
-    calling this function should work."""
-    get_calling_module_info(level=2) # This caches the module info.
+def init(set_package=False, level=2):
+    """A function to initialize the `pytest_helper` module just after importing
+    it.  This function is currently only necessary in rare cases where Python's
+    current working directory (CWD) is changed between the time when the
+    executing module is first loaded and when `script_run` or `sys_path` is
+    called from that module.  In those cases the module's pathname relative to
+    the previous CWD will be incorrectly expanded relative to the new CWD.
+    Calling this function causes the earlier expanded pathname to be cached.
+    This function should be called before any function call or import which
+    changes the CWD and which doesn't change it back afterward.  Importing
+    `pytest_helper` just after the system imports and then immediately calling
+    this function should work.
+    
+    The `init` function takes an optional keyword argument `set_package`.  If
+    it is true then the package attribute of module `__main__` will be
+    automatically set.  This allows for using relative imports fromp scripts,
+    but it must be called before the relative imports are attempted.  The
+    function call `pytest_helper.init(set_package=True)` is equivalent to::
+        
+        pytest_helper.init()
+        import set_package_attribute
+        
+    """
+
+    if set_package:
+       # Set the __PACKAGE__ attribute for module __main__ (if there is one).
+       import set_package_attribute # TODO can't find from symlinks... need pip or path mods...
+
+    get_calling_module_info(level=level) # This caches the module info.
     return
 
 #
@@ -224,22 +251,27 @@ def locals_to_globals(fun_locals=None, fun_globals=None, auto_clear=True, level=
     """Copy all local variables in the calling function's local scope to the
     global scope of the module where that function was called.  The function's
     parameters are ignored and are not copied.  This routine should be called
-    near the end of a function.  It does not allow any existing global
-    variables to be overwritten (and will raise `LocalsToGlobalsError` on any
-    attempt to do so).  This avoids accidentally overwriting important global
-    attributes.
+    near the end of a test function or fixture to share variables with another
+    test function.  This function does not allow any existing global variables
+    to be overwritten unless they were set by a previous run of this function.
+    A `LocalsToGlobalsError` will be raised on any attempt to overwrite an
+    existing global variable.  This avoids accidentally overwriting important
+    global attributes.
     
-    This routine's effect is similar to the effect of explicitly declaring all
+    This routine's effect is similar to the effect of explicitly declaring each
     of a function's variables to be `global`, or doing
-    `globals().update(locals())`, except that it ignores parameters, adds more
-    error checks, and clears any previously-set values.  Note that the globals
-    can be accessed and used in any function, but they are read-only.  If an
-    attribute is explicitly declared `global` in order to modify it, then it
-    will no longer be local so further calls to `locals_to_globals` will not
-    save it (this should not occur in most testing setups, but it is worth
-    noting).  If `locals_to_globals` set it before, though, it will still be
-    deleted when `locals_to_globals` is called again with default `auto_clear`
-    or `clear_locals_from_globals` is called.
+    `globals().update(locals())`, except that it 1) ignores local variables
+    which are function parameters, 2) adds more error checks, and 3) clears any
+    previously-set values.
+    
+    Note that the globals set with `locals_to_globals` can be accessed and used
+    in any function, but they are still read-only, as usual.  If an attribute
+    is explicitly declared `global` in order to modify it, then it will no
+    longer be local so further calls to `locals_to_globals` will not save it
+    (this should not occur in most testing setups, but it is worth noting).  If
+    `locals_to_globals` set it before, though, it will still be deleted when
+    `locals_to_globals` is called again with default `auto_clear` or
+    `clear_locals_from_globals` is called.
     
     If `auto_clear` is true (the default) then any variable that was set on the
     last run of this function will be automatically cleared before any new ones
@@ -253,14 +285,17 @@ def locals_to_globals(fun_locals=None, fun_globals=None, auto_clear=True, level=
     The argument `fun_locals` can be used as a fallback to pass the `locals()`
     dict from the function in case the introspection technique does not work
     for some reason.  The `fun_globals` argument can similarly be passed
-    globals() as a fallback.  So you could call
-       `locals_to_globals(locals(), globals())`
-    to bypass the introspection.
+    globals() as a fallback.  So you could call::
+
+       locals_to_globals(locals(), globals())
+       
+    to bypass the introspection used to locate the two dicts.
     
     The `level` argument is the level up the calling stack to look for the
     calling function.  In order to call an intermediate function which then
     calls this function, for example, `level` would need to be increased by
     one."""
+
     #view_locals_up_stack(4) # useful for debugging
     global last_copied_names
 
@@ -303,7 +338,9 @@ def locals_to_globals(fun_locals=None, fun_globals=None, auto_clear=True, level=
     return
 
 def clear_locals_from_globals(level=2):
-    """Clear all the global variables that were added by locals_to_globals."""
+    """Clear all the global variables that were added by locals_to_globals.
+    This is called automatically by `locals_to_globals` unless that function
+    is run with `auto_clear` set false."""
     global last_copied_names
     g = get_calling_fun_globals_dict(level)
     for k in last_copied_names:
@@ -314,9 +351,12 @@ def clear_locals_from_globals(level=2):
     last_copied_names = []
 
 class PytestHelperException(Exception):
+    """Raised by the routines to help with running tests."""
     pass
 
 class LocalsToGlobalsError(PytestHelperException):
+    """Raised only when there is an error related to the `locals_to_globals`
+    operations."""
     pass
 
 #
@@ -343,12 +383,12 @@ utility function itself.  So level 0 is the attribute of the utility function
 itself, level 1 is the attribute of the calling function, level 2 is the
 function that called the calling function, etc."""
 
-module_info_cache = {} # Save module path info keyed on module name.
+module_info_cache = {} # Save info on modules, keyed on module names.
 
 def get_calling_module_info(level=2, module_name=None, module_path=None):
-    """A higher-level routine to get information about the of a function back
-    some number of levels in the call stack (the calling function).  Returns a
-    tuple:
+    """A higher-level routine to get information about the module of a function
+    back some number of levels in the call stack (the calling function).
+    Returns a tuple::
 
        (calling_module_name,
         calling_module,
@@ -362,7 +402,7 @@ def get_calling_module_info(level=2, module_name=None, module_path=None):
     latter is important in cases where the CWD is changed between the initial
     loading time for a module and the time it (indirectly) calls this routine.
     Such problems are rare, but if they occur you can use these two lines
-    near the top of the module (before any imports which might change CWD):
+    near the top of the module (before any imports which might change CWD)::
 
        import pytest_helper
        pytest_helper.get_calling_module_info(level=1)
@@ -373,7 +413,7 @@ def get_calling_module_info(level=2, module_name=None, module_path=None):
 
     # TODO: make sure this works when the module is actually a package, run
     # from the package's __init__.py file (or however).  Maybe add more
-    # checks, but has to work in both cases.
+    # checks, but should work in both cases.
 
     if module_name:
         calling_module_name = module_name
@@ -492,6 +532,6 @@ def get_calling_module(level=2):
 # Test this file when invoked as a script.
 #
 
-if __name__ == "__main__":
-    script_run("test/test_pytest_helper.py")
+if __name__ == "__main__": # This guard is optional, but slightly more efficient.
+    script_run("test", pytest_args="-v")
 
