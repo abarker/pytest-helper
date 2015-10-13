@@ -64,7 +64,8 @@ except KeyError:
 if main_found and main_module.__package__ is None:
 
     importing_file = main_module.__file__
-    dirname, filename = os.path.split(os.path.abspath(importing_file))
+    dirname, filename = os.path.split(
+                           os.path.realpath(os.path.abspath(importing_file)))
     filename = os.path.splitext(filename)[0]
     parent_dirs = [] # A reverse list of package name parts to build up.
 

@@ -367,14 +367,12 @@ def expand_relative(path, basepath):
     """Expand the path `path` relative to the path `basepath`.  If `basepath`
     is not an absolute path it is first expanded relative to Python's current
     CWD to be one."""
-    # BELOW FAILS!!!!!
-    #path = os.path.expanduser(path)
-    #path = os.path.expanduser(path)
+    path = os.path.expanduser(path)
     if os.path.isabs(path):
         return path
     if not os.path.isabs(basepath):
-        basepath = os.path.abspath(basepath)
-    joined_path = os.path.abspath(os.path.join(basepath, path))
+        basepath = os.path.realpath(os.path.abspath(basepath))
+    joined_path = os.path.realpath(os.path.abspath(os.path.join(basepath, path)))
     return joined_path
 
 """The levels used in the utility routines below are levels in the calling
@@ -426,7 +424,8 @@ def get_calling_module_info(level=2, module_name=None, module_path=None):
     elif calling_module_name in module_info_cache:
         return module_info_cache[calling_module_name]
     else:
-        calling_module_path = os.path.abspath(calling_module.__file__)
+        calling_module_path = os.path.realpath(
+                                   os.path.abspath(calling_module.__file__))
 
     calling_module_dir = os.path.dirname(calling_module_path)
 

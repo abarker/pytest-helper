@@ -10,6 +10,10 @@ test_string = "in_child_dir"
 
 import set_package_attribute # Test setting the package attribute for scripts.
 from . import dummy_module # Works! now this doesn't give an error.
+from .. import dummy_module # Works! now this doesn't give an error.
+
+import sys
+sys.exit(0) # TODO currently only testing relative imports...
 
 ##
 ## Run tests.

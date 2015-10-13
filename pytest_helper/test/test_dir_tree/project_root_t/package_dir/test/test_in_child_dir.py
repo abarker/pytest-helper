@@ -3,7 +3,7 @@
 from __future__ import print_function, division, absolute_import
 import pytest_helper
 from pytest_helper import PytestHelperException, LocalsToGlobalsError
-pytest_helper.init() # Needed because of chdir call below.
+pytest_helper.init() # Needed because of testing chdir call inserted below.
 
 import os
 old_cwd = os.getcwd()
