@@ -14,14 +14,6 @@ pytest_helper.auto_import()
 pytest_helper.sys_path(add_parent=True)
 #pytest_helper.sys_path(add_gn_parent=0)
 
-
-# Run test cases when invoked as a script.
-#if __name__ == "__main__":
-#    import sys, os, py.test
-#    filePath = os.path.dirname(os.path.abspath(__file__))
-#    py.test.main(["-v", __file__])
-#    sys.exit(0)
-
 from py.test import raises, fail, fixture, skip
 
 def dummy_fun(): pass # just to test function objects
@@ -35,7 +27,7 @@ def set_up_test_copy_to_globals(request):
     df = dummy_fun
 
     locals_to_globals()
-    def finalize(): clear_locals_from_globals()
+    def finalize(): clear_locals_from_globals() # works but no auto_clear is easier
     request.addfinalizer(finalize)
 
 def test_copy_locals_to_globals(set_up_test_copy_to_globals):
