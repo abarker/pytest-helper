@@ -20,7 +20,7 @@ test_string = "in_child_dir"
 # Get this file's absolute dir path to test passing absolute pathnames in calls
 # to pytest_helper.
 this_files_dir = os.path.dirname(os.path.abspath(inspect.getsourcefile(lambda:0)))
-path_to_second_test = os.path.join(this_files_dir, "test/second_test.py")
+path_to_second_test = os.path.join(this_files_dir, "test/test_second_in_child.py")
 
 # Use both relative and absolute pathnames in specifying the test file paths.
 # Also include the full directory in the list to check that that works.

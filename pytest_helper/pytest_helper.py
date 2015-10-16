@@ -84,13 +84,15 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None,
         sys.exit(0)
     return
 
+previous_sys_path_list = None # Save the sys.path before modifying it, to restore it.
+
 def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
              add_gn_parent=False, add_self=False, calling_mod_dir=None, level=2):
-    """Add each directory in the list `dirs_to_add` to `sys.path` (but only if
-    the absolute path isn't there already).  A single string representing a
-    path can also be passed to `dirs_to_add`.  Relative pathnames are always
-    interpreted relative to the directory of the calling module (i.e., the
-    directory of the module that calls this function).
+    """Add the canonical absolute pathname of each directory in the list
+    `dirs_to_add` to `sys.path` (but only if it isn't there already).  A single
+    string representing a path can also be passed to `dirs_to_add`.  Relative
+    pathnames are always interpreted relative to the directory of the calling
+    module (i.e., the directory of the module that calls this function).
     
     The keyword arguments `add_parent` and `add_grandparent` are shortcuts that
     can be used instead of putting the equivalent relative path on the list
@@ -107,7 +109,6 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
 
     if not calling_mod_dir:
         calling_mod_dir = get_calling_module_info()[3]
-        print("in sys_path, calling_mod_dir is", calling_mod_dir)
 
     if dirs_to_add is None:
         dirs_to_add = []
@@ -136,14 +137,28 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
 
     dirs_to_add = [os.path.expanduser(p) for p in dirs_to_add]
 
+    global previous_sys_path_list
+    previous_sys_path_list = sys.path[:]
+
     for path in dirs_to_add:
         if os.path.isabs(path):
+            path = os.path.realpath(path) # Convert to canonical path.
             if path not in sys.path:
                 sys.path.insert(0, path)
         else:
             joined_path = expand_relative(path, calling_mod_dir)
             if joined_path not in sys.path:
                 sys.path.insert(0, joined_path)
+
+    return
+
+def restore_previous_sys_path():
+    """This function undoes the effect of the last call to `sys_path`, returning
+    `sys.path` to its previous, saved value."""
+    global previous_sys_path_list
+    if previous_sys_path_list is not None:
+        sys.path = previous_sys_path_list
+        previous_sys_path_list = None
     return
 
 def auto_import(noclobber=True, level=2):
@@ -223,21 +238,23 @@ def init(set_package=False, level=2):
 # Functions for copying locals to globals.
 #
 
-last_copied_names = [] # Saves the most-recently-copied attribute names. 
-context_marker = "pytest_helper_context_marker_320gj97tr" # Detect new global context.
+# The last copied attributes are stored in the same globals dict where they were
+# copied to, in a list with this attribute name.
+last_saved_list_name = "pytest_helper_last_copied_320gj97tr"
 
 def locals_to_globals(fun_locals=None, fun_globals=None, auto_clear=True, 
                       noclobber=True, level=2):
 
     """Copy all local variables in the calling function's local scope to the
     global scope of the module where that function was called.  The function's
-    parameters are ignored and are not copied.  This routine should be called
-    near the end of a test function or fixture to share variables with another
-    test function.  This function does not allow any existing global variables
-    to be overwritten unless they were either set by a previous run of this
-    function or `noclobber` is false.  A `LocalsToGlobalsError` will be raised
-    on any attempt to overwrite an existing global variable.  This avoids
-    accidentally overwriting important global attributes.
+    parameters are ignored and are not copied.  This routine should only be
+    called once, near the end of a test function or fixture.  It allows for
+    variables to be shared with another test function as globals.  This
+    function does not allow any existing global variables to be overwritten
+    unless they were either set by a previous run of this function or
+    `noclobber` is false.  A `LocalsToGlobalsError` will be raised on any
+    attempt to overwrite an existing global variable.  This avoids accidentally
+    overwriting important global attributes.
     
     This routine's effect is similar to the effect of explicitly declaring each
     of a function's variables to be `global`, or doing
@@ -278,19 +295,17 @@ def locals_to_globals(fun_locals=None, fun_globals=None, auto_clear=True,
     one."""
 
     #view_locals_up_stack(4) # useful for debugging
-    global last_copied_names
 
     if not fun_locals:
         fun_locals = get_calling_fun_locals_dict(level)
     if not fun_globals:
         fun_globals = get_calling_fun_globals_dict(level)
 
-    # If we have a new global context (i.e., the context marker previously set
-    # is not in globals), reset the copied names list.  This is a paranoid
-    # test, run just in case Pytest might decide to create a new context.
-    if not context_marker in fun_globals:
+    if last_saved_list_name in fun_globals:
+        last_copied_names = fun_globals[last_saved_list_name]
+    else:
         last_copied_names = []
-        fun_globals[context_marker] = True
+        fun_globals[last_saved_list_name] = last_copied_names
 
     # If last_copied_names isn't empty assume the user forgot to clear it.
     if last_copied_names:
@@ -318,15 +333,16 @@ def locals_to_globals(fun_locals=None, fun_globals=None, auto_clear=True,
 def clear_locals_from_globals(level=2):
     """Clear all the global variables that were added by locals_to_globals.
     This is called automatically by `locals_to_globals` unless that function
-    is run with `auto_clear` set false."""
-    global last_copied_names
+    is run with `auto_clear` set false.  This only affects the module from
+    which the function is called."""
     g = get_calling_fun_globals_dict(level)
+    last_copied_names = g[last_saved_list_name]
     for k in last_copied_names:
         try:
             del g[k]
         except KeyError:
             pass # Ignore if not there.
-    last_copied_names = []
+    del last_copied_names[:] # Empty out last_copied_names in place.
 
 class PytestHelperException(Exception):
     """Raised by the routines to help with running tests."""
@@ -344,10 +360,10 @@ class LocalsToGlobalsError(PytestHelperException):
 def expand_relative(path, basepath):
     """Expand the path `path` relative to the path `basepath`.  If `basepath`
     is not an absolute path it is first expanded relative to Python's current
-    CWD to be one."""
+    CWD to be one.  The canonical version of the absolute path is returned."""
     path = os.path.expanduser(path)
     if os.path.isabs(path):
-        return path
+        return os.path.realpath(path) # Return canonical path, already absolute.
     if not os.path.isabs(basepath):
         basepath = os.path.realpath(os.path.abspath(basepath))
     joined_path = os.path.realpath(os.path.abspath(os.path.join(basepath, path)))
@@ -409,13 +425,13 @@ def get_calling_module_info(level=2, check_exists=True,
 
     # Do an error check to make sure that the detected module directory exists.
     if check_exists and not os.path.isdir(calling_module_dir):
-        raise PytestHelperException("\n\nThe directory\n   {0}\ndoes of the detected"
-                "calling module does not exist.\nDid the Python CWD change without"
+        raise PytestHelperException("\n\nThe directory\n   {0}\nof the detected"
+                " calling module does not exist.\nDid the Python CWD change without"
                 " being changed back?\nYou can try importing pytest_helper near the"
-                " top of your file and then immediately calling\n"
-                "   pytest_helper.get_calling_module_info(level=1)\nafterward.  If"
-                " necessary you can set `module_name` and `module_path`"
-                "\nexplicitly from keyword arguments.".format(calling_module_dir))
+                " top\nof your file and then immediately calling\n"
+                "   pytest_helper.init()\nafterward.  If"
+                " necessary you can set `module_name` and\n`module_path`"
+                " explicitly from keyword arguments.".format(calling_module_dir))
 
     module_info = (calling_module_name, calling_module,
                    calling_module_path, calling_module_dir)

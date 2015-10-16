@@ -15,7 +15,7 @@ pytest_helper.sys_path(add_parent=True)
 pytest_helper.auto_import()
 
 # The module to be tested is in_child_dir.
-# The import below defines test_string="egg".
+# The import below defines test_string="in_child_dir".
 from in_child_dir import *
 
 os.chdir(old_cwd) # Return to prev dir so as not to mess up later tests.
@@ -41,6 +41,8 @@ def test_autoimports(basic_setup):
     # Note that the local variable/parameter basic_setup would try to overwrite
     # the global (and fail) if locals_to_globals did not ignore parameters.
     locals_to_globals()
+
+def test_skip():
     skip()
 
 # Note that the below tests are testing some unusual use-patterns of
@@ -57,14 +59,18 @@ def test_locals_to_globals():
     locals_to_globals() # This copies only new_var, which is saved to delete later.
     with raises(LocalsToGlobalsError):
         locals_to_globals(auto_clear=False)
-    teststr = "house" # This now sets a global, which will not be cleared.
+    teststr = "house" # This now sets a global, which will NOT be cleared.
     locals_to_globals()
    
 class TestInClass(object):
     def test_in_class(self):
-        assert teststr == "house"
-        locals_to_globals() # This clears previously-set globals as a side-effect.
         assert teststr == "house" # Still defined, since it was set as global.
+        assert new_var == "car"
+        locals_to_globals()
         with raises(NameError):
-            assert new_var == "car" # No longer defined; copied on call before last.
+            assert new_var == "car" # Unset and no longer defined globally.
+        # Below line is needed to run these tests again, or else locals_to_globals
+        # refuses to overwrite teststr.  Could also make the first call use
+        # noclobber=False.  Double-running test files is not usually done.
+        del globals()["teststr"]
 
