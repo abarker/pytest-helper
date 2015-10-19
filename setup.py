@@ -67,7 +67,15 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=find_packages(exclude=["doc", "test*"]),
+    #packages=find_packages(exclude=["doc", "test*"]),
+    #package_dir={"": "pytest_helper"}, # Treat pytest_helper as root package.
+    #packages=["pytest_helper"],
+
+    # NOTE I had to symlink these modules in the root package and remove any
+    # __init__.py in the pytest_helper dir to make this work to only include
+    # the two modules.  The package_dir kwarg didn't seem to work.
+    py_modules=["pytest_helper", "set_package_attribute"],
+    #py_modules=["pytest_helper.pytest_helper", "pytest_helper.set_package_attribute"],
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip"s
