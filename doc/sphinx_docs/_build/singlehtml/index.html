@@ -1,0 +1,357 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pytest_helper documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="None" href="index.html#document-index" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li><a href="index.html#document-index">pytest_helper  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="welcome-to-pytest-helper-s-documentation">
+<h1>Welcome to pytest_helper&#8217;s documentation!<a class="headerlink" href="#welcome-to-pytest-helper-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p>Contents:</p>
+<div class="toctree-wrapper compound">
+<span id="document-pytest_helper"></span><div class="section" id="module-pytest_helper">
+<span id="pytest-helper-module"></span><h2>pytest_helper module<a class="headerlink" href="#module-pytest_helper" title="Permalink to this headline">¶</a></h2>
+<p>Created on Sept 30, 2015
+&#64;author: Allen Barker</p>
+<p>Helper functions for using pytest.</p>
+<p>This stuff here is unorganized and maybe out-of-date, but the docstrings
+below are correct.  Fix this stuff up, write a markdown description, too,
+at some point.  Maybe use some kind of literate auto-doc system like in
+scikit-learn modules, and generate a static page.</p>
+<p>Note that with script_run the script is run twice (at least the init) unless
+the call is put near the top of the file (may be bad for long-running init
+things).</p>
+<p>You could always test the __name__=&#8221;__main__&#8221; twice, it wouldn&#8217;t really matter.
+Can optionally add that around script_run.  So while it is checked for main
+inside it, make clear to users that they can put the code inside a test like
+that, too (for clarity or slight efficiency gain).</p>
+<p>This package provides:</p>
+<blockquote>
+<div><p>script_run
+auto_import
+sys_path
+save_abspath</p>
+<p>locals_to_globals
+clear_locals_from_globals</p>
+</div></blockquote>
+<p>Remember that using locals() and globals() is preferred for getting the
+variable dicts when within the same frame.</p>
+<p>Note it needs at least Pytest 2.0.</p>
+<p>Note one advantage of specifications of test files and dirs to import is that
+relative paths are always relative to the calling module location, not the
+Python CWD (which can change depending on where the program is run from).
+Using relative paths improves portability.</p>
+<p>Note that problems with relative paths can arise due to starting scripts or
+the Python interpreter from different directories.  Interpreting all paths
+relative to the calling file&#8217;s location eliminates this problem.</p>
+<p>Note that you can pass in directory names, too.</p>
+<p>Note that only the script_run routine is really dependent on pytest.</p>
+<dl class="docutils">
+<dt>Possible later improvements:</dt>
+<dd><ul class="first last simple">
+<li>Allow multiple test files to be run, with optional list of testfiles.</li>
+<li>Have an option named &#8220;show_commands&#8221; which just prints out the commands
+that are run and then exits.  So people could easily go back to the
+rote way if necessary on some system, and the curious could see what&#8217;s
+going on behind the scenes.</li>
+</ul>
+</dd>
+</dl>
+<dl class="exception">
+<dt id="pytest_helper.LocalsToGlobalsError">
+<em class="property">exception </em><tt class="descclassname">pytest_helper.</tt><tt class="descname">LocalsToGlobalsError</tt><a class="reference internal" href="_modules/pytest_helper.html#LocalsToGlobalsError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.LocalsToGlobalsError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="index.html#pytest_helper.PytestHelperException" title="pytest_helper.PytestHelperException"><tt class="xref py py-class docutils literal"><span class="pre">pytest_helper.PytestHelperException</span></tt></a></p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="pytest_helper.PytestHelperException">
+<em class="property">exception </em><tt class="descclassname">pytest_helper.</tt><tt class="descname">PytestHelperException</tt><a class="reference internal" href="_modules/pytest_helper.html#PytestHelperException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.PytestHelperException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></tt></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pytest_helper.auto_import">
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">auto_import</tt><big>(</big><em>noclobber=True</em>, <em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#auto_import"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.auto_import" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function will import some pytest_helper and pytest attributes into
+the calling module&#8217;s global namespace.  That avoids having to explicitly
+import things like <cite>locals_to_globals</cite>, <cite>skip</cite>, <cite>raises</cite>, and <cite>fail</cite>.  A
+<cite>PytestHelperException</cite> will be raised if any of those globals already
+exist, unless <cite>noclobber</cite> is set false.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pytest_helper.clear_locals_from_globals">
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">clear_locals_from_globals</tt><big>(</big><em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#clear_locals_from_globals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.clear_locals_from_globals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear all the global variables that were added by locals_to_globals.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pytest_helper.expand_relative">
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">expand_relative</tt><big>(</big><em>path</em>, <em>basepath</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#expand_relative"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.expand_relative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expand the path <cite>path</cite> relative to the path <cite>basepath</cite>.  If <cite>basepath</cite>
+is not an absolute path it is first expanded relative to Python&#8217;s current
+CWD to be one.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pytest_helper.get_calling_fun_globals_dict">
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">get_calling_fun_globals_dict</tt><big>(</big><em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#get_calling_fun_globals_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.get_calling_fun_globals_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Note that in calling this function you have to increase the level by
+one since it is also on the stack when it does the lookup.</p>
+<blockquote>
+<div>level 0: The globals dict of this function.
+level 1: The globals dict of the function that called this function.
+level 2: The globals dict of the function that called the calling function.</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="pytest_helper.get_calling_fun_locals_dict">
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">get_calling_fun_locals_dict</tt><big>(</big><em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#get_calling_fun_locals_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.get_calling_fun_locals_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Note that in calling this function you have to increase the level by
+one since it is also on the stack when it does the lookup.</p>
+<blockquote>
+<div>level 0: The locals dict of this function.
+level 1: The locals dict of the function that called this function.
+level 2: The locals dict of the function that called the calling function.</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="pytest_helper.get_calling_fun_parameters">
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">get_calling_fun_parameters</tt><big>(</big><em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#get_calling_fun_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.get_calling_fun_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Note that in calling this function you have to increase the level by
+one since it is also on the stack when it does the lookup.</p>
+<blockquote>
+<div>level 0: This function.
+level 1: The frame of the function that called this function.
+level 2: The frame of the function that called the calling function.</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="pytest_helper.get_calling_module">
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">get_calling_module</tt><big>(</big><em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#get_calling_module"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.get_calling_module" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run this inside a function.  Get the module where the current function
+is being called from.  Returns a tuple (mod_name, module) with the name of
+the module and the module itself.  Note that the module name may be relative
+(to the CWD when the module was loaded) or absolute.  For some info on the
+introspection methods used, see stackoverflow.com/questions/1095543/.</p>
+<blockquote>
+<div>level 0: Module for this function.
+level 1: Module for the function calling this one (what you usually want).
+level 2: Module for the function that called the one calling this one.</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="pytest_helper.get_calling_module_info">
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">get_calling_module_info</tt><big>(</big><em>level=2</em>, <em>module_name=None</em>, <em>module_path=None</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#get_calling_module_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.get_calling_module_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>A higher-level routine to get information about the of a function back
+some number of levels in the call stack (the calling function).  Returns a
+tuple:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>(calling_module_name,</dt>
+<dd>calling_module,
+calling_module_path,
+calling_module_dir)</dd>
+</dl>
+</div></blockquote>
+<p>Any relative paths are converted to absolute paths and a check is made to
+make sure that the module actually exists at the path.  Absolute paths are
+cached in a dict keyed on module names so we always get the pathname
+calculated on the first call to this program from a given module.  The
+latter is important in cases where the CWD is changed between the initial
+loading time for a module and the time it (indirectly) calls this routine.
+Such problems are rare, but if they occur you can use these two lines
+near the top of the module (before any imports which might change CWD):</p>
+<blockquote>
+<div>import pytest_helper
+pytest_helper.get_calling_module_info(level=1)</div></blockquote>
+<p>The module name and/or path can be supplied via the keyword arguments if
+introspection still fails for some reason (or just to slightly improve
+efficiency).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pytest_helper.locals_to_globals">
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">locals_to_globals</tt><big>(</big><em>fun_locals=None</em>, <em>fun_globals=None</em>, <em>auto_clear=True</em>, <em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#locals_to_globals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.locals_to_globals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy all local variables in the calling function&#8217;s local scope to the
+global scope of the module where that function was called.  The function&#8217;s
+parameters are ignored and are not copied.  This routine should be called
+near the end of a function.  It does not allow any existing global
+variables to be overwritten (and will raise <cite>LocalsToGlobalsError</cite> on any
+attempt to do so).  This avoids accidentally overwriting important global
+attributes.</p>
+<p>This routine&#8217;s effect is similar to the effect of explicitly declaring all
+of a function&#8217;s variables to be <cite>global</cite>, or doing
+<cite>globals().update(locals())</cite>, except that it ignores parameters, adds more
+error checks, and clears any previously-set values.  Note that the globals
+can be accessed and used in any function, but they are read-only.  If an
+attribute is explicitly declared <cite>global</cite> in order to modify it, then it
+will no longer be local so further calls to <cite>locals_to_globals</cite> will not
+save it (this should not occur in most testing setups, but it is worth
+noting).  If <cite>locals_to_globals</cite> set it before, though, it will still be
+deleted when <cite>locals_to_globals</cite> is called again with default <cite>auto_clear</cite>
+or <cite>clear_locals_from_globals</cite> is called.</p>
+<p>If <cite>auto_clear</cite> is true (the default) then any variable that was set on the
+last run of this function will be automatically cleared before any new ones
+are set.  This avoids &#8220;false positives&#8221; where a later test succeeds only
+because of a global left over from a previous test.  Note that this clears
+globals on the saved list of globals even if their values were later
+modified.  If <cite>auto_clear</cite> is false then <cite>clear_locals_from_globals</cite> must
+be explicitly called before calling this function again (or else a
+<cite>LocalsToGlobalsError</cite> will be raised).</p>
+<p>The argument <cite>fun_locals</cite> can be used as a fallback to pass the <cite>locals()</cite>
+dict from the function in case the introspection technique does not work
+for some reason.  The <cite>fun_globals</cite> argument can similarly be passed
+globals() as a fallback.  So you could call</p>
+<blockquote>
+<div><cite>locals_to_globals(locals(), globals())</cite></div></blockquote>
+<p>to bypass the introspection.</p>
+<p>The <cite>level</cite> argument is the level up the calling stack to look for the
+calling function.  In order to call an intermediate function which then
+calls this function, for example, <cite>level</cite> would need to be increased by
+one.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pytest_helper.save_abspath">
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">save_abspath</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#save_abspath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.save_abspath" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is only necessary in rare cases where Python&#8217;s current
+working directory (CWD) is changed between the time when pytest_helper is
+loaded and when <cite>script_run</cite> or <cite>sys_path</cite> is called.  In those cases
+expanding relative pathnames from before the CWD into absolute pathnames
+will fail.  This function should be called before any function call or
+import which changes the CWD and which doesn&#8217;t change it back afterward.
+Importing pytest_helper just after the system imports and then immediately
+calling this function should work.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pytest_helper.script_run">
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">script_run</tt><big>(</big><em>testfile_paths=None</em>, <em>self_test=False</em>, <em>pytest_args=None</em>, <em>calling_mod_name=None</em>, <em>calling_mod_path=None</em>, <em>exit=True</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#script_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.script_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run pytest when the calling module is running as a script.
+Run pytest on the test file when the calling module is run as a script.</p>
+<p>The argument <cite>testfile_paths</cite> should be either the pathname to a file or
+directory to run pytest on, or a list of such file paths and directory
+paths.  Any relative paths will be interpreted relative to the directory of
+the script which calls this function.</p>
+<p>If <cite>self_test</cite> is <cite>True</cite> then pytest will be run on the file of the calling
+script itself, i.e., tests are assumed to be in the same file as the code
+to test.</p>
+<p>Using relative paths can fail in cases where Python&#8217;s CWD is changed
+between the loading of the calling module and the call of this function.
+(Most programs do not change the CWD like that, or they return it to its
+previous value.)  In those cases you can still use absolute pathnames.</p>
+<p>The <cite>calling_mod_name</cite> argument is a fallback in case the calling
+function&#8217;s module is not correctly located by introspection.  It is usually
+not required (though it is slightly more efficient).  Use it as:
+<cite>module_name=__name__</cite>.  Similarly for <cite>calling_mod_path</cite>, but that should
+be passed the pathname of the calling module&#8217;s file.</p>
+<p>If <cite>exit</cite> is set false then <cite>sys.exit(0)</cite> will be called after the tests
+finish.  The default is to exit after the tests finish.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pytest_helper.show_globals">
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">show_globals</tt><big>(</big><em>level=2</em>, <em>filt=True</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#show_globals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.show_globals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints the module globals for the module the calling function was called
+in, filtering out files starting with &#8216;__&#8217;.  Useful for testing.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pytest_helper.sys_path">
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">sys_path</tt><big>(</big><em>dirs_to_add=None</em>, <em>add_parent=False</em>, <em>add_grandparent=False</em>, <em>calling_mod_dir=None</em>, <em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#sys_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.sys_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add each directory in the list <cite>dirs_to_add</cite> to <cite>sys.path</cite> (but only if
+the absolute path isn&#8217;t there already).  A single string representing a
+path can also be passed to <cite>dirs_to_add</cite>.  Relative pathnames are always
+interpreted relative to the directory of the calling module (i.e., the
+directory of the module that calls this function).</p>
+<p>The keywords <cite>add_parent</cite> and <cite>add_grandparent</cite> are shortcuts that can be
+used instead of putting the relative path on the list <cite>dirs_to_add</cite>.</p>
+<p>The parameter <cite>calling_mod_dir</cite> can be set as a fallback in case the
+introspection for finding the calling module&#8217;s directory fails for some
+reason.  The <cite>level</cite> is the level up the calling stack to look for the
+calling module.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pytest_helper.view_locals_up_stack">
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">view_locals_up_stack</tt><big>(</big><em>num_levels=4</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#view_locals_up_stack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.view_locals_up_stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>To get an idea of what things look like.  Run from somewhere and see.</p>
+</dd></dl>
+
+</div>
+<span id="document-set_package_attribute"></span><div class="section" id="module-set_package_attribute">
+<span id="set-package-attribute-module"></span><h2>set_package_attribute module<a class="headerlink" href="#module-set_package_attribute" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
+<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html#document-index">Table Of Contents</a></h3>
+  <ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html#document-pytest_helper">pytest_helper module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html#document-set_package_attribute">set_package_attribute module</a></li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li><a href="index.html#document-index">pytest_helper  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Allen Barker.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

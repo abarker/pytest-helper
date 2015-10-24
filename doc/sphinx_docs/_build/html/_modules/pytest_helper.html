@@ -1,0 +1,619 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pytest_helper &mdash; pytest_helper  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="pytest_helper  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">pytest_helper  documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pytest_helper</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Description</span>
+<span class="sd">-----------</span>
+
+<span class="sd">This module contains helper functions for using the pytest unit testing</span>
+<span class="sd">framework.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">absolute_import</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">py.test</span> <span class="kn">import</span> <span class="n">raises</span><span class="p">,</span> <span class="n">fail</span><span class="p">,</span> <span class="n">fixture</span><span class="p">,</span> <span class="n">skip</span>
+<span class="kn">import</span> <span class="nn">py.test</span>
+
+<div class="viewcode-block" id="script_run"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.script_run">[docs]</a><span class="k">def</span> <span class="nf">script_run</span><span class="p">(</span><span class="n">testfile_paths</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">self_test</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">pytest_args</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">calling_mod_name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">calling_mod_path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="nb">exit</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+               <span class="n">always_run</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Run pytest on the specified test files when the calling module is run as</span>
+<span class="sd">    a script.  Using this function requires at least Pytest 2.0.</span>
+<span class="sd">    </span>
+<span class="sd">    The argument `testfile_paths` should be either the pathname to a file or</span>
+<span class="sd">    directory to run pytest on, or else a list of such file paths and directory</span>
+<span class="sd">    paths.  Any relative paths will be interpreted relative to the directory of</span>
+<span class="sd">    the module which calls this function.</span>
+<span class="sd">    </span>
+<span class="sd">    If `self_test` is `True` then pytest will be run on the file of the calling</span>
+<span class="sd">    script itself, i.e., tests are assumed to be in the same file as the code</span>
+<span class="sd">    to test.</span>
+<span class="sd">    </span>
+<span class="sd">    Using relative paths can fail in cases where Python&#39;s CWD is changed</span>
+<span class="sd">    between the loading of the calling module and the call of this function.</span>
+<span class="sd">    (Most programs do not change the CWD like that, or they return it to its</span>
+<span class="sd">    previous value.)  In those cases you can use the `pytest_helper.init()`</span>
+<span class="sd">    function just after importing `pytest_helper` or else use absolute pathnames</span>
+<span class="sd">    </span>
+<span class="sd">    The `calling_mod_name` argument is a fallback in case the calling</span>
+<span class="sd">    function&#39;s module is not correctly located by introspection.  It is usually</span>
+<span class="sd">    not required (though it is slightly more efficient).  Use it as:</span>
+<span class="sd">    `module_name=__name__`.  Similarly for `calling_mod_path`, but that should</span>
+<span class="sd">    be passed the pathname of the calling module&#39;s file.</span>
+<span class="sd">    </span>
+<span class="sd">    If `exit` is set false then `sys.exit(0)` will be called after the tests</span>
+<span class="sd">    finish.  The default is to exit after the tests finish (otherwise when</span>
+<span class="sd">    tests run from the top of a module are finished the rest of the file</span>
+<span class="sd">    will still be executed).</span>
+<span class="sd">    </span>
+<span class="sd">    If `always_run` is true then tests will be run regardless of whether or not</span>
+<span class="sd">    the function was called from a script.</span>
+<span class="sd">    </span>
+<span class="sd">    The parameter `level` is the level up the calling stack to look for the</span>
+<span class="sd">    calling module and should not usually need to be set.&quot;&quot;&quot;</span>
+
+    <span class="n">mod_info</span> <span class="o">=</span> <span class="n">get_calling_module_info</span><span class="p">(</span><span class="n">module_name</span><span class="o">=</span><span class="n">calling_mod_name</span><span class="p">,</span>
+                                       <span class="n">module_path</span><span class="o">=</span><span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">)</span>
+    <span class="n">calling_mod_name</span><span class="p">,</span> <span class="n">calling_mod</span><span class="p">,</span> <span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span> <span class="o">=</span> <span class="n">mod_info</span>
+
+    <span class="k">if</span> <span class="n">calling_mod_name</span> <span class="o">!=</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">always_run</span><span class="p">:</span> <span class="k">return</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">testfile_paths</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">testfile_paths</span> <span class="o">=</span> <span class="p">[</span><span class="n">testfile_paths</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">testfile_paths</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">testfile_paths</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">self_test</span><span class="p">:</span>
+        <span class="n">testfile_paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">calling_mod_path</span><span class="p">)</span>
+
+    <span class="n">testfile_paths</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">testfile_paths</span><span class="p">]</span>
+    <span class="n">testfile_paths</span> <span class="o">=</span> <span class="p">[</span><span class="n">expand_relative</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">testfile_paths</span><span class="p">]</span>
+
+    <span class="c"># Generate calling string and call pytest on the file.</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">testfile_paths</span><span class="p">:</span>
+        <span class="n">pytest_string</span> <span class="o">=</span> <span class="n">t</span>
+        <span class="k">if</span> <span class="n">pytest_args</span><span class="p">:</span>
+            <span class="n">pytest_string</span> <span class="o">=</span> <span class="n">pytest_args</span> <span class="o">+</span> <span class="s">&quot; &quot;</span> <span class="o">+</span> <span class="n">pytest_string</span>
+
+        <span class="c"># Call pytest; this requires pytest 2.0 or greater.</span>
+        <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">pytest_string</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">exit</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span>
+</div>
+<span class="n">previous_sys_path_list</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># Save the sys.path before modifying it, to restore it.</span>
+
+<div class="viewcode-block" id="sys_path"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.sys_path">[docs]</a><span class="k">def</span> <span class="nf">sys_path</span><span class="p">(</span><span class="n">dirs_to_add</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">add_parent</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">add_grandparent</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+             <span class="n">add_gn_parent</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">add_self</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Add the canonical absolute pathname of each directory in the list</span>
+<span class="sd">    `dirs_to_add` to `sys.path` (but only if it isn&#39;t there already).  A single</span>
+<span class="sd">    string representing a path can also be passed to `dirs_to_add`.  Relative</span>
+<span class="sd">    pathnames are always interpreted relative to the directory of the calling</span>
+<span class="sd">    module (i.e., the directory of the module that calls this function).</span>
+<span class="sd">    </span>
+<span class="sd">    The keyword arguments `add_parent` and `add_grandparent` are shortcuts that</span>
+<span class="sd">    can be used instead of putting the equivalent relative path on the list</span>
+<span class="sd">    `dirs_to_add`.  If the keyword argument `add_gn_parent` is set to a</span>
+<span class="sd">    non-negative integer `n` then the (grand)\ :sup:`n`\ parent is added to the</span>
+<span class="sd">    path, where (grand)\ :sup:`1`\ parent is the grandparent.  If `add_self` is</span>
+<span class="sd">    true then the directory of the calling module is added to the system</span>
+<span class="sd">    `sys.path` list.</span>
+<span class="sd">    </span>
+<span class="sd">    The parameter `calling_mod_dir` can be set as a fallback in case the</span>
+<span class="sd">    introspection for finding the calling module&#39;s directory fails for some</span>
+<span class="sd">    reason.  The parameter `level` is the level up the calling stack to look</span>
+<span class="sd">    for the calling module and should not usually need to be set.&quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">calling_mod_dir</span><span class="p">:</span>
+        <span class="n">calling_mod_dir</span> <span class="o">=</span> <span class="n">get_calling_module_info</span><span class="p">()[</span><span class="mi">3</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">dirs_to_add</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">dirs_to_add</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dirs_to_add</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">dirs_to_add</span> <span class="o">=</span> <span class="p">[</span><span class="n">dirs_to_add</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">add_parent</span><span class="p">:</span>
+        <span class="n">dirs_to_add</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;..&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">add_grandparent</span><span class="p">:</span>
+        <span class="n">dirs_to_add</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&quot;..&quot;</span><span class="p">,</span><span class="s">&quot;..&quot;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">add_gn_parent</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">g_level</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">add_gn_parent</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PytestHelperException</span><span class="p">(</span><span class="s">&quot;Non-integer argument to the add_gn_parent &quot;</span>
+                    <span class="s">&quot;argument of the pytest_helper.sys_path function.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">g_level</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">add_gn_parent</span> <span class="ow">is</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PytestHelperException</span><span class="p">(</span><span class="s">&quot;Negative argument or literal True argument</span><span class="se">\n</span><span class="s">&quot;</span>
+                  <span class="s">&quot;to the add_gn_parent parameter of the pytest_helper.sys_path&quot;</span>
+                  <span class="s">&quot; function.</span><span class="se">\n</span><span class="s">It must be a non-negative integer.&quot;</span><span class="p">)</span>
+        <span class="n">parent_string</span> <span class="o">=</span> <span class="s">&quot;..&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">g_level</span><span class="p">):</span>
+            <span class="n">parent_string</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parent_string</span><span class="p">,</span> <span class="s">&quot;..&quot;</span><span class="p">)</span>
+        <span class="n">dirs_to_add</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parent_string</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">add_self</span><span class="p">:</span>
+        <span class="n">dirs_to_add</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;.&quot;</span><span class="p">)</span>
+
+    <span class="n">dirs_to_add</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">dirs_to_add</span><span class="p">]</span>
+
+    <span class="k">global</span> <span class="n">previous_sys_path_list</span>
+    <span class="n">previous_sys_path_list</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">[:]</span>
+
+    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">dirs_to_add</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="c"># Convert to canonical path.</span>
+            <span class="k">if</span> <span class="n">path</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">joined_path</span> <span class="o">=</span> <span class="n">expand_relative</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">joined_path</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">joined_path</span><span class="p">)</span>
+
+    <span class="k">return</span>
+</div>
+<div class="viewcode-block" id="restore_previous_sys_path"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.restore_previous_sys_path">[docs]</a><span class="k">def</span> <span class="nf">restore_previous_sys_path</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;This function undoes the effect of the last call to `sys_path`, returning</span>
+<span class="sd">    `sys.path` to its previous, saved value.&quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">previous_sys_path_list</span>
+    <span class="k">if</span> <span class="n">previous_sys_path_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">previous_sys_path_list</span>
+        <span class="n">previous_sys_path_list</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">return</span>
+</div>
+<div class="viewcode-block" id="auto_import"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.auto_import">[docs]</a><span class="k">def</span> <span class="nf">auto_import</span><span class="p">(</span><span class="n">noclobber</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This function imports some pytest-helper and pytest attributes into the</span>
+<span class="sd">    calling module&#39;s global namespace.  This avoids having to explicitly do</span>
+<span class="sd">    common imports.  A `PytestHelperException` will be raised if any of those</span>
+<span class="sd">    globals already exist, unless `noclobber` is set false.</span>
+<span class="sd">    </span>
+<span class="sd">    The variables that are imported from the `pytest_helper` module are</span>
+<span class="sd">    `locals_to_globals`, and `clear_locals_from_globals`.  The module `py.test`</span>
+<span class="sd">    is imported as the single name `pytest`.  The functions from pytest that</span>
+<span class="sd">    are imported are `raises`, `fail`, `fixture`, and `skip`.&quot;&quot;&quot;</span>
+    
+    <span class="c"># TODO maybe have some options to turn on and off certain groups of autoimports.</span>
+
+    <span class="k">def</span> <span class="nf">insert_in_dict</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Insert (name, value) in dict d checking for noclobber.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">noclobber</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PytestHelperException</span><span class="p">(</span><span class="s">&quot;The pytest_helper function auto_import&quot;</span>
+                    <span class="s">&quot;</span><span class="se">\n</span><span class="s">attempted an overwrite with noclobber set.  The attribute&quot;</span>
+                    <span class="s">&quot; is: &quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">)</span>
+        <span class="n">d</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="n">g</span> <span class="o">=</span> <span class="n">get_calling_fun_globals_dict</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">)</span>
+
+    <span class="c"># Pytest itself, imported as pytest, not py.test</span>
+    <span class="n">insert_in_dict</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="s">&quot;pytest&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="p">)</span>
+
+    <span class="c"># Functions from pytest.</span>
+    <span class="n">insert_in_dict</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="s">&quot;raises&quot;</span><span class="p">,</span> <span class="n">raises</span><span class="p">)</span>
+    <span class="n">insert_in_dict</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="s">&quot;fail&quot;</span><span class="p">,</span> <span class="n">fail</span><span class="p">)</span>
+    <span class="n">insert_in_dict</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="s">&quot;fixture&quot;</span><span class="p">,</span> <span class="n">fixture</span><span class="p">)</span>
+    <span class="n">insert_in_dict</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="s">&quot;skip&quot;</span><span class="p">,</span> <span class="n">skip</span><span class="p">)</span>
+
+    <span class="c"># Functions and classes from this module.</span>
+    <span class="c">#insert_in_dict(g, &quot;script_run&quot;, script_run)</span>
+    <span class="c">#insert_in_dict(g, &quot;sys_path&quot;, sys_path)</span>
+    <span class="c">#insert_in_dict(g, &quot;init&quot;, init)</span>
+    <span class="n">insert_in_dict</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="s">&quot;locals_to_globals&quot;</span><span class="p">,</span> <span class="n">locals_to_globals</span><span class="p">)</span>
+    <span class="n">insert_in_dict</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="s">&quot;clear_locals_from_globals&quot;</span><span class="p">,</span> <span class="n">clear_locals_from_globals</span><span class="p">)</span>
+    <span class="k">return</span>
+</div>
+<div class="viewcode-block" id="init"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.init">[docs]</a><span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="n">set_package</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A function to initialize the `pytest_helper` module just after importing</span>
+<span class="sd">    it.  This function is currently only necessary in rare cases where Python&#39;s</span>
+<span class="sd">    current working directory (CWD) is changed between the time when the</span>
+<span class="sd">    executing module is first loaded and when `script_run` or `sys_path` is</span>
+<span class="sd">    called from that module.  In those cases the module&#39;s pathname relative to</span>
+<span class="sd">    the previous CWD will be incorrectly expanded relative to the new CWD.</span>
+<span class="sd">    Calling this function causes the earlier expanded pathname to be cached.</span>
+<span class="sd">    This function should be called before any function call or import which</span>
+<span class="sd">    changes the CWD and which doesn&#39;t change it back afterward.  Importing</span>
+<span class="sd">    `pytest_helper` just after the system imports and then immediately calling</span>
+<span class="sd">    this function should work.</span>
+<span class="sd">    </span>
+<span class="sd">    The `init` function takes an optional keyword argument `set_package`.  If</span>
+<span class="sd">    it is true then the package attribute of module `__main__` will be</span>
+<span class="sd">    automatically set.  This allows for using relative imports fromp scripts,</span>
+<span class="sd">    but it must be called before the relative imports are attempted.  The</span>
+<span class="sd">    function call `pytest_helper.init(set_package=True)` is equivalent to::</span>
+<span class="sd">        </span>
+<span class="sd">        pytest_helper.init()</span>
+<span class="sd">        import set_package_attribute</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">set_package</span><span class="p">:</span>
+       <span class="c"># Set the __PACKAGE__ attribute for module __main__ (if there is one).</span>
+       <span class="kn">import</span> <span class="nn">set_package_attribute</span> <span class="c"># TODO can&#39;t find from symlinks... need pip or path mods...</span>
+
+    <span class="n">get_calling_module_info</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">)</span> <span class="c"># This caches the module info.</span>
+    <span class="k">return</span>
+
+<span class="c">#</span>
+<span class="c"># Functions for copying locals to globals.</span>
+<span class="c">#</span>
+
+<span class="c"># The last copied attributes are stored in the same globals dict where they were</span>
+<span class="c"># copied to, in a list with this attribute name.</span></div>
+<span class="n">last_saved_list_name</span> <span class="o">=</span> <span class="s">&quot;pytest_helper_last_copied_320gj97tr&quot;</span>
+
+<div class="viewcode-block" id="locals_to_globals"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.locals_to_globals">[docs]</a><span class="k">def</span> <span class="nf">locals_to_globals</span><span class="p">(</span><span class="n">fun_locals</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fun_globals</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">auto_clear</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> 
+                      <span class="n">noclobber</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Copy all local variables in the calling function&#39;s local scope to the</span>
+<span class="sd">    global scope of the module where that function was called.  The function&#39;s</span>
+<span class="sd">    parameters are ignored and are not copied.  This routine should only be</span>
+<span class="sd">    called once, near the end of a test function or fixture.  It allows for</span>
+<span class="sd">    variables to be shared with another test function as globals.  This</span>
+<span class="sd">    function does not allow any existing global variables to be overwritten</span>
+<span class="sd">    unless they were either set by a previous run of this function or</span>
+<span class="sd">    `noclobber` is false.  A `LocalsToGlobalsError` will be raised on any</span>
+<span class="sd">    attempt to overwrite an existing global variable.  This avoids accidentally</span>
+<span class="sd">    overwriting important global attributes.</span>
+<span class="sd">    </span>
+<span class="sd">    This routine&#39;s effect is similar to the effect of explicitly declaring each</span>
+<span class="sd">    of a function&#39;s variables to be `global`, or doing</span>
+<span class="sd">    `globals().update(locals())`, except that it 1) ignores local variables</span>
+<span class="sd">    which are function parameters, 2) adds more error checks, and 3) clears any</span>
+<span class="sd">    previously-set values.</span>
+<span class="sd">    </span>
+<span class="sd">    Note that the globals set with `locals_to_globals` can be accessed and used</span>
+<span class="sd">    in any function in the module, but they are still read-only (as usual with</span>
+<span class="sd">    globals).  An attribute must be explicitly declared `global` in order to</span>
+<span class="sd">    modify the global value.  (it is then no longer local to the function so</span>
+<span class="sd">    the next calls to `locals_to_globals` will clear it but not set it).  If</span>
+<span class="sd">    `locals_to_globals` set it before, though, it will still be deleted when</span>
+<span class="sd">    `locals_to_globals` is called again with default `auto_clear` or</span>
+<span class="sd">    `clear_locals_from_globals` is called.</span>
+<span class="sd">    </span>
+<span class="sd">    If `auto_clear` is true (the default) then any variable that was set on the</span>
+<span class="sd">    last run of this function will be automatically cleared before any new ones</span>
+<span class="sd">    are set.  This avoids &quot;false positives&quot; where a later test succeeds only</span>
+<span class="sd">    because of a global left over from a previous test.  Note that this clears</span>
+<span class="sd">    globals on the saved list of globals even if their values were later</span>
+<span class="sd">    modified.  If `auto_clear` is false then `clear_locals_from_globals` must</span>
+<span class="sd">    be explicitly called before calling this function again (or else a</span>
+<span class="sd">    `LocalsToGlobalsError` will be raised).</span>
+<span class="sd">    </span>
+<span class="sd">    The argument `fun_locals` can be used as a fallback to pass the `locals()`</span>
+<span class="sd">    dict from the function in case the introspection technique does not work</span>
+<span class="sd">    for some reason.  The `fun_globals` argument can similarly be passed</span>
+<span class="sd">    globals() as a fallback.  So you could call::</span>
+
+<span class="sd">       locals_to_globals(locals(), globals())</span>
+<span class="sd">       </span>
+<span class="sd">    to bypass the introspection used to locate the two dicts.</span>
+<span class="sd">    </span>
+<span class="sd">    The `level` argument is the level up the calling stack to look for the</span>
+<span class="sd">    calling function.  In order to call an intermediate function which then</span>
+<span class="sd">    calls this function, for example, `level` would need to be increased by</span>
+<span class="sd">    one.&quot;&quot;&quot;</span>
+
+    <span class="c">#view_locals_up_stack(4) # useful for debugging</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">fun_locals</span><span class="p">:</span>
+        <span class="n">fun_locals</span> <span class="o">=</span> <span class="n">get_calling_fun_locals_dict</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">fun_globals</span><span class="p">:</span>
+        <span class="n">fun_globals</span> <span class="o">=</span> <span class="n">get_calling_fun_globals_dict</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">last_saved_list_name</span> <span class="ow">in</span> <span class="n">fun_globals</span><span class="p">:</span>
+        <span class="n">last_copied_names</span> <span class="o">=</span> <span class="n">fun_globals</span><span class="p">[</span><span class="n">last_saved_list_name</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">last_copied_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">fun_globals</span><span class="p">[</span><span class="n">last_saved_list_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">last_copied_names</span>
+
+    <span class="c"># If last_copied_names isn&#39;t empty assume the user forgot to clear it.</span>
+    <span class="k">if</span> <span class="n">last_copied_names</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">auto_clear</span><span class="p">:</span>
+            <span class="n">clear_locals_from_globals</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="c"># One extra level from this fun.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">LocalsToGlobalsError</span><span class="p">(</span><span class="s">&quot;Failure to call clear_locals_from_globals()&quot;</span>
+                                      <span class="s">&quot; after previous copy (auto_clear is False).&quot;</span><span class="p">)</span>
+
+    <span class="c"># Get the function&#39;s parameters so we can ignore them as locals.</span>
+    <span class="n">params</span><span class="p">,</span> <span class="n">values</span> <span class="o">=</span> <span class="n">get_calling_fun_parameters</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+
+    <span class="c"># Do the actual copies.</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">fun_locals</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span> <span class="k">continue</span>
+        <span class="c"># The following line filters out some weird pytest vars starting with @.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">isalpha</span><span class="p">()</span> <span class="ow">or</span> <span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;_&quot;</span><span class="p">):</span> <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">fun_globals</span> <span class="ow">and</span> <span class="n">noclobber</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">LocalsToGlobalsError</span><span class="p">(</span><span class="s">&quot;Attempt to overwrite existing &quot;</span>
+                                       <span class="s">&quot;module-global variable: &quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">)</span>
+        <span class="n">fun_globals</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">fun_locals</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="n">last_copied_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+    <span class="k">return</span>
+</div>
+<div class="viewcode-block" id="clear_locals_from_globals"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.clear_locals_from_globals">[docs]</a><span class="k">def</span> <span class="nf">clear_locals_from_globals</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Clear all the global variables that were added by locals_to_globals.</span>
+<span class="sd">    This is called automatically by `locals_to_globals` unless that function</span>
+<span class="sd">    is run with `auto_clear` set false.  This only affects the module from</span>
+<span class="sd">    which the function is called.&quot;&quot;&quot;</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">get_calling_fun_globals_dict</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+    <span class="n">last_copied_names</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="n">last_saved_list_name</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">last_copied_names</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">g</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">pass</span> <span class="c"># Ignore if not there.</span>
+    <span class="k">del</span> <span class="n">last_copied_names</span><span class="p">[:]</span> <span class="c"># Empty out last_copied_names in place.</span>
+</div>
+<div class="viewcode-block" id="PytestHelperException"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.PytestHelperException">[docs]</a><span class="k">class</span> <span class="nc">PytestHelperException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised by the routines to help with running tests.&quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="LocalsToGlobalsError"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.LocalsToGlobalsError">[docs]</a><span class="k">class</span> <span class="nc">LocalsToGlobalsError</span><span class="p">(</span><span class="n">PytestHelperException</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised only when there is an error related to the `locals_to_globals`</span>
+<span class="sd">    operations.&quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+
+<span class="c">#</span>
+<span class="c"># Utility functions.</span>
+<span class="c">#</span>
+</div>
+<span class="k">def</span> <span class="nf">expand_relative</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">basepath</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Expand the path `path` relative to the path `basepath`.  If `basepath`</span>
+<span class="sd">    is not an absolute path it is first expanded relative to Python&#39;s current</span>
+<span class="sd">    CWD to be one.  The canonical version of the absolute path is returned.&quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="c"># Return canonical path, already absolute.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">basepath</span><span class="p">):</span>
+        <span class="n">basepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">basepath</span><span class="p">))</span>
+    <span class="n">joined_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basepath</span><span class="p">,</span> <span class="n">path</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">joined_path</span>
+
+<span class="sd">&quot;&quot;&quot;The levels used in the utility routines below are levels in the calling</span>
+<span class="sd">stack (examined using inspect).  The level number includes the level of the</span>
+<span class="sd">utility function itself.  So level 0 is the attribute of the utility function</span>
+<span class="sd">itself, level 1 is the attribute of the calling function, level 2 is the</span>
+<span class="sd">function that called the calling function, etc.&quot;&quot;&quot;</span>
+
+<span class="n">module_info_cache</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># Save info on modules, keyed on module names.</span>
+
+<span class="k">def</span> <span class="nf">get_calling_module_info</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">check_exists</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                            <span class="n">module_name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">module_path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A higher-level routine to get information about the module of a function</span>
+<span class="sd">    back some number of levels in the call stack (the calling function).</span>
+<span class="sd">    Returns a tuple::</span>
+
+<span class="sd">       (calling_module_name,</span>
+<span class="sd">        calling_module,</span>
+<span class="sd">        calling_module_path,</span>
+<span class="sd">        calling_module_dir)</span>
+<span class="sd">    </span>
+<span class="sd">    Any relative paths are converted to absolute paths.  If `check_exists` is</span>
+<span class="sd">    true then a check is made to make sure that the module actually exists at</span>
+<span class="sd">    the path.</span>
+<span class="sd">    </span>
+<span class="sd">    Absolute paths are cached in a dict keyed on module names so we always get</span>
+<span class="sd">    the pathname calculated on the first call to this program from a given</span>
+<span class="sd">    module.  This is important in cases where the CWD is changed between the</span>
+<span class="sd">    initial loading time for a module and the time it (indirectly) calls this</span>
+<span class="sd">    routine.  Such problems are rare, but if they occur you can use these two</span>
+<span class="sd">    lines near the top of the module (before any imports which might change</span>
+<span class="sd">    CWD)::</span>
+
+<span class="sd">       import pytest_helper</span>
+<span class="sd">       pytest_helper.get_calling_module_info(level=1)</span>
+
+<span class="sd">    The module name and/or path can be supplied via the keyword arguments if</span>
+<span class="sd">    introspection still fails for some reason (or just to slightly improve</span>
+<span class="sd">    efficiency).&quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">module_name</span><span class="p">:</span>
+        <span class="n">calling_module_name</span> <span class="o">=</span> <span class="n">module_name</span>
+        <span class="n">calling_module</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">calling_module_name</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">calling_module_name</span><span class="p">,</span> <span class="n">calling_module</span> <span class="o">=</span> <span class="n">get_calling_module</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">module_path</span><span class="p">:</span>
+        <span class="n">calling_module_path</span> <span class="o">=</span> <span class="n">module_path</span>
+    <span class="k">elif</span> <span class="n">calling_module_name</span> <span class="ow">in</span> <span class="n">module_info_cache</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">module_info_cache</span><span class="p">[</span><span class="n">calling_module_name</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">calling_module_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span>
+                                   <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">calling_module</span><span class="o">.</span><span class="n">__file__</span><span class="p">))</span>
+
+    <span class="n">calling_module_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">calling_module_path</span><span class="p">)</span>
+
+    <span class="c"># Do an error check to make sure that the detected module directory exists.</span>
+    <span class="k">if</span> <span class="n">check_exists</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">calling_module_dir</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">PytestHelperException</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n\n</span><span class="s">The directory</span><span class="se">\n</span><span class="s">   {0}</span><span class="se">\n</span><span class="s">of the detected&quot;</span>
+                <span class="s">&quot; calling module does not exist.</span><span class="se">\n</span><span class="s">Did the Python CWD change without&quot;</span>
+                <span class="s">&quot; being changed back?</span><span class="se">\n</span><span class="s">You can try importing pytest_helper near the&quot;</span>
+                <span class="s">&quot; top</span><span class="se">\n</span><span class="s">of your file and then immediately calling</span><span class="se">\n</span><span class="s">&quot;</span>
+                <span class="s">&quot;   pytest_helper.init()</span><span class="se">\n</span><span class="s">afterward.  If&quot;</span>
+                <span class="s">&quot; necessary you can set `module_name` and</span><span class="se">\n</span><span class="s">`module_path`&quot;</span>
+                <span class="s">&quot; explicitly from keyword arguments.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">calling_module_dir</span><span class="p">))</span>
+
+    <span class="n">module_info</span> <span class="o">=</span> <span class="p">(</span><span class="n">calling_module_name</span><span class="p">,</span> <span class="n">calling_module</span><span class="p">,</span>
+                   <span class="n">calling_module_path</span><span class="p">,</span> <span class="n">calling_module_dir</span><span class="p">)</span>
+
+    <span class="n">module_info_cache</span><span class="p">[</span><span class="n">calling_module_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">module_info</span>
+    <span class="k">return</span> <span class="n">module_info</span>
+
+<span class="k">def</span> <span class="nf">view_locals_up_stack</span><span class="p">(</span><span class="n">num_levels</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;To get an idea of what things look like.  Run from somewhere and see.&quot;&quot;&quot;</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&quot;Viewing local variable dict keys up the stack.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_levels</span><span class="p">)):</span>
+        <span class="n">calling_fun_frame</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">calling_fun_name</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()[</span><span class="n">i</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">calling_fun_locals</span> <span class="o">=</span> <span class="n">calling_fun_frame</span><span class="o">.</span><span class="n">f_locals</span>
+        <span class="n">indent</span> <span class="o">=</span> <span class="s">&quot;   &quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">num_levels</span> <span class="o">-</span> <span class="n">i</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;{0}{1} -- stack level {2}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">indent</span><span class="p">,</span> <span class="n">calling_fun_name</span><span class="p">,</span> <span class="n">i</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;{0}f_locals keys: {1}</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">indent</span><span class="p">,</span> <span class="n">calling_fun_locals</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+
+<span class="k">def</span> <span class="nf">show_globals</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">filt</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Prints the module globals for the module the calling function was called</span>
+<span class="sd">    in, filtering out files starting with &#39;__&#39;.  Useful for testing.&quot;&quot;&quot;</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&quot;Globals:&quot;</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">get_calling_fun_globals_dict</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">g</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+        <span class="k">if</span> <span class="n">filt</span> <span class="ow">and</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;__&quot;</span><span class="p">):</span> <span class="k">continue</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;    {0} = {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">get_calling_fun_parameters</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Note that in calling this function you have to increase the level by</span>
+<span class="sd">    one since it is also on the stack when it does the lookup.</span>
+<span class="sd">       level 0: This function.</span>
+<span class="sd">       level 1: The frame of the function that called this function.</span>
+<span class="sd">       level 2: The frame of the function that called the calling function.&quot;&quot;&quot;</span>
+    <span class="n">calling_fun_frame</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()[</span><span class="n">level</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">params</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">values</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getargvalues</span><span class="p">(</span><span class="n">calling_fun_frame</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_calling_fun_locals_dict</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Note that in calling this function you have to increase the level by</span>
+<span class="sd">    one since it is also on the stack when it does the lookup.</span>
+<span class="sd">       level 0: The locals dict of this function.</span>
+<span class="sd">       level 1: The locals dict of the function that called this function.</span>
+<span class="sd">       level 2: The locals dict of the function that called the calling function.&quot;&quot;&quot;</span>
+    <span class="n">calling_fun_frame</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()[</span><span class="n">level</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">calling_fun_locals</span> <span class="o">=</span> <span class="n">calling_fun_frame</span><span class="o">.</span><span class="n">f_locals</span>
+    <span class="k">return</span> <span class="n">calling_fun_locals</span>
+
+<span class="k">def</span> <span class="nf">get_calling_fun_globals_dict</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Note that in calling this function you have to increase the level by</span>
+<span class="sd">    one since it is also on the stack when it does the lookup.</span>
+<span class="sd">       level 0: The globals dict of this function.</span>
+<span class="sd">       level 1: The globals dict of the function that called this function.</span>
+<span class="sd">       level 2: The globals dict of the function that called the calling function.&quot;&quot;&quot;</span>
+    <span class="n">calling_fun_frame</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()[</span><span class="n">level</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">calling_fun_globals</span> <span class="o">=</span> <span class="n">calling_fun_frame</span><span class="o">.</span><span class="n">f_globals</span>
+    <span class="k">return</span> <span class="n">calling_fun_globals</span>
+
+<span class="k">def</span> <span class="nf">get_calling_module</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Run this inside a function.  Get the module where the current function</span>
+<span class="sd">    is being called from.  Returns a tuple (mod_name, module) with the name of</span>
+<span class="sd">    the module and the module itself.  Note that the module name may be relative</span>
+<span class="sd">    (to the CWD when the module was loaded) or absolute.  For some info on the</span>
+<span class="sd">    introspection methods used, see stackoverflow.com/questions/1095543/.</span>
+<span class="sd">       level 0: Module for this function.</span>
+<span class="sd">       level 1: Module for the function calling this one (what you usually want).</span>
+<span class="sd">       level 2: Module for the function that called the one calling this one.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># Three lines below work, even when chdir is called; just get __name__ from</span>
+    <span class="c"># the globals dict.</span>
+    <span class="n">calling_fun_globals</span> <span class="o">=</span> <span class="n">get_calling_fun_globals_dict</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="o">+</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">calling_module_name</span> <span class="o">=</span> <span class="n">calling_fun_globals</span><span class="p">[</span><span class="s">&quot;__name__&quot;</span><span class="p">]</span>
+    <span class="n">calling_module</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">calling_module_name</span><span class="p">]</span>
+
+    <span class="c"># Two lines below work.  They fail, though, when os.chdir(&quot;..&quot;) is called</span>
+    <span class="c"># before this function is called.</span>
+    <span class="c">#frame = inspect.stack()[level+1]</span>
+    <span class="c">#calling_module = inspect.getmodule(frame[0])</span>
+
+    <span class="c"># Four lines below work, using sys rather than inspect.</span>
+    <span class="c"># Someone says this way works with pyinstaller, too, but I haven&#39;t tried it.</span>
+    <span class="c"># Apparently sys._getframe is available with a performance hit in PyPy,</span>
+    <span class="c"># but sys._current_frames is less widely available.</span>
+    <span class="c">#f = list(sys._current_frames().values())[0]</span>
+    <span class="c">#for i in range(level): f = f.f_back</span>
+    <span class="c">#calling_module_name = f.f_globals[&#39;__name__&#39;]</span>
+    <span class="c">#calling_module = sys.modules[calling_module_name]</span>
+
+    <span class="k">return</span> <span class="n">calling_module</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">calling_module</span>
+
+<span class="c">#</span>
+<span class="c"># Test this file when invoked as a script.</span>
+<span class="c">#</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span> <span class="c"># This guard is optional, but slightly more efficient.</span>
+    <span class="n">script_run</span><span class="p">(</span><span class="s">&quot;test&quot;</span><span class="p">,</span> <span class="n">pytest_args</span><span class="o">=</span><span class="s">&quot;-v&quot;</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">pytest_helper  documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Allen Barker.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

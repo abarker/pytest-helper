@@ -1,0 +1,415 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pytest-helper &mdash; pytest_helper  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="pytest_helper  documentation" href="#" />
+    <link rel="next" title="pytest_helper module" href="pytest_helper.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pytest_helper.html" title="pytest_helper module"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">pytest_helper  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="pytest-helper">
+<h1>pytest-helper<a class="headerlink" href="#pytest-helper" title="Permalink to this headline">¶</a></h1>
+<p>This package provides several functions which make it easier to set up and run
+unit tests in Python using the <a class="reference external" href="http://pytest.org">pytest</a> testing framework.
+It makes use of pytest but is not part of the official pytest project.</p>
+<div class="section" id="introduction">
+<span id="id1"></span><h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>Testing is an important part of software development, especially for a
+dynamically typed language like Python.  The easier it is for people to set up
+and run tests, the more likely they are to write their tests as they code
+(rather than waiting until later to do so, or perhaps not writing formal tests
+at all).  This is especially true for beginners.</p>
+<p>Here is a simple example to illustrate the idea.  This is a Python module
+which is possibly part of a larger package.  It contains its own test functions
+at the bottom.  Whenever the module is run as a script the tests will be run
+with pytest; otherwise the module runs normally.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pytest_helper</span>
+
+<span class="c"># Regular program code goes here.</span>
+
+<span class="n">testing_var</span> <span class="o">=</span> <span class="s">&quot;foo&quot;</span>
+
+<span class="c"># Test running below, but only when the module is invoked as a script.</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>  <span class="c"># This guard conditional is optional.</span>
+
+    <span class="n">pytest_helper</span><span class="o">.</span><span class="n">script_run</span><span class="p">(</span><span class="n">self_test</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">pytest_args</span><span class="o">=</span><span class="s">&quot;-v&quot;</span><span class="p">)</span>
+
+<span class="n">pytest_helper</span><span class="o">.</span><span class="n">auto_import</span><span class="p">()</span>  <span class="c"># Do some basic imports automatically.</span>
+
+<span class="k">def</span> <span class="nf">my_setup</span><span class="p">():</span> <span class="c"># Could be a pytest fixture instead of a regular function.</span>
+    <span class="n">setup_var</span> <span class="o">=</span> <span class="s">&quot;bar&quot;</span>
+    <span class="n">locals_to_globals</span><span class="p">()</span>  <span class="c"># Copies setup_var to the module&#39;s global namespace.</span>
+
+<span class="k">def</span> <span class="nf">test_var_values</span><span class="p">():</span>
+    <span class="n">my_setup</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="n">testing_var</span> <span class="o">==</span> <span class="s">&quot;foo&quot;</span>  <span class="c"># Set in the regular code above.</span>
+    <span class="k">assert</span> <span class="n">setup_var</span> <span class="o">==</span> <span class="s">&quot;bar&quot;</span>    <span class="c"># Read from the global namespace.</span>
+    <span class="n">test_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">with</span> <span class="n">raises</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span>  <span class="c"># Pytest function raises was autoimported.</span>
+        <span class="n">test_dict</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>There are more examples in the <a class="reference internal" href="#examples"><em>Examples</em></a> section below, including the
+case where tests are in separate files and the case of a test file itself
+located in a separate test directory.</p>
+<p>Some of the provided helper functions are general-purpose, but several are
+specific to the <a class="reference external" href="http://pytest.org">pytest</a> testing framework.  The functions
+are independent of each other and can be used (or not used) as desired.  These
+functions are fully compatible with the ordinary uses and invocations of
+pytest.</p>
+<p>In order to simplify the functional interface, some of these helper functions
+use very basic introspection look up the names of modules.  Others use
+introspection to modify a module&#8217;s global variables.  Some might object to the
+use of introspection &#8220;magic,&#8221; but the level used by these functions is far less
+than what pytest itself does already.  Where introspection is used, a fallback
+is usually provided to do the task without introspection.</p>
+<p>Two kinds of helper functions are provided.  The first kind are intended to
+make it easier to run pytest on a test file or files, and the second kind are
+meant to be used in writing tests inside test files.  The functions are briefly
+described in the sections below.</p>
+</div>
+<div class="section" id="functions-to-help-in-running-tests">
+<h2>Functions to help in running tests<a class="headerlink" href="#functions-to-help-in-running-tests" title="Permalink to this headline">¶</a></h2>
+<p>These are the main functions which are used to make it easier to invoke pytest
+on a test file.</p>
+<ul>
+<li><p class="first"><a class="reference internal" href="pytest_helper.html#sys-path"><em>pytest_helper.sys_path</em></a></p>
+<blockquote>
+<div><p>The function <tt class="code docutils literal"><span class="pre">sys_path</span></tt> takes a directory path or a list of paths and
+inserts them into Python&#8217;s <tt class="code docutils literal"><span class="pre">sys.path</span></tt> list.  This is often necessary in
+order for Python to find the imports in test files.  A benefit of using this
+function is that relative paths are allowed, and all relative paths are
+expanded relative to the directory of the module which calls the function.
+This is in contrast to the default evaluation of relative paths in Python,
+which is relative to Python&#8217;s current working directory (CWD).  The CWD can
+vary depending on the particular command used to invoke the Python
+interpreter.  Using relative imports within a project&#8217;s directory structure
+makes it more portable.</p>
+<p>The line below shows how to use <tt class="code docutils literal"><span class="pre">sys_path</span></tt> to add both the directory
+<tt class="docutils literal"><span class="pre">../test</span></tt> and the parent directory to Python&#8217;s <tt class="docutils literal"><span class="pre">sys.path</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">pytest_helper</span><span class="o">.</span><span class="n">sys_path</span><span class="p">(</span><span class="s">&quot;../test&quot;</span><span class="p">,</span> <span class="n">add_parent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This line does the same thing as the line above:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">pytest_helper</span><span class="o">.</span><span class="n">sys_path</span><span class="p">([</span><span class="s">&quot;..&quot;</span><span class="p">,</span> <span class="s">&quot;../test&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p class="first"><a class="reference internal" href="pytest_helper.html#script-run"><em>pytest_helper.script_run</em></a></p>
+<blockquote>
+<div><p>The <tt class="code docutils literal"><span class="pre">script_run</span></tt> function is used to actually invoke pytest on a test file or
+list of files.  It takes a path or list of paths and, when called from a
+script, will run pytest on all those files.  If it is not called from a
+script&#8217;s <tt class="code docutils literal"><span class="pre">__main__</span></tt> module then it returns without doing anything.  Any
+relative paths passed to the function are expanded relative to the directory of
+the module from which the <tt class="code docutils literal"><span class="pre">script_run</span></tt> function is called.</p>
+<p>The <tt class="code docutils literal"><span class="pre">script_run</span></tt> function is useful because it allows Python modules to be
+easily made self-testing when they are run as scripts.  When working on a
+module in, say, Vim you can invoke a command to run the current file as a
+script in order to see if it still passes whatever tests are defined for it.
+Those tests can be in the same file and/or in other files.  Test files
+themselves can similarly be made self-executing when run as a script, which can
+be useful when writing tests.</p>
+<p>One use of modules with self-contained tests, like in the example in the
+<a class="reference internal" href="#introduction"><em>Introduction</em></a>, is to quickly start writing a simple module while
+including a few tests.  As (or if) the module continues to evolve it is easy to
+extract those tests into a separate test module at some point.</p>
+<p>The example in the <a class="reference internal" href="#introduction"><em>Introduction</em></a> shows how to use <tt class="code docutils literal"><span class="pre">script_run</span></tt> to run
+a self-test on a file.  The line below shows how the <tt class="code docutils literal"><span class="pre">script_run</span></tt> function
+would be used to run pytest, with the <tt class="docutils literal"><span class="pre">-v</span></tt> verbose argument, on the test
+file <tt class="docutils literal"><span class="pre">test/test_foobar.py</span></tt>.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">pytest_helper</span><span class="o">.</span><span class="n">script_run</span><span class="p">(</span><span class="s">&quot;test/test_foobar.py&quot;</span><span class="p">,</span> <span class="n">pytest_args</span><span class="o">=</span><span class="s">&quot;-v&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When the module that calls the above function is not run as a script the
+function call does nothing.</p>
+</div></blockquote>
+</li>
+<li><p class="first"><a class="reference internal" href="set_package_attribute.html#set-package-attribute"><em>set_package_attribute</em></a></p>
+<blockquote>
+<div><p>The pytest-helper package provides a module called <tt class="code docutils literal"><span class="pre">set_package_attribute</span></tt>.
+Simply importing this module before any relative imports allows those
+relative imports to continue working when the module is invoked as a script.
+(This is done by setting the <tt class="code docutils literal"><span class="pre">__package__</span></tt> attribute for <tt class="code docutils literal"><span class="pre">__main__</span></tt>, but
+requires some other steps, too.)  So to use the module, you would make this
+import before any relative imports:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">set_package_attribute</span>
+</pre></div>
+</div>
+<p>An alternate way to do the same thing is to pass a keyword argument to the
+optional pytest-helper initialization function just after importing it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pytest_helper</span>
+<span class="n">pytest_helper</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">set_package</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The early <tt class="code docutils literal"><span class="pre">init</span></tt> call provides the additional benefit of
+making the introspection lookup of the calling-module&#8217;s path continue to work
+even if some other later command or module import changes the Python CWD (which
+is rare, but it can happen).</p>
+</div></blockquote>
+</li>
+</ul>
+<p>See <a class="reference internal" href="pytest_helper.html#help-running"><em>Functions to help with running tests</em></a> for detailed documentation of these functions.</p>
+</div>
+<div class="section" id="functions-to-help-in-writing-tests">
+<h2>Functions to help in writing tests<a class="headerlink" href="#functions-to-help-in-writing-tests" title="Permalink to this headline">¶</a></h2>
+<p>These functions are used to help in writing the tests themselves.</p>
+<ul>
+<li><p class="first"><a class="reference internal" href="pytest_helper.html#auto-import"><em>pytest_helper.auto_import</em></a></p>
+<blockquote>
+<div><p>The <tt class="code docutils literal"><span class="pre">auto_import</span></tt> function is a convenience function that automatically imports
+certain pytest-helper and pytest functions into the calling module&#8217;s global
+namespace.  It imports the <tt class="code docutils literal"><span class="pre">py.test</span></tt> module as <tt class="code docutils literal"><span class="pre">pytest</span></tt>.  From pytest-helper it
+imports <tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt>, and <tt class="code docutils literal"><span class="pre">clear_locals_from_globals</span></tt>.  From pytest it
+imports <tt class="code docutils literal"><span class="pre">raises</span></tt>, <tt class="code docutils literal"><span class="pre">fail</span></tt>, <tt class="code docutils literal"><span class="pre">fixture</span></tt>, and <tt class="code docutils literal"><span class="pre">skip</span></tt>.</p>
+<p>This function is usually called without arguments:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">pytest_helper</span><span class="o">.</span><span class="n">auto_import</span><span class="p">()</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p class="first"><a class="reference internal" href="pytest_helper.html#locals-to-globals"><em>pytest_helper.locals_to_globals</em></a></p>
+<blockquote>
+<div><p>The <tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt> function is intended to be run from a fixture (i.e.,
+from a test setup function) in the same module as the tests.  It mimics the
+effect of declaring all the local variables in the setup function global in
+order to access them from the test functions that use the setup.  By default
+it never overwrites an existing global variable unless that variable was set
+by a previous run of <tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt>.  It also clears any variables set
+on its previous call so they do not accidentally affect the current tests.</p>
+<p>This function is usually called without arguments, near the end of a setup
+function or fixture.  If <tt class="code docutils literal"><span class="pre">auto_import</span></tt> is used then it is automatically
+imported into the module&#8217;s global namespace.</p>
+</div></blockquote>
+</li>
+<li><p class="first"><a class="reference internal" href="pytest_helper.html#clear-locals-from-globals"><em>pytest_helper.clear_locals_from_globals</em></a></p>
+<blockquote>
+<div><p>The <tt class="code docutils literal"><span class="pre">clear_locals_from_globals</span></tt> function is called by <tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt> to
+clear any previously-set globals.  It can also be used to explicitly do the
+clearing, such as when <tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt> is run with <tt class="code docutils literal"><span class="pre">auto_clear</span></tt> set false.</p>
+</div></blockquote>
+</li>
+</ul>
+<p>See <a class="reference internal" href="pytest_helper.html#help-writing"><em>Functions to help in writing tests</em></a> for detailed documentation of these functions.</p>
+</div>
+<div class="section" id="examples">
+<span id="id3"></span><h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>Below are examples of using the pytest-helper functions in different cases.
+Note that when <tt class="code docutils literal"><span class="pre">script_run</span></tt> is called from a regular module (one which contains
+code which is being tested) it is invoked near the end of the file.  This is
+only because it is traditional and convenient to put testing code near the end.
+It is actually more efficient to put calls to <tt class="code docutils literal"><span class="pre">script_run</span></tt> near the beginning
+of such a module, since otherwise the module&#8217;s initialization code is run
+twice.  This is usually insignificant in interactive user-testing scenarios,
+but for some modules (such as modules with a long setup time) it can make a
+difference.</p>
+<p>Whenever <tt class="code docutils literal"><span class="pre">script_run</span></tt> is called in the examples below the optional <tt class="code docutils literal"><span class="pre">if</span> <span class="pre">__name__</span>
+<span class="pre">==</span> <span class="pre">&quot;__main__&quot;</span></tt> guard conditional is not used.  This is slightly less efficient
+(including in ordinary code runs) since the module&#8217;s name then has to be looked
+up by introspection to see if anything should be done.  You can always
+explicitly use the guard conditional around calls to <tt class="code docutils literal"><span class="pre">script_run</span></tt>.</p>
+<ul>
+<li><p class="first"><strong>Running tests in separate test files and test directories.</strong></p>
+<blockquote>
+<div><p>This example is a module with tests in separate test files and directories.
+When invoked as a script it runs all the tests in the subdirectory <tt class="docutils literal"><span class="pre">test</span></tt> and
+then runs only the test file <tt class="docutils literal"><span class="pre">test_var_set.py</span></tt> in a sibling-level test
+directory called <tt class="docutils literal"><span class="pre">test2</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Regular program code goes here.</span>
+
+<span class="n">testing_var</span> <span class="o">=</span> <span class="s">&quot;foo&quot;</span>
+
+<span class="c"># Run test files below, but only when the module is invoked as a script.</span>
+<span class="c"># The guard conditional is optional, but slightly more efficient.</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+   <span class="kn">import</span> <span class="nn">pytest_helper</span>
+   <span class="n">pytest_helper</span><span class="o">.</span><span class="n">script_run</span><span class="p">([</span><span class="s">&quot;test&quot;</span><span class="p">,</span> <span class="s">&quot;../test2/test_var_set.py&quot;</span><span class="p">],</span>
+                            <span class="n">pytest_args</span><span class="o">=</span><span class="s">&quot;-v&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p class="first"><strong>Using pytest-helper inside a separate test file.</strong></p>
+<blockquote>
+<div><p>The next example is separate tests-only file, which when run as a script
+executes pytest on itself.  This file is assumed to be inside a test
+subdirectory, and to import the file <tt class="docutils literal"><span class="pre">do_things.py</span></tt> from its parent
+directory.  That directory is added to Python&#8217;s <tt class="code docutils literal"><span class="pre">sys.path</span></tt> by a call to
+<tt class="code docutils literal"><span class="pre">sys_path</span></tt> (the test directory is not in the package of the parent directory,
+since it is usually not recommended to have an <tt class="docutils literal"><span class="pre">__init__.py</span></tt> file in test
+directories).  The test file below can still be run from other files with
+<tt class="code docutils literal"><span class="pre">script_run</span></tt> or via the usual invocation of pytest from the command line.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pytest_helper</span>
+
+<span class="n">pytest_helper</span><span class="o">.</span><span class="n">script_run</span><span class="p">(</span><span class="n">self_test</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">pytest_args</span><span class="o">=</span><span class="s">&quot;-v&quot;</span><span class="p">)</span>
+<span class="n">pytest_helper</span><span class="o">.</span><span class="n">auto_import</span><span class="p">()</span>  <span class="c"># Do some basic imports automatically.</span>
+<span class="n">pytest_helper</span><span class="o">.</span><span class="n">sys_path</span><span class="p">(</span><span class="n">add_parent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c"># pytest_helper.sys_path(&quot;..&quot;)  # Works the same as the line above.</span>
+<span class="c"># pytest_helper.sys_path([&quot;..&quot;])  # Works the same as the two lines above.</span>
+
+<span class="kn">from</span> <span class="nn">do_things</span> <span class="kn">import</span> <span class="o">*</span>  <span class="c"># Since we&#39;re testing that module, import all.</span>
+
+<span class="nd">@fixture</span>
+<span class="k">def</span> <span class="nf">my_fixture</span><span class="p">():</span>
+    <span class="n">fixture_var</span> <span class="o">=</span> <span class="s">&quot;bar&quot;</span>
+    <span class="n">locals_to_globals</span><span class="p">()</span>  <span class="c"># Copies fixture_var to the module&#39;s global namespace.</span>
+
+<span class="k">def</span> <span class="nf">test_var</span><span class="p">(</span><span class="n">my_fixture</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">testing_var</span> <span class="o">==</span> <span class="s">&quot;foo&quot;</span>  <span class="c"># Assumed to be set in do_things.py.</span>
+    <span class="k">assert</span> <span class="n">fixture_var</span> <span class="o">==</span> <span class="s">&quot;bar&quot;</span>  <span class="c"># Now in the module&#39;s global namespace.</span>
+    <span class="n">test_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">with</span> <span class="n">raises</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span> <span class="n">test_dict</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>  <span class="c"># The raises function was autoimported.</span>
+
+<span class="k">def</span> <span class="nf">test_skipped</span><span class="p">():</span>
+    <span class="n">skip</span><span class="p">()</span>  <span class="c"># The skip function was also autoimported.</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ul>
+<p>Notice that very little needs to be changed in order to extract a separate test
+module from the testing part of a module which initially contains its own tests
+(like in the first example, in the <a class="reference internal" href="#introduction"><em>Introduction</em></a>).  A <tt class="code docutils literal"><span class="pre">sys_path</span></tt> function
+call would be added so the new test file can import the file to be tested, and
+then the actual import of the code is done.  If desired, the original module
+can use <tt class="code docutils literal"><span class="pre">script_run</span></tt> to run pytest on the new test file when it is invoked as a
+script, as in the earlier example.</p>
+</div>
+<div class="section" id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pytest_helper.html">pytest_helper module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytest_helper.html#description">Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytest_helper.html#functions-to-help-with-running-tests">Functions to help with running tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytest_helper.html#functions-to-help-in-writing-tests">Functions to help in writing tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytest_helper.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="set_package_attribute.html">set_package_attribute module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="set_package_attribute.html#description">Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="set_package_attribute.html#further-details">Further details</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
+<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">pytest-helper</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#functions-to-help-in-running-tests">Functions to help in running tests</a></li>
+<li><a class="reference internal" href="#functions-to-help-in-writing-tests">Functions to help in writing tests</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pytest_helper.html"
+                        title="next chapter">pytest_helper module</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pytest_helper.html" title="pytest_helper module"
+             >next</a> |</li>
+        <li><a href="#">pytest_helper  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Allen Barker.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>
