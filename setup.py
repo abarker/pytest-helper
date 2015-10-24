@@ -73,8 +73,10 @@ setup(
 
     # NOTE I had to symlink these modules in the root package and remove any
     # __init__.py in the pytest_helper dir to make this work to only include
-    # the two modules.  The package_dir kwarg didn't seem to work.
+    # the two modules.  The package_dir kwarg does not seem to work, nor do
+    # other variations.  Might be the package/module name shadowing, or something else.
     py_modules=["pytest_helper", "set_package_attribute"],
+    #py_modules=[splitext(basename(i))[0] for i in glob.glob("pytest_helper/*.py")]
     #py_modules=["pytest_helper.pytest_helper", "pytest_helper.set_package_attribute"],
 
     # List run-time dependencies here.  These will be installed by pip when

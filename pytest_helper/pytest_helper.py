@@ -167,12 +167,10 @@ def auto_import(noclobber=True, level=2):
     common imports.  A `PytestHelperException` will be raised if any of those
     globals already exist, unless `noclobber` is set false.
     
-    The variables that are imported from this module are `locals_to_globals`,
-    and `clear_locals_from_globals`.
-    
-    The module `py.test` is imported as the single name `pytest`.  The
-    functions from pytest that are imported are `raises`, `fail`, `fixture`,
-    and `skip`."""
+    The variables that are imported from the `pytest_helper` module are
+    `locals_to_globals`, and `clear_locals_from_globals`.  The module `py.test`
+    is imported as the single name `pytest`.  The functions from pytest that
+    are imported are `raises`, `fail`, `fixture`, and `skip`."""
     
     # TODO maybe have some options to turn on and off certain groups of autoimports.
 
