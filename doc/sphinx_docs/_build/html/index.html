@@ -87,7 +87,7 @@ with pytest; otherwise the module runs normally.</p>
 <span class="k">def</span> <span class="nf">test_var_values</span><span class="p">():</span>
     <span class="n">my_setup</span><span class="p">()</span>  <span class="c"># Run the setup code.</span>
     <span class="k">assert</span> <span class="n">testing_var</span> <span class="o">==</span> <span class="s">&quot;foo&quot;</span>  <span class="c"># Set in the regular code above.</span>
-    <span class="k">assert</span> <span class="n">setup_var</span> <span class="o">==</span> <span class="s">&quot;bar&quot;</span>    <span class="c"># Read from the global namespace.</span>
+    <span class="k">assert</span> <span class="n">setup_var</span> <span class="o">==</span> <span class="s">&quot;bar&quot;</span>    <span class="c"># Now in the global namespace.</span>
     <span class="n">test_dict</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">with</span> <span class="n">raises</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span>  <span class="c"># Pytest function raises was autoimported.</span>
         <span class="n">test_dict</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
@@ -114,8 +114,8 @@ described in the sections below.</p>
 </div>
 <div class="section" id="functions-to-help-in-running-tests">
 <h2>Functions to help in running tests<a class="headerlink" href="#functions-to-help-in-running-tests" title="Permalink to this headline">¶</a></h2>
-<p>These are the main functions which are used to make it easier to invoke pytest
-on a test file.</p>
+<p>These are the main functions which simplify the invocation pytest on a given
+test file.</p>
 <ul>
 <li><p class="first"><a class="reference internal" href="pytest_helper.html#sys-path"><em>pytest_helper.sys_path</em></a></p>
 <blockquote>
@@ -161,8 +161,8 @@ including a few tests.  As (or if) the module continues to evolve it is easy to
 extract those tests into a separate test module at some point.</p>
 <p>The example in the <a class="reference internal" href="#introduction"><em>Introduction</em></a> shows how to use <tt class="code docutils literal"><span class="pre">script_run</span></tt> to run
 a self-test on a file.  The line below shows how the <tt class="code docutils literal"><span class="pre">script_run</span></tt> function
-would be used to run pytest, with the <tt class="docutils literal"><span class="pre">-v</span></tt> verbose argument, on the test
-file <tt class="docutils literal"><span class="pre">test/test_foobar.py</span></tt>.:</p>
+would be used to run pytest, with the <tt class="docutils literal"><span class="pre">-v</span></tt> verbose argument, on a test
+file named <tt class="docutils literal"><span class="pre">test/test_foobar.py</span></tt>:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">pytest_helper</span><span class="o">.</span><span class="n">script_run</span><span class="p">(</span><span class="s">&quot;test/test_foobar.py&quot;</span><span class="p">,</span> <span class="n">pytest_args</span><span class="o">=</span><span class="s">&quot;-v&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -229,9 +229,10 @@ imported into the module&#8217;s global namespace.</p>
 </li>
 <li><p class="first"><a class="reference internal" href="pytest_helper.html#clear-locals-from-globals"><em>pytest_helper.clear_locals_from_globals</em></a></p>
 <blockquote>
-<div><p>The <tt class="code docutils literal"><span class="pre">clear_locals_from_globals</span></tt> function is called by <tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt> to
-clear any previously-set globals.  It can also be used to explicitly do the
-clearing, such as when <tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt> is run with <tt class="code docutils literal"><span class="pre">auto_clear</span></tt> set false.</p>
+<div><p>By default the <tt class="code docutils literal"><span class="pre">clear_locals_from_globals</span></tt> function is always called by
+<tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt> in order to clear any previously-set globals.  This
+function can also be explicitly called to do the clearing, such as when
+<tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt> is run with <tt class="code docutils literal"><span class="pre">auto_clear</span></tt> set false.</p>
 </div></blockquote>
 </li>
 </ul>
@@ -290,8 +291,8 @@ directories).  The test file below can still be run from other files with
 <span class="n">pytest_helper</span><span class="o">.</span><span class="n">script_run</span><span class="p">(</span><span class="n">self_test</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">pytest_args</span><span class="o">=</span><span class="s">&quot;-v&quot;</span><span class="p">)</span>
 <span class="n">pytest_helper</span><span class="o">.</span><span class="n">auto_import</span><span class="p">()</span>  <span class="c"># Do some basic imports automatically.</span>
 <span class="n">pytest_helper</span><span class="o">.</span><span class="n">sys_path</span><span class="p">(</span><span class="n">add_parent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-<span class="c"># pytest_helper.sys_path(&quot;..&quot;)  # Works the same as the line above.</span>
-<span class="c"># pytest_helper.sys_path([&quot;..&quot;])  # Works the same as the two lines above.</span>
+<span class="c"># pytest_helper.sys_path(&quot;..&quot;)  # Does the same thing as the line above.</span>
+<span class="c"># pytest_helper.sys_path([&quot;..&quot;])  # Does the same as the two lines above.</span>
 
 <span class="kn">from</span> <span class="nn">do_things</span> <span class="kn">import</span> <span class="o">*</span>  <span class="c"># Since we&#39;re testing that module, import all.</span>
 
@@ -317,9 +318,10 @@ directories).  The test file below can still be run from other files with
 module from the testing part of a module which initially contains its own tests
 (like in the first example, in the <a class="reference internal" href="#introduction"><em>Introduction</em></a>).  A <tt class="code docutils literal"><span class="pre">sys_path</span></tt> function
 call would be added so the new test file can import the file to be tested, and
-then the actual import of the code is done.  If desired, the original module
-can use <tt class="code docutils literal"><span class="pre">script_run</span></tt> to run pytest on the new test file when it is invoked as a
-script, as in the earlier example.</p>
+then the actual import of the code is done.  If desired, the call to
+<tt class="code docutils literal"><span class="pre">script_run</span></tt> in the original module can be modified to run pytest on the new
+test file when it is invoked as a script, as in the earlier example.  Just
+remove the <tt class="code docutils literal"><span class="pre">self_test</span></tt> option and pass <tt class="code docutils literal"><span class="pre">script_run</span></tt> the new pathname.</p>
 </div>
 <div class="section" id="module-contents">
 <h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>

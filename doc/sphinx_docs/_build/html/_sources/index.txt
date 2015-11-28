@@ -52,7 +52,7 @@ with pytest; otherwise the module runs normally. ::
    def test_var_values():
        my_setup()  # Run the setup code.
        assert testing_var == "foo"  # Set in the regular code above.
-       assert setup_var == "bar"    # Read from the global namespace.
+       assert setup_var == "bar"    # Now in the global namespace.
        test_dict = {}
        with raises(KeyError):  # Pytest function raises was autoimported.
            test_dict[5]
@@ -82,8 +82,8 @@ described in the sections below.
 Functions to help in running tests
 ==================================
 
-These are the main functions which are used to make it easier to invoke pytest
-on a test file.
+These are the main functions which simplify the invocation pytest on a given
+test file.
 
 * :ref:`pytest_helper.sys_path<sys_path>`
 
@@ -131,8 +131,8 @@ on a test file.
 
    The example in the :ref:`Introduction` shows how to use `script_run` to run
    a self-test on a file.  The line below shows how the `script_run` function
-   would be used to run pytest, with the ``-v`` verbose argument, on the test
-   file ``test/test_foobar.py``.::
+   would be used to run pytest, with the ``-v`` verbose argument, on a test
+   file named ``test/test_foobar.py``::
    
 
       pytest_helper.script_run("test/test_foobar.py", pytest_args="-v")
@@ -197,9 +197,10 @@ These functions are used to help in writing the tests themselves.
 
 * :ref:`pytest_helper.clear_locals_from_globals<clear_locals_from_globals>`
 
-   The `clear_locals_from_globals` function is called by `locals_to_globals` to
-   clear any previously-set globals.  It can also be used to explicitly do the
-   clearing, such as when `locals_to_globals` is run with `auto_clear` set false.
+   By default the `clear_locals_from_globals` function is always called by
+   `locals_to_globals` in order to clear any previously-set globals.  This
+   function can also be explicitly called to do the clearing, such as when
+   `locals_to_globals` is run with `auto_clear` set false.
 
 See :ref:`help_writing` for detailed documentation of these functions.
 
@@ -260,8 +261,8 @@ explicitly use the guard conditional around calls to `script_run`.
       pytest_helper.script_run(self_test=True, pytest_args="-v")
       pytest_helper.auto_import()  # Do some basic imports automatically.
       pytest_helper.sys_path(add_parent=True)
-      # pytest_helper.sys_path("..")  # Works the same as the line above.
-      # pytest_helper.sys_path([".."])  # Works the same as the two lines above.
+      # pytest_helper.sys_path("..")  # Does the same thing as the line above.
+      # pytest_helper.sys_path([".."])  # Does the same as the two lines above.
 
       from do_things import *  # Since we're testing that module, import all.
 
@@ -283,9 +284,10 @@ Notice that very little needs to be changed in order to extract a separate test
 module from the testing part of a module which initially contains its own tests
 (like in the first example, in the :ref:`Introduction`).  A `sys_path` function
 call would be added so the new test file can import the file to be tested, and
-then the actual import of the code is done.  If desired, the original module
-can use `script_run` to run pytest on the new test file when it is invoked as a
-script, as in the earlier example.
+then the actual import of the code is done.  If desired, the call to
+`script_run` in the original module can be modified to run pytest on the new
+test file when it is invoked as a script, as in the earlier example.  Just
+remove the `self_test` option and pass `script_run` the new pathname.
 
 Module contents
 ===============
