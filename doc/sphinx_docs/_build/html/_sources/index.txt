@@ -21,10 +21,10 @@ Introduction
 Testing is an important part of software development, especially for a
 dynamically typed language like Python.  The easier it is for people to set up
 and run tests, the more likely they are to write their tests as they code
-(rather than waiting until later to do so, or perhaps not writing formal tests
+rather than waiting until later to do so (or perhaps not writing formal tests
 at all).  This is especially true for beginners.
 
-Here is a simple example to illustrate the idea.  This is a Python module
+Below is a simple example to illustrate the idea.  This is a Python module
 which is possibly part of a larger package.  It contains its own test functions
 at the bottom.  Whenever the module is run as a script the tests will be run
 with pytest; otherwise the module runs normally. ::
@@ -35,11 +35,13 @@ with pytest; otherwise the module runs normally. ::
 
    testing_var = "foo"
 
-   # Test running below, but only when the module is invoked as a script.
+   # Run the tests, but only when the module is invoked as a script.
 
    if __name__ == "__main__":  # This guard conditional is optional.
 
        pytest_helper.script_run(self_test=True, pytest_args="-v")
+
+   # Test functions are below; these can easily be moved to a separate module.
    
    pytest_helper.auto_import()  # Do some basic imports automatically.
 
@@ -48,7 +50,7 @@ with pytest; otherwise the module runs normally. ::
        locals_to_globals()  # Copies setup_var to the module's global namespace.
 
    def test_var_values():
-       my_setup()
+       my_setup()  # Run the setup code.
        assert testing_var == "foo"  # Set in the regular code above.
        assert setup_var == "bar"    # Read from the global namespace.
        test_dict = {}
@@ -56,8 +58,8 @@ with pytest; otherwise the module runs normally. ::
            test_dict[5]
    
 There are more examples in the :ref:`Examples` section below, including the
-case where tests are in separate files and the case of a test file itself
-located in a separate test directory.
+case where tests to be run are in separate files and the case of a test file
+itself, located in a separate test directory.
 
 Some of the provided helper functions are general-purpose, but several are
 specific to the `pytest <http://pytest.org>`_ testing framework.  The functions

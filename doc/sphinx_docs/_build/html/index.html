@@ -58,9 +58,9 @@ It makes use of pytest but is not part of the official pytest project.</p>
 <p>Testing is an important part of software development, especially for a
 dynamically typed language like Python.  The easier it is for people to set up
 and run tests, the more likely they are to write their tests as they code
-(rather than waiting until later to do so, or perhaps not writing formal tests
+rather than waiting until later to do so (or perhaps not writing formal tests
 at all).  This is especially true for beginners.</p>
-<p>Here is a simple example to illustrate the idea.  This is a Python module
+<p>Below is a simple example to illustrate the idea.  This is a Python module
 which is possibly part of a larger package.  It contains its own test functions
 at the bottom.  Whenever the module is run as a script the tests will be run
 with pytest; otherwise the module runs normally.</p>
@@ -70,11 +70,13 @@ with pytest; otherwise the module runs normally.</p>
 
 <span class="n">testing_var</span> <span class="o">=</span> <span class="s">&quot;foo&quot;</span>
 
-<span class="c"># Test running below, but only when the module is invoked as a script.</span>
+<span class="c"># Run the tests, but only when the module is invoked as a script.</span>
 
 <span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>  <span class="c"># This guard conditional is optional.</span>
 
     <span class="n">pytest_helper</span><span class="o">.</span><span class="n">script_run</span><span class="p">(</span><span class="n">self_test</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">pytest_args</span><span class="o">=</span><span class="s">&quot;-v&quot;</span><span class="p">)</span>
+
+<span class="c"># Test functions are below; these can easily be moved to a separate module.</span>
 
 <span class="n">pytest_helper</span><span class="o">.</span><span class="n">auto_import</span><span class="p">()</span>  <span class="c"># Do some basic imports automatically.</span>
 
@@ -83,7 +85,7 @@ with pytest; otherwise the module runs normally.</p>
     <span class="n">locals_to_globals</span><span class="p">()</span>  <span class="c"># Copies setup_var to the module&#39;s global namespace.</span>
 
 <span class="k">def</span> <span class="nf">test_var_values</span><span class="p">():</span>
-    <span class="n">my_setup</span><span class="p">()</span>
+    <span class="n">my_setup</span><span class="p">()</span>  <span class="c"># Run the setup code.</span>
     <span class="k">assert</span> <span class="n">testing_var</span> <span class="o">==</span> <span class="s">&quot;foo&quot;</span>  <span class="c"># Set in the regular code above.</span>
     <span class="k">assert</span> <span class="n">setup_var</span> <span class="o">==</span> <span class="s">&quot;bar&quot;</span>    <span class="c"># Read from the global namespace.</span>
     <span class="n">test_dict</span> <span class="o">=</span> <span class="p">{}</span>
@@ -92,8 +94,8 @@ with pytest; otherwise the module runs normally.</p>
 </pre></div>
 </div>
 <p>There are more examples in the <a class="reference internal" href="#examples"><em>Examples</em></a> section below, including the
-case where tests are in separate files and the case of a test file itself
-located in a separate test directory.</p>
+case where tests to be run are in separate files and the case of a test file
+itself, located in a separate test directory.</p>
 <p>Some of the provided helper functions are general-purpose, but several are
 specific to the <a class="reference external" href="http://pytest.org">pytest</a> testing framework.  The functions
 are independent of each other and can be used (or not used) as desired.  These

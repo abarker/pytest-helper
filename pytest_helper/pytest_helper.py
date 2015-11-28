@@ -6,6 +6,11 @@ Description
 This module contains helper functions for using the pytest unit testing
 framework.
 
+..  Copyright (c) 2015 by Allen Barker.
+    License: MIT, see LICENSE for more details.
+
+.. default-role:: code
+
 """
 
 from __future__ import print_function, division, absolute_import

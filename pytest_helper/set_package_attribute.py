@@ -44,8 +44,13 @@ via a relative import.
     as an anti-pattern (see
     https://mail.python.org/pipermail/python-3000/2007-April/006793.html).
     Nevertheless, it can be a convenient and useful pattern in certain
-    situations.  He did later approve PEP 366 which defined the `__package__`
+    situations.  He did later approve PEP 366, which defined the `__package__`
     attribute to handle the situation.
+
+..  Copyright (c) 2015 by Allen Barker.
+    License: MIT, see LICENSE for more details.
+
+.. default-role:: code
 
 """
 
