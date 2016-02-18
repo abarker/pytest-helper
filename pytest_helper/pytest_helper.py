@@ -17,8 +17,35 @@ from __future__ import print_function, division, absolute_import
 import inspect
 import sys
 import os
+try:
+    from configparser import ConfigParser
+except ImportError: # Must be Python 2, use old names.
+    from ConfigParser import SafeConfigParser as ConfigParser
 from py.test import raises, fail, fixture, skip
 import py.test
+
+# TODO: consider xfail, parameterize, and others for auto_import, and possible
+# ways for users to specify the list in a once-per-project way (has to be
+# easier than just importing).
+#
+# TODO, updated:
+#  - On import the pytest_helper.py file will go up the dir tree and identify
+#    the package root.  Just go ahead and duplicate some of the code from
+#    set_package_attribute to keep them independent.  Note this only done
+#    once, so assumes a common package root.
+#  - On finding the root, it will look for a file named .pytest_helper.ini
+#    and read that file.
+#  - In that file, you can set any global parameters that might be defined
+#    (can always add later and be backward compatible), as well as specify
+#    ANY of the kwargs for ANY of the provided functions.
+#    --> Maybe better, you set the DEFAULT values from config file, so can change
+#    for individual runs rather than always override.
+#  - To implement the kwarg defaults, write some utility functions.  They
+#    should pass dicts, with the argument values.  You can presumably update
+#    a copy of the user's defaults dict with the arguments passed via locals().
+#  - Can pass an ignore option to autoimport to just ignore one or two
+#    in specific cases.
+#  - Consider using the library configparser routines.
 
 def script_run(testfile_paths=None, self_test=False, pytest_args=None,
                calling_mod_name=None, calling_mod_path=None, exit=True,
@@ -372,11 +399,11 @@ def expand_relative(path, basepath):
     joined_path = os.path.realpath(os.path.abspath(os.path.join(basepath, path)))
     return joined_path
 
-"""The levels used in the utility routines below are levels in the calling
-stack (examined using inspect).  The level number includes the level of the
-utility function itself.  So level 0 is the attribute of the utility function
-itself, level 1 is the attribute of the calling function, level 2 is the
-function that called the calling function, etc."""
+# The levels used in the utility routines below are levels in the calling stack
+# (examined using inspect).  The level number includes the level of the utility
+# function itself.  So level 0 is the attribute of the utility function itself,
+# level 1 is the attribute of the calling function, level 2 is the function
+# that called the calling function, etc.
 
 module_info_cache = {} # Save info on modules, keyed on module names.
 
@@ -523,6 +550,54 @@ def get_calling_module(level=2):
     #calling_module = sys.modules[calling_module_name]
 
     return calling_module.__name__, calling_module
+
+#
+# Config file locating and reading functions.
+#
+
+USE_USER_CONFIG_FILE = True # Setting False turns off even looking for a config file.
+USER_CONFIG = None # A dict of dicts containing the config file contents, if used.
+
+def get_importing_module_filename(level=2):
+    """Run this during the initialization of a module to return the absolute pathname
+    of the module which is importing the module currently being imported."""
+    module_filename = inspect.getframeinfo(
+                      inspect.getouterframes(inspect.currentframe())[level][0])[0]
+    return os.path.abspath(module_filename)
+
+def get_config_file():
+    """Get the full pathname of the configuration file, returning `None` if
+    not found.  If inside a package then go up the directory tree to the root of
+    the Python package and look there.  Otherwise, only look in the importing
+    module's directory."""
+    importing_module = get_importing_module_filename()
+    dirname, name = os.path.split(importing_module)
+
+    # Go up the package directory tree if inside a package.
+    while os.path.exists(os.path.join(dirname, "..", "__init__.py")):
+        dirname, name = os.path.split(dirname) 
+    
+    config_path = os.path.join(dirname, ".pytest_helper.ini")
+
+    if os.path.exists(config_path):
+        return config_path
+    else:
+        return None
+
+def read_config_file(filename):
+    """Return a dict of dicts with a dict of parameter arguments for each
+    section of the config file."""
+    config = ConfigParser()
+    config.read(filename)
+    config_dict = { s:dict(config.items(s)) for s in config.sections() }
+    return config_dict
+
+if USE_USER_CONFIG_FILE:
+    filename = get_config_file()
+    print("Config file name is", filename)
+    if filename:
+        USER_CONFIG = read_config_file(filename)
+    print(USER_CONFIG)
 
 #
 # Test this file when invoked as a script.

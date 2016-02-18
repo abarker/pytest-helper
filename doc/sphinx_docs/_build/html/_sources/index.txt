@@ -13,6 +13,26 @@ This package provides several functions which make it easier to set up and run
 unit tests in Python using the `pytest <http://pytest.org>`_ testing framework.
 It makes use of pytest but is not part of the official pytest project.
 
+Installation
+============
+
+The easiest way to install is to use ``pip``, which also allows for easy
+uninstallation.  Either download the zipped directory from GitHub and unzip it,
+or else use `git` to clone the GitHub repo.  Then run:
+
+.. code-block:: bash
+
+   ls -l "egg"
+   pip install file:///path/to/the/new/pytest_helper/dir
+
+replacing the path with the one where you saved the directory.  (Run the
+command with ``sudo`` or equivalent administrator privileges if installing as
+a system Python package rather than as a local one.)
+
+Alternately, you can run the package's ``setup.py`` program directly with
+``python setup.py install``.  Or, you can just add the ``pytest_helper``
+subdirectory to your ``PYTHONPATH`` environment variable.
+
 .. _Introduction:
 
 Introduction
@@ -286,8 +306,9 @@ module from the testing part of a module which initially contains its own tests
 call would be added so the new test file can import the file to be tested, and
 then the actual import of the code is done.  If desired, the call to
 `script_run` in the original module can be modified to run pytest on the new
-test file when it is invoked as a script, as in the earlier example.  Just
-remove the `self_test` option and pass `script_run` the new pathname.
+test file when the original module is invoked as a script, as in the earlier
+example.  Just remove the `self_test` option and pass `script_run` the new
+pathname.
 
 Module contents
 ===============

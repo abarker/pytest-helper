@@ -13,6 +13,25 @@ This package provides several functions which make it easier to set up and run
 unit tests in Python using the `pytest <http://pytest.org>`_ testing framework.
 It makes use of pytest but is not part of the official pytest project.
 
+Installation
+============
+
+The easiest way to install is to use ``pip``, which also allows for easy
+uninstallation.  Either download the zipped directory from GitHub and unzip it,
+or else use `git` to clone the GitHub repo.  Then run:
+
+.. code-block:: bash
+
+   pip install file:///path/to/the/new/pytest_helper/dir
+
+replacing the path with the one where you saved the directory.  (Run the
+command with ``sudo`` or equivalent administrator privileges if installing as
+a system Python package rather than as a local one.)
+
+Alternately, you can run the package's ``setup.py`` program directly with
+``python setup.py install``.  Or, you can just add the ``pytest_helper``
+subdirectory to your ``PYTHONPATH`` environment variable.
+
 .. _Introduction:
 
 Introduction
@@ -64,8 +83,7 @@ itself, located in a separate test directory.
 Some of the provided helper functions are general-purpose, but several are
 specific to the `pytest <http://pytest.org>`_ testing framework.  The functions
 are independent of each other and can be used (or not used) as desired.  These
-functions are fully compatible with the ordinary uses and invocations of
-pytest.
+functions are compatible with the ordinary uses and invocations of pytest.
 
 In order to simplify the functional interface, some of these helper functions
 use very basic introspection look up the names of modules.  Others use

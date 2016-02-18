@@ -53,6 +53,22 @@
 <p>This package provides several functions which make it easier to set up and run
 unit tests in Python using the <a class="reference external" href="http://pytest.org">pytest</a> testing framework.
 It makes use of pytest but is not part of the official pytest project.</p>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>The easiest way to install is to use <tt class="docutils literal"><span class="pre">pip</span></tt>, which also allows for easy
+uninstallation.  Either download the zipped directory from GitHub and unzip it,
+or else use <tt class="code docutils literal"><span class="pre">git</span></tt> to clone the GitHub repo.  Then run:</p>
+<div class="highlight-bash"><div class="highlight"><pre>ls -l <span class="s2">&quot;egg&quot;</span>
+pip install file:///path/to/the/new/pytest_helper/dir
+</pre></div>
+</div>
+<p>replacing the path with the one where you saved the directory.  (Run the
+command with <tt class="docutils literal"><span class="pre">sudo</span></tt> or equivalent administrator privileges if installing as
+a system Python package rather than as a local one.)</p>
+<p>Alternately, you can run the package&#8217;s <tt class="docutils literal"><span class="pre">setup.py</span></tt> program directly with
+<tt class="docutils literal"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">install</span></tt>.  Or, you can just add the <tt class="docutils literal"><span class="pre">pytest_helper</span></tt>
+subdirectory to your <tt class="docutils literal"><span class="pre">PYTHONPATH</span></tt> environment variable.</p>
+</div>
 <div class="section" id="introduction">
 <span id="id1"></span><h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
 <p>Testing is an important part of software development, especially for a
@@ -320,8 +336,9 @@ module from the testing part of a module which initially contains its own tests
 call would be added so the new test file can import the file to be tested, and
 then the actual import of the code is done.  If desired, the call to
 <tt class="code docutils literal"><span class="pre">script_run</span></tt> in the original module can be modified to run pytest on the new
-test file when it is invoked as a script, as in the earlier example.  Just
-remove the <tt class="code docutils literal"><span class="pre">self_test</span></tt> option and pass <tt class="code docutils literal"><span class="pre">script_run</span></tt> the new pathname.</p>
+test file when the original module is invoked as a script, as in the earlier
+example.  Just remove the <tt class="code docutils literal"><span class="pre">self_test</span></tt> option and pass <tt class="code docutils literal"><span class="pre">script_run</span></tt> the new
+pathname.</p>
 </div>
 <div class="section" id="module-contents">
 <h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
@@ -361,6 +378,7 @@ remove the <tt class="code docutils literal"><span class="pre">self_test</span><
   <h3><a href="#">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">pytest-helper</a><ul>
+<li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#introduction">Introduction</a></li>
 <li><a class="reference internal" href="#functions-to-help-in-running-tests">Functions to help in running tests</a></li>
 <li><a class="reference internal" href="#functions-to-help-in-writing-tests">Functions to help in writing tests</a></li>
