@@ -205,6 +205,12 @@ def auto_import(noclobber=True, level=2):
     are imported are `raises`, `fail`, `fixture`, and `skip`."""
     
     # TODO maybe have some options to turn on and off certain groups of autoimports.
+    # Still need to set up, and also allow "import as" type things.
+    # -----> Just let user pass in a list, and do an update with it over initial
+    # defaults.  Easy to implement, easy to document.
+    #
+    # user_defaults = USER_CONFIG["auto_import"]
+    # if "names_to_import" in user_defaults: names_to_import = user_defaults["names_to_import"]
 
     def insert_in_dict(d, name, value):
         """Insert (name, value) in dict d checking for noclobber."""
@@ -216,21 +222,24 @@ def auto_import(noclobber=True, level=2):
 
     g = get_calling_fun_globals_dict(level=level)
 
-    # Pytest itself, imported as pytest, not py.test
-    insert_in_dict(g, "pytest", py.test)
+    for name, value in AUTO_IMPORT_INITIAL_DEFAULTS:
+        insert_in_dict(g, name, value)
 
-    # Functions from pytest.
-    insert_in_dict(g, "raises", raises)
-    insert_in_dict(g, "fail", fail)
-    insert_in_dict(g, "fixture", fixture)
-    insert_in_dict(g, "skip", skip)
+    ## Pytest itself, imported as pytest, not py.test
+    #insert_in_dict(g, "pytest", py.test)
 
-    # Functions and classes from this module.
-    #insert_in_dict(g, "script_run", script_run)
-    #insert_in_dict(g, "sys_path", sys_path)
-    #insert_in_dict(g, "init", init)
-    insert_in_dict(g, "locals_to_globals", locals_to_globals)
-    insert_in_dict(g, "clear_locals_from_globals", clear_locals_from_globals)
+    ## Functions from pytest.
+    #insert_in_dict(g, "raises", raises)
+    #insert_in_dict(g, "fail", fail)
+    #insert_in_dict(g, "fixture", fixture)
+    #insert_in_dict(g, "skip", skip)
+
+    ## Functions and classes from this module.
+    ##insert_in_dict(g, "script_run", script_run)
+    ##insert_in_dict(g, "sys_path", sys_path)
+    ##insert_in_dict(g, "init", init)
+    #insert_in_dict(g, "locals_to_globals", locals_to_globals)
+    #insert_in_dict(g, "clear_locals_from_globals", clear_locals_from_globals)
     return
 
 def init(set_package=False, level=2):
@@ -556,7 +565,17 @@ def get_calling_module(level=2):
 #
 
 USE_USER_CONFIG_FILE = True # Setting False turns off even looking for a config file.
+CONFIG_FILE_NAME = "pytest_helper.ini"
 USER_CONFIG = None # A dict of dicts containing the config file contents, if used.
+
+AUTO_IMPORT_INITIAL_DEFAULTS = [("pytest", py.test),
+                                ("raises", raises),
+                                ("fail", fail),
+                                ("fixture", fixture),
+                                ("skip", skip),
+                                ("locals_to_globals", locals_to_globals),
+                                ("clear_locals_from_globals", clear_locals_from_globals)
+                                ]
 
 def get_importing_module_filename(level=2):
     """Run this during the initialization of a module to return the absolute pathname
@@ -577,7 +596,7 @@ def get_config_file():
     while os.path.exists(os.path.join(dirname, "..", "__init__.py")):
         dirname, name = os.path.split(dirname) 
     
-    config_path = os.path.join(dirname, ".pytest_helper.ini")
+    config_path = os.path.join(dirname, CONFIG_FILE_NAME)
 
     if os.path.exists(config_path):
         return config_path
@@ -593,11 +612,9 @@ def read_config_file(filename):
     return config_dict
 
 if USE_USER_CONFIG_FILE:
-    filename = get_config_file()
-    print("Config file name is", filename)
-    if filename:
-        USER_CONFIG = read_config_file(filename)
-    print(USER_CONFIG)
+    config_filename = get_config_file()
+    if config_filename:
+        USER_CONFIG = read_config_file(config_filename)
 
 #
 # Test this file when invoked as a script.
