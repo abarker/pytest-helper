@@ -21,6 +21,7 @@ try:
     from configparser import ConfigParser
 except ImportError: # Must be Python 2, use old names.
     from ConfigParser import SafeConfigParser as ConfigParser
+import functools
 from py.test import raises, fail, fixture, skip
 import py.test
 
@@ -46,6 +47,31 @@ import py.test
 #  - Can pass an ignore option to autoimport to just ignore one or two
 #    in specific cases.
 #  - Consider using the library configparser routines.
+#
+# TODO PROBLEMS, see below in config section.
+
+def substitute_user_config_defaults(f):
+    """A decorator to implement user-defined defaults for the kwargs.  For each
+    user-defined default kwarg value, pass that value *except* if the corresponding
+    kwarg was passed as an actual argument."""
+    # Get arg names, to deal kwargs passed as regular args.
+    arg_names_of_f = inspect.getargspec(f)[0] # Visible in closure of wrapper.
+
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        print("DEBUG passed kwargs are", kwargs)
+        user_default_params_for_f = USER_CONFIG.get(f.__name__)
+        print("DEBUG user default kwargs are", kwargs)
+        if not user_default_params_for_f: # User didn't define default values.
+            return f(*args, **kwargs)
+        print("DEBUG user_default_params_for_f is", user_default_params_for_f)
+        new_kwargs_dict = dict(kwargs)
+        for param_name in arg_names_of_f[len(args):]: # ignore if passes as *arg
+            if param_name in user_default_params_for_f and param_name not in kwargs:
+                new_kwargs_dict[param_name] = user_default_params_for_f[param_name]
+        return f(*args, **new_kwargs_dict)
+
+    return wrapper
 
 def script_run(testfile_paths=None, self_test=False, pytest_args=None,
                calling_mod_name=None, calling_mod_path=None, exit=True,
@@ -193,6 +219,7 @@ def restore_previous_sys_path():
         previous_sys_path_list = None
     return
 
+@substitute_user_config_defaults # remove level increment if removing wrapper
 def auto_import(noclobber=True, level=2):
     """This function imports some pytest-helper and pytest attributes into the
     calling module's global namespace.  This avoids having to explicitly do
@@ -212,18 +239,27 @@ def auto_import(noclobber=True, level=2):
     # user_defaults = USER_CONFIG["auto_import"]
     # if "names_to_import" in user_defaults: names_to_import = user_defaults["names_to_import"]
 
-    def insert_in_dict(d, name, value):
+    # This `level` increment is ONLY for when the `substitute_user_config_defaults`
+    # decorator is used, since the decorator wrapper adds one level on the stack.
+    level = level + 1
+
+    print("DEBUG noclobber is now", noclobber)
+
+    def insert_in_dict(d, name, value, noclobber):
         """Insert (name, value) in dict d checking for noclobber."""
+        print("DEBUG called insert fun, noclobber is", noclobber)
         if noclobber and name in d:
+            print("DEBUG insert fun if, raising, noclobber is", noclobber)
             raise PytestHelperException("The pytest_helper function auto_import"
                     "\nattempted an overwrite with noclobber set.  The attribute"
                     " is: " + name)
+        print("DEBUG setting in insert")
         d[name] = value
 
     g = get_calling_fun_globals_dict(level=level)
 
     for name, value in AUTO_IMPORT_INITIAL_DEFAULTS:
-        insert_in_dict(g, name, value)
+        insert_in_dict(g, name, value, noclobber)
 
     ## Pytest itself, imported as pytest, not py.test
     #insert_in_dict(g, "pytest", py.test)
@@ -566,7 +602,7 @@ def get_calling_module(level=2):
 
 USE_USER_CONFIG_FILE = True # Setting False turns off even looking for a config file.
 CONFIG_FILE_NAME = "pytest_helper.ini"
-USER_CONFIG = None # A dict of dicts containing the config file contents, if used.
+USER_CONFIG = {} # A dict of dicts containing the config file contents, if used.
 
 AUTO_IMPORT_INITIAL_DEFAULTS = [("pytest", py.test),
                                 ("raises", raises),
@@ -584,19 +620,32 @@ def get_importing_module_filename(level=2):
                       inspect.getouterframes(inspect.currentframe())[level][0])[0]
     return os.path.abspath(module_filename)
 
+# TODO need separate package name for each different package that may import it???
+# what if a package is using another package that also imports it?????
+# What about when a test package imports it, but the test dir is not part of
+# the package????
+
+# --> Maybe REQUIRE the use of the init call in order to read the default config
+# file????  Then called on each import statement, not just on the first one.
+# THEN just use __package__ to keep a dict of the ones looked up, or have
+# a package option for test dir, since OTHERWISE IT DOESN'T KNOW WHERE TO LOOK.
+
 def get_config_file():
     """Get the full pathname of the configuration file, returning `None` if
     not found.  If inside a package then go up the directory tree to the root of
     the Python package and look there.  Otherwise, only look in the importing
     module's directory."""
     importing_module = get_importing_module_filename()
+    print("DEBUG importing module is", importing_module)
     dirname, name = os.path.split(importing_module)
 
     # Go up the package directory tree if inside a package.
-    while os.path.exists(os.path.join(dirname, "..", "__init__.py")):
+    while (os.path.exists(os.path.join(dirname, "__init__.py")) and
+           os.path.exists(os.path.join(dirname, "..", "__init__.py"))):
         dirname, name = os.path.split(dirname) 
     
     config_path = os.path.join(dirname, CONFIG_FILE_NAME)
+    print("DEBUG config path is", config_path)
 
     if os.path.exists(config_path):
         return config_path
@@ -609,6 +658,7 @@ def read_config_file(filename):
     config = ConfigParser()
     config.read(filename)
     config_dict = { s:dict(config.items(s)) for s in config.sections() }
+    print("DEBUG config dict is", config_dict)
     return config_dict
 
 if USE_USER_CONFIG_FILE:
