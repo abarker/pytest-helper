@@ -48,7 +48,7 @@ import py.test
 #    in specific cases.
 #  - Consider using the library configparser routines.
 #
-# TODO PROBLEMS, see below in config section.
+# TODO PROBLEMS, see below in config section... now requiring init for config.
 
 def substitute_user_config_defaults(f):
     """A decorator to implement user-defined defaults for the kwargs.  For each
@@ -212,7 +212,7 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
 
 def restore_previous_sys_path():
     """This function undoes the effect of the last call to `sys_path`, returning
-    `sys.path` to its previous, saved value."""
+    `sys.path` to its previous, saved value.  This can be useful at times."""
     global previous_sys_path_list
     if previous_sys_path_list is not None:
         sys.path = previous_sys_path_list
@@ -635,6 +635,14 @@ def get_config_file():
     not found.  If inside a package then go up the directory tree to the root of
     the Python package and look there.  Otherwise, only look in the importing
     module's directory."""
+    # TODO: update for use with the init function.
+    # path to look, in order, first draft:
+    # - explicit pathname
+    # - dir of importing module
+    # - path up to root of package (note can't cache unless always at top)
+    # - parent dir or its path up to package root (if test dir, no __init__)
+    #
+    # In each dir, look first for pytest_helper.ini and then for .pytest_helper.ini
     importing_module = get_importing_module_filename()
     print("DEBUG importing module is", importing_module)
     dirname, name = os.path.split(importing_module)
@@ -661,6 +669,7 @@ def read_config_file(filename):
     print("DEBUG config dict is", config_dict)
     return config_dict
 
+# TODO: move this to the init function, and change the rest of the stuff to match
 if USE_USER_CONFIG_FILE:
     config_filename = get_config_file()
     if config_filename:

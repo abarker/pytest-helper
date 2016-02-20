@@ -58,8 +58,7 @@ It makes use of pytest but is not part of the official pytest project.</p>
 <p>The easiest way to install is to use <tt class="docutils literal"><span class="pre">pip</span></tt>, which also allows for easy
 uninstallation.  Either download the zipped directory from GitHub and unzip it,
 or else use <tt class="code docutils literal"><span class="pre">git</span></tt> to clone the GitHub repo.  Then run:</p>
-<div class="highlight-bash"><div class="highlight"><pre>ls -l <span class="s2">&quot;egg&quot;</span>
-pip install file:///path/to/the/new/pytest_helper/dir
+<div class="highlight-bash"><div class="highlight"><pre>pip install file:///path/to/the/new/pytest_helper/dir
 </pre></div>
 </div>
 <p>replacing the path with the one where you saved the directory.  (Run the
@@ -115,14 +114,13 @@ itself, located in a separate test directory.</p>
 <p>Some of the provided helper functions are general-purpose, but several are
 specific to the <a class="reference external" href="http://pytest.org">pytest</a> testing framework.  The functions
 are independent of each other and can be used (or not used) as desired.  These
-functions are fully compatible with the ordinary uses and invocations of
-pytest.</p>
+functions are compatible with the ordinary uses and invocations of pytest.</p>
 <p>In order to simplify the functional interface, some of these helper functions
 use very basic introspection look up the names of modules.  Others use
-introspection to modify a module&#8217;s global variables.  Some might object to the
-use of introspection &#8220;magic,&#8221; but the level used by these functions is far less
-than what pytest itself does already.  Where introspection is used, a fallback
-is usually provided to do the task without introspection.</p>
+introspection to modify a module&#8217;s global variables.  Some people might object
+to the use of introspection &#8220;magic,&#8221; but the level used by these functions is
+far less than what pytest itself does already.  Where introspection is used, a
+fallback is usually provided to do the task without introspection.</p>
 <p>Two kinds of helper functions are provided.  The first kind are intended to
 make it easier to run pytest on a test file or files, and the second kind are
 meant to be used in writing tests inside test files.  The functions are briefly
@@ -186,6 +184,22 @@ file named <tt class="docutils literal"><span class="pre">test/test_foobar.py</s
 function call does nothing.</p>
 </div></blockquote>
 </li>
+<li><p class="first"><a class="reference internal" href="pytest_helper.html#init"><em>pytest_helper.init</em></a></p>
+<blockquote>
+<div><p>The <tt class="code docutils literal"><span class="pre">pytest_helper.init</span></tt> function call is optional, but adds some
+functionality.  Perhaps the most useful added feature is the ability to use a
+configuration file.  See the section <a class="reference internal" href="#configuration"><em>Configuration files</em></a> below.  This
+function should be called directly after importing <tt class="code docutils literal"><span class="pre">pytest_helper</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pytest_helper</span>
+<span class="n">pytest_helper</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">set_package</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Using an early <tt class="code docutils literal"><span class="pre">init</span></tt> call provides the additional benefit of making sure
+that the introspective lookup of the calling-module&#8217;s path will continue to
+work even if some intervening command or module import changes the Python
+CWD (which is rare, but it happens).</p>
+</div></blockquote>
+</li>
 <li><p class="first"><a class="reference internal" href="set_package_attribute.html#set-package-attribute"><em>set_package_attribute</em></a></p>
 <blockquote>
 <div><p>The pytest-helper package provides a module called <tt class="code docutils literal"><span class="pre">set_package_attribute</span></tt>.
@@ -198,15 +212,8 @@ import before any relative imports:</p>
 </pre></div>
 </div>
 <p>An alternate way to do the same thing is to pass a keyword argument to the
-optional pytest-helper initialization function just after importing it:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pytest_helper</span>
-<span class="n">pytest_helper</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">set_package</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>The early <tt class="code docutils literal"><span class="pre">init</span></tt> call provides the additional benefit of
-making the introspection lookup of the calling-module&#8217;s path continue to work
-even if some other later command or module import changes the Python CWD (which
-is rare, but it can happen).</p>
+optional pytest-helper initialization function just after importing
+<tt class="code docutils literal"><span class="pre">pytest_helper</span></tt>, as described above.</p>
 </div></blockquote>
 </li>
 </ul>
@@ -340,6 +347,10 @@ test file when the original module is invoked as a script, as in the earlier
 example.  Just remove the <tt class="code docutils literal"><span class="pre">self_test</span></tt> option and pass <tt class="code docutils literal"><span class="pre">script_run</span></tt> the new
 pathname.</p>
 </div>
+<div class="section" id="configuration-files">
+<span id="configuration"></span><h2>Configuration files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h2>
+<p>The use of <tt class="code docutils literal"><span class="pre">init</span></tt> is required.</p>
+</div>
 <div class="section" id="module-contents">
 <h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
@@ -383,6 +394,7 @@ pathname.</p>
 <li><a class="reference internal" href="#functions-to-help-in-running-tests">Functions to help in running tests</a></li>
 <li><a class="reference internal" href="#functions-to-help-in-writing-tests">Functions to help in writing tests</a></li>
 <li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#configuration-files">Configuration files</a></li>
 <li><a class="reference internal" href="#module-contents">Module contents</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>

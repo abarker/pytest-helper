@@ -87,10 +87,10 @@ functions are compatible with the ordinary uses and invocations of pytest.
 
 In order to simplify the functional interface, some of these helper functions
 use very basic introspection look up the names of modules.  Others use
-introspection to modify a module's global variables.  Some might object to the
-use of introspection "magic," but the level used by these functions is far less
-than what pytest itself does already.  Where introspection is used, a fallback
-is usually provided to do the task without introspection.
+introspection to modify a module's global variables.  Some people might object
+to the use of introspection "magic," but the level used by these functions is
+far less than what pytest itself does already.  Where introspection is used, a
+fallback is usually provided to do the task without introspection.
 
 Two kinds of helper functions are provided.  The first kind are intended to
 make it easier to run pytest on a test file or files, and the second kind are
@@ -152,11 +152,25 @@ test file.
    would be used to run pytest, with the ``-v`` verbose argument, on a test
    file named ``test/test_foobar.py``::
    
-
       pytest_helper.script_run("test/test_foobar.py", pytest_args="-v")
 
    When the module that calls the above function is not run as a script the
    function call does nothing.
+
+* :ref:`pytest_helper.init<init>`
+
+   The `pytest_helper.init` function call is optional, but adds some
+   functionality.  Perhaps the most useful added feature is the ability to use a
+   configuration file.  See the section :ref:`Configuration` below.  This
+   function should be called directly after importing `pytest_helper`::
+
+      import pytest_helper
+      pytest_helper.init()
+
+   Using an early `init` call provides the additional benefit of making sure
+   that the introspective lookup of the calling-module's path will continue to
+   work even if some intervening command or module import changes the Python
+   CWD (which is rare, but it happens).
 
 * :ref:`set_package_attribute<set_package_attribute>`
 
@@ -169,16 +183,9 @@ test file.
 
       import set_package_attribute
 
-   An alternate way to do the same thing is to pass a keyword argument to the
-   optional pytest-helper initialization function just after importing it::
-
-      import pytest_helper
-      pytest_helper.init(set_package=True)
-
-   The early `init` call provides the additional benefit of
-   making the introspection lookup of the calling-module's path continue to work
-   even if some other later command or module import changes the Python CWD (which
-   is rare, but it can happen).
+   An alternate way to do the same thing is to call the optional pytest-helper
+   initialization function just after importing `pytest_helper`, as described
+   above, using the keyword argument `set_package=True`.
 
 See :ref:`help_running` for detailed documentation of these functions.
 
@@ -307,6 +314,13 @@ then the actual import of the code is done.  If desired, the call to
 test file when the original module is invoked as a script, as in the earlier
 example.  Just remove the `self_test` option and pass `script_run` the new
 pathname.
+
+.. _Configuration:
+
+Configuration files
+===================
+
+The use of `init` is required.
 
 Module contents
 ===============

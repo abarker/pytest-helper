@@ -118,7 +118,7 @@ for the calling module and should not usually need to be set.</p>
 <dt id="pytest_helper.restore_previous_sys_path">
 <tt class="descclassname">pytest_helper.</tt><tt class="descname">restore_previous_sys_path</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#restore_previous_sys_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.restore_previous_sys_path" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function undoes the effect of the last call to <tt class="code docutils literal"><span class="pre">sys_path</span></tt>, returning
-<tt class="code docutils literal"><span class="pre">sys.path</span></tt> to its previous, saved value.</p>
+<tt class="code docutils literal"><span class="pre">sys.path</span></tt> to its previous, saved value.  This can be useful at times.</p>
 </dd></dl>
 
 <span class="target" id="init"></span><dl class="function">
@@ -151,7 +151,7 @@ function call <tt class="code docutils literal"><span class="pre">pytest_helper.
 <span id="help-writing"></span><h2>Functions to help in writing tests<a class="headerlink" href="#functions-to-help-in-writing-tests" title="Permalink to this headline">¶</a></h2>
 <span class="target" id="auto-import"></span><dl class="function">
 <dt id="pytest_helper.auto_import">
-<tt class="descclassname">pytest_helper.</tt><tt class="descname">auto_import</tt><big>(</big><em>noclobber=True</em>, <em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#auto_import"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.auto_import" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">auto_import</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#auto_import"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.auto_import" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function imports some pytest-helper and pytest attributes into the
 calling module&#8217;s global namespace.  This avoids having to explicitly do
 common imports.  A <tt class="code docutils literal"><span class="pre">PytestHelperException</span></tt> will be raised if any of those
