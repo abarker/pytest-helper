@@ -13,6 +13,15 @@ framework.
 
 """
 
+# TODO LATEST TODO:
+# Save this file and strip out all but the default param stuff, since it is cool.
+# But, it no longer works since I switched having each module call init to do
+# config, since can't guarantee first import is only one.  So need to modify
+# the functions themselves if want to modify default args.  That, or maybe
+# somehow have the decorator substitute a modifiable view for the default
+# args instead of doing it all at define time.  Going well, though.  Just do
+# the auto_import for now.
+
 from __future__ import print_function, division, absolute_import
 import inspect
 import sys
@@ -21,46 +30,26 @@ try:
     from configparser import ConfigParser
 except ImportError: # Must be Python 2, use old names.
     from ConfigParser import SafeConfigParser as ConfigParser
-import functools
-from py.test import raises, fail, fixture, skip
+import functools # Imported just for the wraps decorator.
 import py.test
+pytest = py.test # Alias, usable in config files.
 
-# TODO: consider xfail, parameterize, and others for auto_import, and possible
-# ways for users to specify the list in a once-per-project way (has to be
-# easier than just importing).
-#
-# TODO, updated:
-#  - On import the pytest_helper.py file will go up the dir tree and identify
-#    the package root.  Just go ahead and duplicate some of the code from
-#    set_package_attribute to keep them independent.  Note this only done
-#    once, so assumes a common package root.
-#  - On finding the root, it will look for a file named .pytest_helper.ini
-#    and read that file.
-#  - In that file, you can set any global parameters that might be defined
-#    (can always add later and be backward compatible), as well as specify
-#    ANY of the kwargs for ANY of the provided functions.
-#    --> Maybe better, you set the DEFAULT values from config file, so can change
-#    for individual runs rather than always override.
-#  - To implement the kwarg defaults, write some utility functions.  They
-#    should pass dicts, with the argument values.  You can presumably update
-#    a copy of the user's defaults dict with the arguments passed via locals().
-#  - Can pass an ignore option to autoimport to just ignore one or two
-#    in specific cases.
-#  - Consider using the library configparser routines.
-#
-# TODO PROBLEMS, see below in config section... now requiring init for config.
+ALLOW_USER_CONFIG_FILES = True # Setting False turns off even looking for a config file.
+CONFIG_FILE_NAMES = ["pytest_helper.ini", ".pytest_helper.ini"] # Searched in order.
+FAIL_ON_MISSING_CONFIG = True # Raise exception if specified but not found.
 
-def substitute_user_config_defaults(f):
+def subst_user_config_default_params(f):
     """A decorator to implement user-defined defaults for the kwargs.  For each
     user-defined default kwarg value, pass that value *except* if the corresponding
     kwarg was passed as an actual argument."""
+    # TODO: check for bad arguments in config file
     # Get arg names, to deal kwargs passed as regular args.
     arg_names_of_f = inspect.getargspec(f)[0] # Visible in closure of wrapper.
 
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         print("DEBUG passed kwargs are", kwargs)
-        user_default_params_for_f = USER_CONFIG.get(f.__name__)
+        user_default_params_for_f = user_config_dict.get(f.__name__)
         print("DEBUG user default kwargs are", kwargs)
         if not user_default_params_for_f: # User didn't define default values.
             return f(*args, **kwargs)
@@ -219,66 +208,11 @@ def restore_previous_sys_path():
         previous_sys_path_list = None
     return
 
-@substitute_user_config_defaults # remove level increment if removing wrapper
-def auto_import(noclobber=True, level=2):
-    """This function imports some pytest-helper and pytest attributes into the
-    calling module's global namespace.  This avoids having to explicitly do
-    common imports.  A `PytestHelperException` will be raised if any of those
-    globals already exist, unless `noclobber` is set false.
-    
-    The variables that are imported from the `pytest_helper` module are
-    `locals_to_globals`, and `clear_locals_from_globals`.  The module `py.test`
-    is imported as the single name `pytest`.  The functions from pytest that
-    are imported are `raises`, `fail`, `fixture`, and `skip`."""
-    
-    # TODO maybe have some options to turn on and off certain groups of autoimports.
-    # Still need to set up, and also allow "import as" type things.
-    # -----> Just let user pass in a list, and do an update with it over initial
-    # defaults.  Easy to implement, easy to document.
-    #
-    # user_defaults = USER_CONFIG["auto_import"]
-    # if "names_to_import" in user_defaults: names_to_import = user_defaults["names_to_import"]
 
-    # This `level` increment is ONLY for when the `substitute_user_config_defaults`
-    # decorator is used, since the decorator wrapper adds one level on the stack.
-    level = level + 1
+user_config_dict = {} # A dict of dicts containing the config file contents, if used.
 
-    print("DEBUG noclobber is now", noclobber)
-
-    def insert_in_dict(d, name, value, noclobber):
-        """Insert (name, value) in dict d checking for noclobber."""
-        print("DEBUG called insert fun, noclobber is", noclobber)
-        if noclobber and name in d:
-            print("DEBUG insert fun if, raising, noclobber is", noclobber)
-            raise PytestHelperException("The pytest_helper function auto_import"
-                    "\nattempted an overwrite with noclobber set.  The attribute"
-                    " is: " + name)
-        print("DEBUG setting in insert")
-        d[name] = value
-
-    g = get_calling_fun_globals_dict(level=level)
-
-    for name, value in AUTO_IMPORT_INITIAL_DEFAULTS:
-        insert_in_dict(g, name, value, noclobber)
-
-    ## Pytest itself, imported as pytest, not py.test
-    #insert_in_dict(g, "pytest", py.test)
-
-    ## Functions from pytest.
-    #insert_in_dict(g, "raises", raises)
-    #insert_in_dict(g, "fail", fail)
-    #insert_in_dict(g, "fixture", fixture)
-    #insert_in_dict(g, "skip", skip)
-
-    ## Functions and classes from this module.
-    ##insert_in_dict(g, "script_run", script_run)
-    ##insert_in_dict(g, "sys_path", sys_path)
-    ##insert_in_dict(g, "init", init)
-    #insert_in_dict(g, "locals_to_globals", locals_to_globals)
-    #insert_in_dict(g, "clear_locals_from_globals", clear_locals_from_globals)
-    return
-
-def init(set_package=False, level=2):
+def init(conf=False, set_package=False, calling_mod_name=None,
+                                        calling_mod_path=None, level=2):
     """A function to initialize the `pytest_helper` module just after importing
     it.  This function is currently only necessary in rare cases where Python's
     current working directory (CWD) is changed between the time when the
@@ -306,7 +240,19 @@ def init(set_package=False, level=2):
        # Set the __PACKAGE__ attribute for module __main__ (if there is one).
        import set_package_attribute # TODO can't find from symlinks... need pip or path mods...
 
-    get_calling_module_info(level=level) # This caches the module info.
+    # The get_calling_module_info function also caches any module info.
+    mod_info = get_calling_module_info(module_name=calling_mod_name,
+                                       module_path=calling_mod_path, level=level)
+    calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
+
+    if conf and ALLOW_USER_CONFIG_FILES:
+        config_filename = get_config_file_pathname(calling_mod_dir)
+        if config_filename:
+            user_config_dict = read_and_eval_config_file(config_filename, calling_mod)
+        else:
+            if FAIL_ON_MISSING_CONFIG:
+                raise PytestHelperException("Config file specified but"
+                        " not found in directory tree.")
     return
 
 #
@@ -427,6 +373,78 @@ class LocalsToGlobalsError(PytestHelperException):
     """Raised only when there is an error related to the `locals_to_globals`
     operations."""
     pass
+
+
+# BEST WAY if NO eval:
+# ---> If you require a module name string also then you can use getattr instead
+# of having to use eval:
+#   if module_name = "pytest_helper": module_name = __name__ # This module.
+#   module = sys.modules["foo.bar"] # ADD TEST IF NOT THERE
+#   value = getattr(module, "name_orig")
+#   insert_in_dict(g, name_new, value, noclobber)
+# where you look up the module from its name.... consider.  Then put that in
+# the relevant globals() dict.
+# So update them all to look like: ("fail", "fail", "py.test"),
+#
+# BUT this can FAIL if the module name is __main__ instead of expected name!
+# BUT you don't need to import from current namespace, anyway, when using auto_import.
+
+AUTO_IMPORT_DEFAULT_DEFAULTS = [("pytest", py.test), # (<nameToImportAs>, <value>)
+                                ("raises", py.test.raises),
+                                ("fail", py.test.fail),
+                                ("fixture", py.test.fixture),
+                                ("skip", py.test.skip),
+                                ("xfail", py.test.xfail),
+                                ("locals_to_globals", locals_to_globals),
+                                ("clear_locals_from_globals", clear_locals_from_globals)
+                                ]
+
+@subst_user_config_default_params # Remove level increment if removing decorator!
+def auto_import(imports=AUTO_IMPORT_DEFAULT_DEFAULTS, skip=None, noclobber=True,
+                level=2):
+    """This function imports some pytest-helper and pytest attributes into the
+    calling module's global namespace.  This avoids having to explicitly do
+    common imports.  A `PytestHelperException` will be raised if any of those
+    globals already exist, unless `noclobber` is set false.
+
+    The `imports` option is a list of (name,value) pairs to import automatically.
+    Since using it each time would be as much trouble as doing the imports,
+    explicitly, it is mainly meant to be set in configuration files.  The `skip`
+    option is a list of names to skip in importing, if just one or two are causing
+    problems locally to a file.
+    
+    The default variables that are imported from the `pytest_helper` module are
+    `locals_to_globals`, and `clear_locals_from_globals`.  The module `py.test`
+    is imported as the single name `pytest`.  The functions from pytest that
+    are imported by default are `raises`, `fail`, `fixture`, and `skip`, and
+    `xfail`."""
+
+    print("DEBUG imports arg is", imports)
+    
+    # This `level` increment is ONLY for when the `subst_user_config_default_params`
+    # decorator is used, since the decorator wrapper adds one level on the stack.
+    level = level + 1
+
+    print("DEBUG noclobber is now", noclobber)
+
+    def insert_in_dict(d, name, value, noclobber):
+        """Insert (name, value) in dict d checking for noclobber."""
+        print("DEBUG called insert fun, noclobber is", noclobber)
+        if noclobber and name in d:
+            print("DEBUG insert fun if, raising, noclobber is", noclobber)
+            raise PytestHelperException("The pytest_helper function auto_import"
+                    "\nattempted an overwrite with noclobber set.  The attribute"
+                    " is: " + name)
+        print("DEBUG setting in insert")
+        d[name] = value
+
+    g = get_calling_fun_globals_dict(level=level)
+
+    for name, value in imports:
+        if skip and name in skip: continue
+        insert_in_dict(g, name, value, noclobber)
+
+    return
 
 #
 # Utility functions.
@@ -600,85 +618,94 @@ def get_calling_module(level=2):
 # Config file locating and reading functions.
 #
 
-USE_USER_CONFIG_FILE = True # Setting False turns off even looking for a config file.
-CONFIG_FILE_NAME = "pytest_helper.ini"
-USER_CONFIG = {} # A dict of dicts containing the config file contents, if used.
-
-AUTO_IMPORT_INITIAL_DEFAULTS = [("pytest", py.test),
-                                ("raises", raises),
-                                ("fail", fail),
-                                ("fixture", fixture),
-                                ("skip", skip),
-                                ("locals_to_globals", locals_to_globals),
-                                ("clear_locals_from_globals", clear_locals_from_globals)
-                                ]
-
 def get_importing_module_filename(level=2):
     """Run this during the initialization of a module to return the absolute pathname
-    of the module which is importing the module currently being imported."""
+    of the module which is importing the module that is currently being imported."""
     module_filename = inspect.getframeinfo(
                       inspect.getouterframes(inspect.currentframe())[level][0])[0]
     return os.path.abspath(module_filename)
 
-# TODO need separate package name for each different package that may import it???
-# what if a package is using another package that also imports it?????
-# What about when a test package imports it, but the test dir is not part of
-# the package????
-
-# --> Maybe REQUIRE the use of the init call in order to read the default config
-# file????  Then called on each import statement, not just on the first one.
-# THEN just use __package__ to keep a dict of the ones looked up, or have
-# a package option for test dir, since OTHERWISE IT DOESN'T KNOW WHERE TO LOOK.
-
-def get_config_file():
+def get_config_file_pathname(calling_module_dir):
     """Get the full pathname of the configuration file, returning `None` if
-    not found.  If inside a package then go up the directory tree to the root of
-    the Python package and look there.  Otherwise, only look in the importing
-    module's directory."""
+    nothing was found.  Go up the directory tree to the root of the first
+    Python package encountered or else to the top-level root directory if no
+    packages are encountered, taking the first file found with the correct
+    name.  Otherwise, only look in the importing module's directory."""
+
     # TODO: update for use with the init function.
     # path to look, in order, first draft:
     # - explicit pathname
     # - dir of importing module
-    # - path up to root of package (note can't cache unless always at top)
+    # - path up dir tree until root of package
     # - parent dir or its path up to package root (if test dir, no __init__)
     #
     # In each dir, look first for pytest_helper.ini and then for .pytest_helper.ini
-    importing_module = get_importing_module_filename()
-    print("DEBUG importing module is", importing_module)
-    dirname, name = os.path.split(importing_module)
 
-    # Go up the package directory tree if inside a package.
-    while (os.path.exists(os.path.join(dirname, "__init__.py")) and
-           os.path.exists(os.path.join(dirname, "..", "__init__.py"))):
-        dirname, name = os.path.split(dirname) 
-    
-    config_path = os.path.join(dirname, CONFIG_FILE_NAME)
-    print("DEBUG config path is", config_path)
+    dirname = calling_module_dir # Start looking in calling module's dir.
 
-    if os.path.exists(config_path):
-        return config_path
-    else:
-        return None
+    # Go up the directory tree.
+    in_package = False
+    while True:
+        if os.path.exists(os.path.join(dirname, "__init__.py")):
+            in_package = True
 
-def read_config_file(filename):
-    """Return a dict of dicts with a dict of parameter arguments for each
-    section of the config file."""
+        for config_name in CONFIG_FILE_NAMES:
+            config_path = os.path.join(dirname, config_name)
+            print("DEBUG config path being tested is", config_path)
+            if os.path.exists(config_path):
+                return config_path
+
+        dirname, name = os.path.split(dirname) # Go up one dir.
+
+        if not name: # If no subdir name then we were at root dir.
+            return None
+        if in_package and not os.path.exists(os.path.join(dirname, "__init__.py")):
+            return None # Past the top of a package, nothing found.
+
+def read_and_eval_config_file(filename, calling_mod):
+    """Return a dict of dicts containing a dict of parameter arguments for each
+    section of the config file, with the evaluated value."""
     config = ConfigParser()
     config.read(filename)
+
+    # Convert the ConfigParser format into a regular dict of dicts.
     config_dict = { s:dict(config.items(s)) for s in config.sections() }
+
+    # Evaluate each string within each config file section.
+    for section, subdict in config_dict.items():
+        for key, value in subdict.items():
+            try:
+                config_dict[key] = eval(value, globals())
+            except NameError:
+                err_string = ("NameError in config file."
+                              "\nThe section is '{0}', the key is '{1}',"
+                              " and the value is '{2}'."
+                              .format(section, key, value))
+                print(err_string)
+                raise PytestHelperException(err_string)
+            except SyntaxError:
+                err_string = ("SyntaxError in config file."
+                              "\nThe section is '{0}', the key is '{1}',"
+                              " and the value is '{2}'."
+                              .format(section, key, value))
+                print(err_string)
+                raise PytestHelperException(err_string)
+            #except ValueError:
+            #    err_string = ("ValueError in config file."
+            #                  "\nThe section is '{0}', the key is '{1}',"
+            #                  " and the value is '{2}'."
+            #                  .format(section, key, value))
+            #    print(err_string)
+            #    raise PytestHelperException(err_string)
+
     print("DEBUG config dict is", config_dict)
     return config_dict
-
-# TODO: move this to the init function, and change the rest of the stuff to match
-if USE_USER_CONFIG_FILE:
-    config_filename = get_config_file()
-    if config_filename:
-        USER_CONFIG = read_config_file(config_filename)
 
 #
 # Test this file when invoked as a script.
 #
 
 if __name__ == "__main__": # This guard is optional, but slightly more efficient.
+    init(conf=True) # TODO remove this or set a real config file in path
     script_run("test", pytest_args="-v")
 
