@@ -198,9 +198,12 @@ These functions are used to help in writing the tests themselves.
 
    The `auto_import` function is a convenience function that automatically imports
    certain pytest-helper and pytest functions into the calling module's global
-   namespace.  It imports the `py.test` module as `pytest`.  From pytest-helper it
-   imports `locals_to_globals`, and `clear_locals_from_globals`.  From pytest it
-   imports `raises`, `fail`, `fixture`, and `skip`.
+   namespace.  The names can then be used like builtins in the test code.
+   
+   By default this function imports the `py.test` module as `pytest`.  From
+   pytest-helper it imports `locals_to_globals`, and
+   `clear_locals_from_globals`.  From pytest it imports `raises`, `fail`,
+   `fixture`, `skip`, and `xskip`.
 
    This function is usually called without arguments::
 
