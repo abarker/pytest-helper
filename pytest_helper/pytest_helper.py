@@ -17,23 +17,10 @@ framework.
 # use the same config file if they allow arbitrary sections to be added.
 # https://pytest.org/latest/customize.html
 #
-# WORKS OK now, for basic tests, but better still to integrate with pytest ini
-# stuff.
-# ---> pytest does NOT look for dotted files at all, so remove from list
-#
-# ---> Stuff is saved in different dir for later if desired; maybe just
-#      rip out all but a few options and document those.  Not many are
-#      all that important.  Just go up the dir tree, as now.  Still need
-#      to eval the autoimports list.  Only overrides are really needed
-#      for those autoimports.
-#
 # ---> You can set pytest options in pytest.ini file, but might not hurt
 #      to also allow in pytest_helper.ini file.
 #
 # ---> Setting set_package from the init function would also be useful.
-#
-# --> The decorator might be useful for testing in general... could maybe
-#     make a separate module and allow it to be imported, too.
 
 from __future__ import print_function, division, absolute_import
 import inspect
@@ -49,111 +36,9 @@ pytest = py.test # Alias, usable in config files.
 
 ALLOW_USER_CONFIG_FILES = True # Setting False turns off even looking for a config file.
 CONFIG_FILE_NAMES = ["pytest_helper.ini"] # List of filenames, searched for in order.
-FAIL_ON_MISSING_CONFIG = True # Raise exception if specified but not found.
-CONFIG_DEFAULT_SUFFIX = "_defaults"
-CONFIG_OVERRIDE_SUFFIX = "_overrides"
+FAIL_ON_MISSING_CONFIG = False # Raise exception if config file enabled but not found.
+CONFIG_SECTION_STRING = "pytest_helper" # Label for active section of the config file.
 
-def process_args(f, args, kwargs, arg_names, arg_indices, name_to_index,
-                 has_default, default_vals):
-    """Modify arguments in the wrapper to f.  Code here executes at runtime,
-    not define-time.  Return the modified args and kwargs.  Convenience
-    arguments are also passed, calculated once at define-time."""
-    # Handle special case where calling_mod_name, calling_mod_path, or level
-    # is passed.
-    calling_mod_name = None
-    cmn_index = name_to_index.get("calling_mod_name")
-    if cmn_index is not None:
-        if "calling_mod_name" in kwargs: calling_mod_name = kwargs["calling_mod_name"]
-        elif len(args) > cmn_index: calling_mod_name = args[cmn_index]
-        else: calling_mod_name = default_vals[cmn_index]
-
-    calling_mod_path = None
-    cmp_index = name_to_index.get("calling_mod_path")
-    if cmp_index is not None:
-        if "calling_mod_path" in kwargs: calling_mod_path = kwargs["calling_mod_path"]
-        elif len(args) > cmp_index: calling_mod_path = args[cmp_index]
-        else: calling_mod_path = default_vals[cmp_index]
-
-    # Every fun f must have a level argument.
-    lvl_index = name_to_index.get("level")
-    if "level" in kwargs: level = kwargs["level"]
-    elif len(args) > lvl_index: level = args[lvl_index]
-    else: level = default_vals[lvl_index]
-
-    # Look up the module info.
-    mod_info = get_calling_module_info(module_name=calling_mod_name,
-                                       module_path=calling_mod_path,
-                                       level=level
-                                       )
-    calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
-
-    # Get the dict of module config parameters.
-    calling_mod_config_dict = get_config(calling_mod_path, calling_mod_dir)
-
-    # Look up any default config settings for the calling module.
-    config_section_defaults = f.__name__ + CONFIG_DEFAULT_SUFFIX
-
-    user_default_params_for_f = calling_mod_config_dict.get(
-                                               config_section_defaults, {})
-    
-    # Look up any overrides and update new_kwargs_dict if so.
-    config_section_overrides = f.__name__ + CONFIG_OVERRIDE_SUFFIX
-    user_override_params_for_f = calling_mod_config_dict.get(
-                                              config_section_overrides, {})
-
-    # If user didn't define config values, just call f normally.
-    if not user_default_params_for_f and not user_override_params_for_f:
-        return args, kwargs
-
-    # TODO: Check for bad arguments in config file, not matching argspec.
-    new_args_list = list(args)
-    new_kwargs_dict = dict(kwargs)
-
-    # Substitute any default config arguments.
-    for param_name in arg_names[len(args):]: # ignore if passed as *arg
-        if param_name in user_default_params_for_f and param_name not in kwargs:
-            new_kwargs_dict[param_name] = user_default_params_for_f[param_name]
-
-    # Override any override config arguments.
-    for count, param_name in enumerate(arg_names):
-        if param_name in user_override_params_for_f:
-            if count < len(args):
-                new_args_list[count] = user_override_params_for_f[param_name]
-            else:
-                new_kwargs_dict[param_name] = user_override_params_for_f[param_name]
-
-    return new_args_list, new_kwargs_dict
-
-def subst_user_config_params(f):
-    """A decorator to implement user-defined defaults for the kwargs.  For each
-    user-defined default kwarg value, pass that value *except* if the corresponding
-    kwarg was passed as an actual argument.  Does not work when `*args` or `**kwargs`
-    are explicitly declared."""
-    # Note code in this outer level runs at function define-time, not runtime.
-
-    # Get some properties of f to make available, after define-time processing, to
-    # the runtime of wrapper.
-    arg_names = inspect.getargspec(f)[0] # Visible in closure of wrapper.
-    name_to_index = {}
-    for count, name in enumerate(arg_names): name_to_index[name] = count
-    default_vals_only = inspect.getargspec(f)[3] # Visible in closure of wrapper.
-    arg_indices = range(len(arg_names)) # Index over all arg names.
-    has_default = [False] * len(arg_names)
-    for i in range(len(default_vals_only)): has_default[-(i-1)] = True
-    default_vals = [None] * len(arg_names)
-    for i in range(len(default_vals_only)): default_vals[-(i-1)] = default_vals_only[-(i-1)]
-
-    @functools.wraps(f)
-    def wrapper(*args, **kwargs):
-        new_args_list, new_kwargs_dict = process_args(f, args, kwargs,
-                    arg_names, arg_indices, name_to_index, has_default, default_vals)
-        # Return the wrapped function passed the modified arguments.
-        print(new_args_list, new_kwargs_dict)
-        return f(*new_args_list, **new_kwargs_dict)
-
-    return wrapper
-
-@subst_user_config_params # Remove level increment if removing decorator!
 def script_run(testfile_paths=None, self_test=False, pytest_args=None,
                calling_mod_name=None, calling_mod_path=None, exit=True,
                always_run=False, level=2):
@@ -192,16 +77,18 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None,
     The parameter `level` is the level up the calling stack to look for the
     calling module and should not usually need to be set."""
 
-    # This `level` increment is ONLY for when the `subst_user_config_params`
-    # decorator is used, since the decorator wrapper adds one level on the stack.
-    level = level + 1
-
     mod_info = get_calling_module_info(module_name=calling_mod_name,
                                        module_path=calling_mod_path, level=level)
     calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
 
     if calling_mod_name != "__main__":
         if not always_run: return
+
+    # Override arguments with any values set in the config file.
+    pytest_args = get_config_value("script_run_pytest_args", pytest_args,
+                                             calling_mod_path, calling_mod_dir)
+    testfile_paths = get_config_value("script_run_testfile_paths", testfile_paths,
+                                             calling_mod_path, calling_mod_dir)
 
     if isinstance(testfile_paths, str):
         testfile_paths = [testfile_paths]
@@ -229,9 +116,9 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None,
 
 previous_sys_path_list = None # Save the sys.path before modifying it, to restore it.
 
-@subst_user_config_params # Remove level increment if removing decorator!
 def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
-             add_gn_parent=False, add_self=False, calling_mod_dir=None, level=2):
+             add_gn_parent=False, add_self=False, calling_mod_name=None, 
+             calling_mod_path=None, level=2):
     """Add the canonical absolute pathname of each directory in the list
     `dirs_to_add` to `sys.path` (but only if it isn't there already).  A single
     string representing a path can also be passed to `dirs_to_add`.  Relative
@@ -246,17 +133,24 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
     true then the directory of the calling module is added to the system
     `sys.path` list.
     
-    The parameter `calling_mod_dir` can be set as a fallback in case the
-    introspection for finding the calling module's directory fails for some
-    reason.  The parameter `level` is the level up the calling stack to look
-    for the calling module and should not usually need to be set."""
+    The parameters `calling_mod_name` and `calling_mod_dir` can be set as a
+    fallback in case the introspection for finding the calling module's
+    information fails for some reason.  The parameter `level` is the level up
+    the calling stack to look for the calling module and should not usually
+    need to be set."""
 
-    # This `level` increment is ONLY for when the `subst_user_config_params`
-    # decorator is used, since the decorator wrapper adds one level on the stack.
-    level = level + 1
+    # We really only need calling_mod_dir as a fallback *except* when config
+    # files are used we also need to know the module path, since config info
+    # is looked up and saved per-module.
+    mod_info = get_calling_module_info(module_name=calling_mod_name,
+                                       module_path=calling_mod_path, level=level)
+    calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
 
-    if not calling_mod_dir:
-        calling_mod_dir = get_calling_module_info(level=level)[3]
+    # Override arguments with any values set in the config file.
+    dirs_to_add = get_config_value("sys_path_dirs_to_add", dirs_to_add,
+                                             calling_mod_path, calling_mod_dir)
+    add_gn_parent = get_config_value("script_run_add_gn_parent", add_gn_parent,
+                                             calling_mod_path, calling_mod_dir)
 
     if dirs_to_add is None:
         dirs_to_add = []
@@ -266,7 +160,7 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
         dirs_to_add.append("..")
     if add_grandparent:
         dirs_to_add.append(os.path.join("..",".."))
-    if add_gn_parent:
+    if add_gn_parent is not False:
         try:
             g_level = int(add_gn_parent)
         except TypeError:
@@ -310,7 +204,7 @@ def restore_previous_sys_path():
     return
 
 
-def init(conf=False, set_package=False, calling_mod_name=None,
+def init(set_package=False, conf=True, calling_mod_name=None,
                                         calling_mod_path=None, level=2):
     """A function to initialize the `pytest_helper` module just after importing
     it.  This function is currently only necessary in rare cases where Python's
@@ -332,12 +226,11 @@ def init(conf=False, set_package=False, calling_mod_name=None,
         
         pytest_helper.init()
         import set_package_attribute
-        
+       
+    If the parameter `conf` is set false then no configuration files will be
+    searched for or used.
     """
 
-    if set_package:
-       # Set the __PACKAGE__ attribute for module __main__ (if there is one).
-       import set_package_attribute # TODO can't find from symlinks... need pip or path mods...
 
     # The get_calling_module_info function caches module info, including the
     # calling_mod_path, as a side effect.
@@ -345,12 +238,18 @@ def init(conf=False, set_package=False, calling_mod_name=None,
                                        module_path=calling_mod_path, level=level)
     calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
 
-    # Read in the configuration file.
-    if conf and ALLOW_USER_CONFIG_FILES:
-        get_config(calling_mod_path, calling_mod_dir, enable=True)
+    # Override arguments with any values set in the config file.
+    set_package = get_config_value("init_set_package", set_package,
+                                             calling_mod_path, calling_mod_dir)
 
-    value = get_config_value("noclobber", "default", calling_mod_path, calling_mod_dir)
-    print("YYYYYYYYYY  Looked up value is", value)
+    if set_package:
+       # Set the __PACKAGE__ attribute for module __main__ (if there is one).
+       import set_package_attribute # TODO can't find from symlinks... need pip or path mods...
+
+    # Read in the configuration file.
+    if not conf or not ALLOW_USER_CONFIG_FILES:
+        get_config(calling_mod_path, calling_mod_dir, disable=True)
+
     return
 
 #
@@ -486,19 +385,18 @@ class LocalsToGlobalsError(PytestHelperException):
 # BUT this can FAIL if the module name is __main__ instead of expected name!
 # BUT you don't need to import from current namespace, anyway, when using auto_import.
 
-AUTO_IMPORT_DEFAULT_DEFAULTS = [("pytest", py.test), # (<nameToImportAs>, <value>)
-                                ("raises", py.test.raises),
-                                ("fail", py.test.fail),
-                                ("fixture", py.test.fixture),
-                                ("skip", py.test.skip),
-                                ("xfail", py.test.xfail),
-                                ("locals_to_globals", locals_to_globals),
-                                ("clear_locals_from_globals", clear_locals_from_globals)
-                                ]
+AUTO_IMPORT_DEFAULTS = [("pytest", py.test), # (<nameToImportAs>, <value>)
+                        ("raises", py.test.raises),
+                        ("fail", py.test.fail),
+                        ("fixture", py.test.fixture),
+                        ("skip", py.test.skip),
+                        ("xfail", py.test.xfail),
+                        ("locals_to_globals", locals_to_globals),
+                        ("clear_locals_from_globals", clear_locals_from_globals)
+                       ]
 
-@subst_user_config_params # Remove level increment if removing decorator!
-def auto_import(noclobber=True, skip=None, imports=AUTO_IMPORT_DEFAULT_DEFAULTS,
-                level=2):
+def auto_import(noclobber=True, skip=None, imports=AUTO_IMPORT_DEFAULTS,
+                calling_mod_name=None, calling_mod_path=None, level=2):
     """This function imports some pytest-helper and pytest attributes into the
     calling module's global namespace.  This avoids having to explicitly do
     common imports.  A `PytestHelperException` will be raised if any of those
@@ -517,9 +415,17 @@ def auto_import(noclobber=True, skip=None, imports=AUTO_IMPORT_DEFAULT_DEFAULTS,
     are imported by default are `raises`, `fail`, `fixture`, and `skip`, and
     `xfail`."""
 
-    # This `level` increment is ONLY for when the `subst_user_config_params`
-    # decorator is used, since the decorator wrapper adds one level on the stack.
-    level = level + 1
+    mod_info = get_calling_module_info(module_name=calling_mod_name,
+                                       module_path=calling_mod_path, level=level)
+    calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
+
+    # Override arguments with any values set in the config file.
+    noclobber = get_config_value("autoimport_noclobber", noclobber,
+                                             calling_mod_path, calling_mod_dir)
+    imports = get_config_value("autoimport_imports", imports,
+                                             calling_mod_path, calling_mod_dir)
+    skip = get_config_value("autoimport_skip", skip,
+                                             calling_mod_path, calling_mod_dir)
 
     def insert_in_dict(d, name, value, noclobber):
         """Insert (name, value) in dict d checking for noclobber."""
@@ -797,41 +703,32 @@ def read_and_eval_config_file(filename):
     return config_dict
 
 per_module_config_dict = {} # Cache the config dict for each module by module filename.
-config_enabled_modules = {} # Save booleans for which modules look for config.
+config_disabled_modules = {} # Save booleans for which modules look for config.
 config_dict_cache = {} # Cache config dicts by their filenames (save space and time).
 
-def get_config(calling_mod_path, calling_mod_dir, enable=False):
-
+def get_config(calling_mod_path, calling_mod_dir, disable=False):
     """Return the configuration corresponding to the module with pathname
     `calling_mod_path`.  Return an empty dict if no config is found.  Caches
     its values based on pathnames of module (to avoid problems with `__main__`
     when run as a script) as well as on the pathnames of config files.  If
     nothing is found in the cache, it looks for the file and reads it in if
-    possible.  If `enable` is not set for a module (called once with enable
-    set) then it will always return an empty dict for the given module and skip
-    searching for the file."""
+    possible.  If `disable` is set for a module then it will always return an
+    empty config dict for the given module and skip searching for the file."""
 
     # TODO, maybe: Could speed up even more by using a cache on each pathname
     # up to the config file.  A bit more space but faster.
 
     cache_key = calling_mod_path # Use pathname to avoid __main__ problems.
 
-    # Enable the module if that flag is set.
-    if enable:
-        print("ENABLE ================ cache_key is", cache_key)
-        config_enabled_modules[cache_key] = True
-
-    print("SEARCH ============= cache key is", cache_key)
+    # Disable config files for the module if that flag is set.
+    if disable:
+        config_disabled_modules[cache_key] = True
 
     # If module not enabled (by current or prev call with enable=True) return empty.
-    if cache_key not in config_enabled_modules:
-        print("CACHE KEY NOT FOUND IN ENABLED", config_enabled_modules)
+    if cache_key in config_disabled_modules:
         return {}
 
-    print("CACHE KEY FOUND IN ENABLED", config_enabled_modules)
-
     if cache_key in per_module_config_dict: # Look in per-module cache.
-        print("CACHE KEY FOUND IN per_module_config_dict")
         config_dict = per_module_config_dict[cache_key]
 
     else: # If not in per-module cache, look for a config file.
@@ -843,7 +740,6 @@ def get_config(calling_mod_path, calling_mod_dir, enable=False):
         elif config_file_path: # Some path was set.
             config_dict = read_and_eval_config_file(config_file_path)
             config_dict_cache[config_file_path] = config_dict
-            print("READ CONFIG FILE ==========")
         else: # Returned None from config_file_path.
             if FAIL_ON_MISSING_CONFIG:
                 raise PytestHelperException("Config file specified but"
@@ -856,22 +752,16 @@ def get_config(calling_mod_path, calling_mod_dir, enable=False):
 
     return config_dict
 
-#CONFIG_SECTION_STRING = "pytest_helper"
-CONFIG_SECTION_STRING = "auto_import_defaults"
-
 def get_config_value(config_key, default, calling_mod_path, calling_mod_dir):
     """Return the config value from the config file corresponding to the key
     `config_key`.  Return the value `default` if no config value is set."""
     config_dict = get_config(calling_mod_path, calling_mod_dir)
-    print("WWW config dict is", config_dict)
 
-    print("WWW config dict is", config_dict)
     if CONFIG_SECTION_STRING in config_dict:
         config_dict = config_dict[CONFIG_SECTION_STRING]
     else:
         return default
 
-    print("WWW config dict is", config_dict)
     if config_key in config_dict:
         return config_dict[config_key]
     else:
@@ -881,10 +771,10 @@ def get_config_value(config_key, default, calling_mod_path, calling_mod_dir):
 # Test this file when invoked as a script.
 #
 
-init(conf=True, set_package=True) # TODO remove this or set a real config file in path
+init(set_package=True) # TODO remove this or set a real config file in path
 if __name__ == "__main__": # This guard is optional, but slightly more efficient.
-    #script_run("test", pytest_args="-v")
-    script_run(self_test=True, pytest_args="-v", exit=True)
+    script_run("test", pytest_args="-v")
+    #script_run(self_test=True, pytest_args="-v -s", exit=True)
 
 auto_import()
 #print("skipped is", skip)
@@ -893,5 +783,5 @@ def test_config():
     #fail()
     print("skipped inside fun is", skip)
     #fail()
-    #skip()
+    skip()
 
