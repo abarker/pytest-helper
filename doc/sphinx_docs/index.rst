@@ -3,6 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. thing TODO: include the github command to clone or else the zipped file pathname.
+
 ===============================
 pytest-helper
 ===============================
@@ -326,7 +328,46 @@ pathname.
 Configuration files
 ===================
 
-The use of `init` is required.
+Several of the pytest-helper functions have arguments which can be overridden
+by values in a configuration file.  The file must be named `pytest_helper.ini`,
+and each module separately searches for and parses a file with that name.
+(Config files are loaded per-module since many different modules across
+different packages may import and use the pytest-helper functions.)  The search
+conducted from the directory of the module up to the root directory, taking the
+first such file encountered.  Caching is used to speed up the process.  Locating
+and using config files can be disabled altogether by passing the argument `conf=False`
+to the `init` function::
+
+   import pytest_helper
+   init(conf=False)
+
+Below is an example `pytest_helper.ini` configuration, which sets a value for
+all the options which are settable from the config file.  Any other sections of
+the file or options are silently ignored.  The options are all constructed from
+the name of the function concatanated with the name of the parameter they
+override
+
+::
+
+   [pytest_helper]
+
+   init_set_package = True
+
+   script_run_pytest_args = "-v -s"
+
+   sys_path_add_gn_parent = 2
+
+   autoimport_noclobber = False
+   autoimport_skip = ["pytest", "locals_to_globals"]
+   autoimport_imports = [("pytest", py.test),
+                         ("raises", py.test.raises),
+                         ("fail", py.test.fail),
+                         ("fixture", py.test.fixture),
+                         ("skip", py.test.skip),
+                         ("xfail", py.test.xfail),
+                         ("locals_to_globals", locals_to_globals),
+                         ("clear_locals_from_globals", clear_locals_from_globals)
+                        ]
 
 Module contents
 ===============

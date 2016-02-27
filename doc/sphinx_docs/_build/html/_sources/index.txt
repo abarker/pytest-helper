@@ -3,6 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. thing TODO: include the github command to clone or else the zipped file pathname.
+
 ===============================
 pytest-helper
 ===============================
@@ -46,7 +48,9 @@ at all).  This is especially true for beginners.
 Below is a simple example to illustrate the idea.  This is a Python module
 which is possibly part of a larger package.  It contains its own test functions
 at the bottom.  Whenever the module is run as a script the tests will be run
-with pytest; otherwise the module runs normally. ::
+with pytest; otherwise the module runs normally.  So as the module is being
+written or modified the developer can execute the file and see the results of
+the pytest tests for the module, as well as add tests to the file. ::
 
    import pytest_helper
 
@@ -78,7 +82,8 @@ with pytest; otherwise the module runs normally. ::
    
 There are more examples in the :ref:`Examples` section below, including the
 case where tests to be run are in separate files and the case of a test file
-itself, located in a separate test directory.
+itself, located in a separate test directory.  It is easy to move tests
+originally written inside the module being tested to a separate test file.
 
 Some of the provided helper functions are general-purpose, but several are
 specific to the `pytest <http://pytest.org>`_ testing framework.  The functions
@@ -165,7 +170,7 @@ test file.
    function should be called directly after importing `pytest_helper`::
 
       import pytest_helper
-      pytest_helper.init(set_package=True)
+      pytest_helper.init()
 
    Using an early `init` call provides the additional benefit of making sure
    that the introspective lookup of the calling-module's path will continue to
@@ -183,9 +188,9 @@ test file.
 
       import set_package_attribute
 
-   An alternate way to do the same thing is to pass a keyword argument to the
-   optional pytest-helper initialization function just after importing
-   `pytest_helper`, as described above.
+   An alternate way to do the same thing is to call the optional pytest-helper
+   initialization function just after importing `pytest_helper`, as described
+   above, using the keyword argument `set_package=True`.
 
 See :ref:`help_running` for detailed documentation of these functions.
 
@@ -198,9 +203,12 @@ These functions are used to help in writing the tests themselves.
 
    The `auto_import` function is a convenience function that automatically imports
    certain pytest-helper and pytest functions into the calling module's global
-   namespace.  It imports the `py.test` module as `pytest`.  From pytest-helper it
-   imports `locals_to_globals`, and `clear_locals_from_globals`.  From pytest it
-   imports `raises`, `fail`, `fixture`, and `skip`.
+   namespace.  The names can then be used like builtins in the test code.
+   
+   By default this function imports the `py.test` module as `pytest`.  From
+   pytest-helper it imports `locals_to_globals`, and
+   `clear_locals_from_globals`.  From pytest it imports `raises`, `fail`,
+   `fixture`, `skip`, and `xskip`.
 
    This function is usually called without arguments::
 
@@ -247,8 +255,8 @@ difference.
 Whenever `script_run` is called in the examples below the optional `if __name__
 == "__main__"` guard conditional is not used.  This is slightly less efficient
 (including in ordinary code runs) since the module's name then has to be looked
-up by introspection to see if anything should be done.  You can always
-explicitly use the guard conditional around calls to `script_run`.
+up by introspection to see if anything should be done.  The guard conditional
+can always be explicitly used around calls to `script_run`.
 
 * **Running tests in separate test files and test directories.**
 
@@ -320,7 +328,46 @@ pathname.
 Configuration files
 ===================
 
-The use of `init` is required.
+Several of the pytest-helper functions have arguments which can be overridden
+by values in a configuration file.  The file must be named `pytest_helper.ini`,
+and each module separately searches for and parses a file with that name.
+(Config files are loaded per-module since many different modules across
+different packages may import and use the pytest-helper functions.)  The search
+conducted from the directory of the module up to the root directory, taking the
+first such file encountered.  Caching is used to speed up the process.  Locating
+and using config files can be disabled altogether by passing the argument `conf=False`
+to the `init` function::
+
+   import pytest_helper
+   init(conf=False)
+
+Below is an example `pytest_helper.ini` configuration, which sets a value for
+all the options which are settable from the config file.  Any other sections of
+the file or options are silently ignored.  The options are all constructed from
+the name of the function concatanated with the name of the parameter they
+override
+
+::
+
+   [pytest_helper]
+
+   init_set_package = True
+
+   script_run_pytest_args = "-v -s"
+
+   sys_path_add_gn_parent = 2
+
+   autoimport_noclobber = False
+   autoimport_skip = ["pytest", "locals_to_globals"]
+   autoimport_imports = [("pytest", py.test),
+                         ("raises", py.test.raises),
+                         ("fail", py.test.fail),
+                         ("fixture", py.test.fixture),
+                         ("skip", py.test.skip),
+                         ("xfail", py.test.xfail),
+                         ("locals_to_globals", locals_to_globals),
+                         ("clear_locals_from_globals", clear_locals_from_globals)
+                        ]
 
 Module contents
 ===============

@@ -95,7 +95,7 @@ calling module and should not usually need to be set.</p>
 
 <span class="target" id="sys-path"></span><dl class="function">
 <dt id="pytest_helper.sys_path">
-<tt class="descclassname">pytest_helper.</tt><tt class="descname">sys_path</tt><big>(</big><em>dirs_to_add=None</em>, <em>add_parent=False</em>, <em>add_grandparent=False</em>, <em>add_gn_parent=False</em>, <em>add_self=False</em>, <em>calling_mod_dir=None</em>, <em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#sys_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.sys_path" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">sys_path</tt><big>(</big><em>dirs_to_add=None</em>, <em>add_parent=False</em>, <em>add_grandparent=False</em>, <em>add_gn_parent=False</em>, <em>add_self=False</em>, <em>calling_mod_name=None</em>, <em>calling_mod_path=None</em>, <em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#sys_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.sys_path" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add the canonical absolute pathname of each directory in the list
 <tt class="code docutils literal"><span class="pre">dirs_to_add</span></tt> to <tt class="code docutils literal"><span class="pre">sys.path</span></tt> (but only if it isn&#8217;t there already).  A single
 string representing a path can also be passed to <tt class="code docutils literal"><span class="pre">dirs_to_add</span></tt>.  Relative
@@ -108,10 +108,11 @@ non-negative integer <tt class="code docutils literal"><span class="pre">n</span
 path, where (grand)<sup>1</sup>parent is the grandparent.  If <tt class="code docutils literal"><span class="pre">add_self</span></tt> is
 true then the directory of the calling module is added to the system
 <tt class="code docutils literal"><span class="pre">sys.path</span></tt> list.</p>
-<p>The parameter <tt class="code docutils literal"><span class="pre">calling_mod_dir</span></tt> can be set as a fallback in case the
-introspection for finding the calling module&#8217;s directory fails for some
-reason.  The parameter <tt class="code docutils literal"><span class="pre">level</span></tt> is the level up the calling stack to look
-for the calling module and should not usually need to be set.</p>
+<p>The parameters <tt class="code docutils literal"><span class="pre">calling_mod_name</span></tt> and <tt class="code docutils literal"><span class="pre">calling_mod_dir</span></tt> can be set as a
+fallback in case the introspection for finding the calling module&#8217;s
+information fails for some reason.  The parameter <tt class="code docutils literal"><span class="pre">level</span></tt> is the level up
+the calling stack to look for the calling module and should not usually
+need to be set.</p>
 </dd></dl>
 
 <span class="target" id="restore-previous-sys-path"></span><dl class="function">
@@ -123,7 +124,7 @@ for the calling module and should not usually need to be set.</p>
 
 <span class="target" id="init"></span><dl class="function">
 <dt id="pytest_helper.init">
-<tt class="descclassname">pytest_helper.</tt><tt class="descname">init</tt><big>(</big><em>set_package=False</em>, <em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.init" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">init</tt><big>(</big><em>set_package=False</em>, <em>conf=True</em>, <em>calling_mod_name=None</em>, <em>calling_mod_path=None</em>, <em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.init" title="Permalink to this definition">¶</a></dt>
 <dd><p>A function to initialize the <tt class="code docutils literal"><span class="pre">pytest_helper</span></tt> module just after importing
 it.  This function is currently only necessary in rare cases where Python&#8217;s
 current working directory (CWD) is changed between the time when the
@@ -144,6 +145,8 @@ function call <tt class="code docutils literal"><span class="pre">pytest_helper.
 <span class="kn">import</span> <span class="nn">set_package_attribute</span>
 </pre></div>
 </div>
+<p>If the parameter <tt class="code docutils literal"><span class="pre">conf</span></tt> is set false then no configuration files will be
+searched for or used.</p>
 </dd></dl>
 
 </div>
@@ -151,15 +154,22 @@ function call <tt class="code docutils literal"><span class="pre">pytest_helper.
 <span id="help-writing"></span><h2>Functions to help in writing tests<a class="headerlink" href="#functions-to-help-in-writing-tests" title="Permalink to this headline">¶</a></h2>
 <span class="target" id="auto-import"></span><dl class="function">
 <dt id="pytest_helper.auto_import">
-<tt class="descclassname">pytest_helper.</tt><tt class="descname">auto_import</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#auto_import"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.auto_import" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">auto_import</tt><big>(</big><em>noclobber=True, skip=None, imports=[('pytest', &lt;AliasModule 'py.test' for 'pytest'&gt;), ('raises', &lt;function raises at 0x2b598df03e60&gt;), ('fail', &lt;function fail at 0x2b598dc770c8&gt;), ('fixture', &lt;function fixture at 0x2b598ddd7d70&gt;), ('skip', &lt;function skip at 0x2b598dc77050&gt;), ('xfail', &lt;function xfail at 0x2b598df22668&gt;), ('locals_to_globals', &lt;function locals_to_globals at 0x2b598daab1b8&gt;), ('clear_locals_from_globals', &lt;function clear_locals_from_globals at 0x2b598daab230&gt;)], calling_mod_name=None, calling_mod_path=None, level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#auto_import"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.auto_import" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function imports some pytest-helper and pytest attributes into the
 calling module&#8217;s global namespace.  This avoids having to explicitly do
 common imports.  A <tt class="code docutils literal"><span class="pre">PytestHelperException</span></tt> will be raised if any of those
 globals already exist, unless <tt class="code docutils literal"><span class="pre">noclobber</span></tt> is set false.</p>
-<p>The variables that are imported from the <tt class="code docutils literal"><span class="pre">pytest_helper</span></tt> module are
+<p>The <tt class="code docutils literal"><span class="pre">imports</span></tt> option is a list of (name,value) pairs to import
+automatically.  Since using it each time would be as much trouble as doing
+the imports, explicitly, it is mainly meant to be set in configuration
+files.  In a config file the values are evaluated in the global namespace
+of <tt class="code docutils literal"><span class="pre">pytest_helper</span></tt>.  The <tt class="code docutils literal"><span class="pre">skip</span></tt> option is a list of names to skip in
+importing, if just one or two are causing problems locally to a file.</p>
+<p>The default variables that are imported from the <tt class="code docutils literal"><span class="pre">pytest_helper</span></tt> module are
 <tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt>, and <tt class="code docutils literal"><span class="pre">clear_locals_from_globals</span></tt>.  The module <tt class="code docutils literal"><span class="pre">py.test</span></tt>
 is imported as the single name <tt class="code docutils literal"><span class="pre">pytest</span></tt>.  The functions from pytest that
-are imported are <tt class="code docutils literal"><span class="pre">raises</span></tt>, <tt class="code docutils literal"><span class="pre">fail</span></tt>, <tt class="code docutils literal"><span class="pre">fixture</span></tt>, and <tt class="code docutils literal"><span class="pre">skip</span></tt>.</p>
+are imported by default are <tt class="code docutils literal"><span class="pre">raises</span></tt>, <tt class="code docutils literal"><span class="pre">fail</span></tt>, <tt class="code docutils literal"><span class="pre">fixture</span></tt>, and <tt class="code docutils literal"><span class="pre">skip</span></tt>, and
+<tt class="code docutils literal"><span class="pre">xfail</span></tt>.</p>
 </dd></dl>
 
 <span class="target" id="locals-to-globals"></span><dl class="function">

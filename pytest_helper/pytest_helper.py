@@ -13,14 +13,7 @@ framework.
 
 """
 
-# TODO pytest has ini file stuff of its own.  Maybe do the same as they do, or even
-# use the same config file if they allow arbitrary sections to be added.
-# https://pytest.org/latest/customize.html
-#
-# ---> You can set pytest options in pytest.ini file, but might not hurt
-#      to also allow in pytest_helper.ini file.
-#
-# ---> Setting set_package from the init function would also be useful.
+# TODO Add tests of the config file stuff.
 
 from __future__ import print_function, division, absolute_import
 import inspect
@@ -87,8 +80,6 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None,
     # Override arguments with any values set in the config file.
     pytest_args = get_config_value("script_run_pytest_args", pytest_args,
                                              calling_mod_path, calling_mod_dir)
-    testfile_paths = get_config_value("script_run_testfile_paths", testfile_paths,
-                                             calling_mod_path, calling_mod_dir)
 
     if isinstance(testfile_paths, str):
         testfile_paths = [testfile_paths]
@@ -147,15 +138,11 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
     calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
 
     # Override arguments with any values set in the config file.
-    dirs_to_add = get_config_value("sys_path_dirs_to_add", dirs_to_add,
-                                             calling_mod_path, calling_mod_dir)
-    add_gn_parent = get_config_value("script_run_add_gn_parent", add_gn_parent,
+    add_gn_parent = get_config_value("sys_path_add_gn_parent", add_gn_parent,
                                              calling_mod_path, calling_mod_dir)
 
-    if dirs_to_add is None:
-        dirs_to_add = []
-    if isinstance(dirs_to_add, str):
-        dirs_to_add = [dirs_to_add]
+    if dirs_to_add is None: dirs_to_add = []
+    if isinstance(dirs_to_add, str): dirs_to_add = [dirs_to_add]
     if add_parent:
         dirs_to_add.append("..")
     if add_grandparent:
@@ -238,17 +225,18 @@ def init(set_package=False, conf=True, calling_mod_name=None,
                                        module_path=calling_mod_path, level=level)
     calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
 
+    # Disable the configuration file if requested.
+    if not conf or not ALLOW_USER_CONFIG_FILES:
+        get_config(calling_mod_path, calling_mod_dir, disable=True)
+
     # Override arguments with any values set in the config file.
     set_package = get_config_value("init_set_package", set_package,
                                              calling_mod_path, calling_mod_dir)
 
     if set_package:
        # Set the __PACKAGE__ attribute for module __main__ (if there is one).
-       import set_package_attribute # TODO can't find from symlinks... need pip or path mods...
-
-    # Read in the configuration file.
-    if not conf or not ALLOW_USER_CONFIG_FILES:
-        get_config(calling_mod_path, calling_mod_dir, disable=True)
+       global set_package_attribute
+       import set_package_attribute
 
     return
 
@@ -369,21 +357,6 @@ class LocalsToGlobalsError(PytestHelperException):
     """Raised only when there is an error related to the `locals_to_globals`
     operations."""
     pass
-
-
-# BEST WAY if NO eval is used, just explicit variable lookups:
-# ---> If you require a module name string also then you can use getattr instead
-# of having to use eval:
-#   if module_name = "pytest_helper": module_name = __name__ # This module.
-#   module = sys.modules["foo.bar"] # ADD TEST IF NOT THERE
-#   value = getattr(module, "name_orig")
-#   insert_in_dict(g, name_new, value, noclobber)
-# where you look up the module from its name.... consider.  Then put that in
-# the relevant globals() dict.
-# So update them all to look like: ("fail", "fail", "py.test"),
-#
-# BUT this can FAIL if the module name is __main__ instead of expected name!
-# BUT you don't need to import from current namespace, anyway, when using auto_import.
 
 AUTO_IMPORT_DEFAULTS = [("pytest", py.test), # (<nameToImportAs>, <value>)
                         ("raises", py.test.raises),
@@ -771,12 +744,12 @@ def get_config_value(config_key, default, calling_mod_path, calling_mod_dir):
 # Test this file when invoked as a script.
 #
 
-init(set_package=True) # TODO remove this or set a real config file in path
+init(set_package=False) # TODO remove this or set a real config file in path
 if __name__ == "__main__": # This guard is optional, but slightly more efficient.
     script_run("test", pytest_args="-v")
     #script_run(self_test=True, pytest_args="-v -s", exit=True)
 
-auto_import()
+auto_import(noclobber=False)
 #print("skipped is", skip)
 #globals()["skip"] = fail
 def test_config():

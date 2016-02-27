@@ -62,6 +62,15 @@
 
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="c"># TODO pytest has ini file stuff of its own.  Maybe do the same as they do, or even</span>
+<span class="c"># use the same config file if they allow arbitrary sections to be added.</span>
+<span class="c"># https://pytest.org/latest/customize.html</span>
+<span class="c">#</span>
+<span class="c"># ---&gt; You can set pytest options in pytest.ini file, but might not hurt</span>
+<span class="c">#      to also allow in pytest_helper.ini file.</span>
+<span class="c">#</span>
+<span class="c"># ---&gt; Setting set_package from the init function would also be useful.</span>
+
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">absolute_import</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
 <span class="kn">import</span> <span class="nn">sys</span>
@@ -70,57 +79,14 @@
     <span class="kn">from</span> <span class="nn">configparser</span> <span class="kn">import</span> <span class="n">ConfigParser</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span> <span class="c"># Must be Python 2, use old names.</span>
     <span class="kn">from</span> <span class="nn">ConfigParser</span> <span class="kn">import</span> <span class="n">SafeConfigParser</span> <span class="k">as</span> <span class="n">ConfigParser</span>
-<span class="kn">import</span> <span class="nn">functools</span>
-<span class="kn">from</span> <span class="nn">py.test</span> <span class="kn">import</span> <span class="n">raises</span><span class="p">,</span> <span class="n">fail</span><span class="p">,</span> <span class="n">fixture</span><span class="p">,</span> <span class="n">skip</span>
+<span class="kn">import</span> <span class="nn">functools</span> <span class="c"># Imported just for the wraps decorator.</span>
 <span class="kn">import</span> <span class="nn">py.test</span>
+<span class="n">pytest</span> <span class="o">=</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span> <span class="c"># Alias, usable in config files.</span>
 
-<span class="c"># TODO: consider xfail, parameterize, and others for auto_import, and possible</span>
-<span class="c"># ways for users to specify the list in a once-per-project way (has to be</span>
-<span class="c"># easier than just importing).</span>
-<span class="c">#</span>
-<span class="c"># TODO, updated:</span>
-<span class="c">#  - On import the pytest_helper.py file will go up the dir tree and identify</span>
-<span class="c">#    the package root.  Just go ahead and duplicate some of the code from</span>
-<span class="c">#    set_package_attribute to keep them independent.  Note this only done</span>
-<span class="c">#    once, so assumes a common package root.</span>
-<span class="c">#  - On finding the root, it will look for a file named .pytest_helper.ini</span>
-<span class="c">#    and read that file.</span>
-<span class="c">#  - In that file, you can set any global parameters that might be defined</span>
-<span class="c">#    (can always add later and be backward compatible), as well as specify</span>
-<span class="c">#    ANY of the kwargs for ANY of the provided functions.</span>
-<span class="c">#    --&gt; Maybe better, you set the DEFAULT values from config file, so can change</span>
-<span class="c">#    for individual runs rather than always override.</span>
-<span class="c">#  - To implement the kwarg defaults, write some utility functions.  They</span>
-<span class="c">#    should pass dicts, with the argument values.  You can presumably update</span>
-<span class="c">#    a copy of the user&#39;s defaults dict with the arguments passed via locals().</span>
-<span class="c">#  - Can pass an ignore option to autoimport to just ignore one or two</span>
-<span class="c">#    in specific cases.</span>
-<span class="c">#  - Consider using the library configparser routines.</span>
-<span class="c">#</span>
-<span class="c"># TODO PROBLEMS, see below in config section.</span>
-
-<span class="k">def</span> <span class="nf">substitute_user_config_defaults</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;A decorator to implement user-defined defaults for the kwargs.  For each</span>
-<span class="sd">    user-defined default kwarg value, pass that value *except* if the corresponding</span>
-<span class="sd">    kwarg was passed as an actual argument.&quot;&quot;&quot;</span>
-    <span class="c"># Get arg names, to deal kwargs passed as regular args.</span>
-    <span class="n">arg_names_of_f</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getargspec</span><span class="p">(</span><span class="n">f</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="c"># Visible in closure of wrapper.</span>
-
-    <span class="nd">@functools.wraps</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&quot;DEBUG passed kwargs are&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">user_default_params_for_f</span> <span class="o">=</span> <span class="n">USER_CONFIG</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&quot;DEBUG user default kwargs are&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">user_default_params_for_f</span><span class="p">:</span> <span class="c"># User didn&#39;t define default values.</span>
-            <span class="k">return</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&quot;DEBUG user_default_params_for_f is&quot;</span><span class="p">,</span> <span class="n">user_default_params_for_f</span><span class="p">)</span>
-        <span class="n">new_kwargs_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">param_name</span> <span class="ow">in</span> <span class="n">arg_names_of_f</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">):]:</span> <span class="c"># ignore if passes as *arg</span>
-            <span class="k">if</span> <span class="n">param_name</span> <span class="ow">in</span> <span class="n">user_default_params_for_f</span> <span class="ow">and</span> <span class="n">param_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-                <span class="n">new_kwargs_dict</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">user_default_params_for_f</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">new_kwargs_dict</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">wrapper</span>
+<span class="n">ALLOW_USER_CONFIG_FILES</span> <span class="o">=</span> <span class="bp">True</span> <span class="c"># Setting False turns off even looking for a config file.</span>
+<span class="n">CONFIG_FILE_NAMES</span> <span class="o">=</span> <span class="p">[</span><span class="s">&quot;pytest_helper.ini&quot;</span><span class="p">]</span> <span class="c"># List of filenames, searched for in order.</span>
+<span class="n">FAIL_ON_MISSING_CONFIG</span> <span class="o">=</span> <span class="bp">False</span> <span class="c"># Raise exception if config file enabled but not found.</span>
+<span class="n">CONFIG_SECTION_STRING</span> <span class="o">=</span> <span class="s">&quot;pytest_helper&quot;</span> <span class="c"># Label for active section of the config file.</span>
 
 <div class="viewcode-block" id="script_run"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.script_run">[docs]</a><span class="k">def</span> <span class="nf">script_run</span><span class="p">(</span><span class="n">testfile_paths</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">self_test</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">pytest_args</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                <span class="n">calling_mod_name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">calling_mod_path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="nb">exit</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
@@ -167,6 +133,10 @@
     <span class="k">if</span> <span class="n">calling_mod_name</span> <span class="o">!=</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">always_run</span><span class="p">:</span> <span class="k">return</span>
 
+    <span class="c"># Override arguments with any values set in the config file.</span>
+    <span class="n">pytest_args</span> <span class="o">=</span> <span class="n">get_config_value</span><span class="p">(</span><span class="s">&quot;script_run_pytest_args&quot;</span><span class="p">,</span> <span class="n">pytest_args</span><span class="p">,</span>
+                                             <span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="p">)</span>
+
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">testfile_paths</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">testfile_paths</span> <span class="o">=</span> <span class="p">[</span><span class="n">testfile_paths</span><span class="p">]</span>
     <span class="k">elif</span> <span class="n">testfile_paths</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
@@ -194,7 +164,8 @@
 <span class="n">previous_sys_path_list</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># Save the sys.path before modifying it, to restore it.</span>
 
 <div class="viewcode-block" id="sys_path"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.sys_path">[docs]</a><span class="k">def</span> <span class="nf">sys_path</span><span class="p">(</span><span class="n">dirs_to_add</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">add_parent</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">add_grandparent</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-             <span class="n">add_gn_parent</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">add_self</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+             <span class="n">add_gn_parent</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">add_self</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">calling_mod_name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> 
+             <span class="n">calling_mod_path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Add the canonical absolute pathname of each directory in the list</span>
 <span class="sd">    `dirs_to_add` to `sys.path` (but only if it isn&#39;t there already).  A single</span>
 <span class="sd">    string representing a path can also be passed to `dirs_to_add`.  Relative</span>
@@ -209,23 +180,30 @@
 <span class="sd">    true then the directory of the calling module is added to the system</span>
 <span class="sd">    `sys.path` list.</span>
 <span class="sd">    </span>
-<span class="sd">    The parameter `calling_mod_dir` can be set as a fallback in case the</span>
-<span class="sd">    introspection for finding the calling module&#39;s directory fails for some</span>
-<span class="sd">    reason.  The parameter `level` is the level up the calling stack to look</span>
-<span class="sd">    for the calling module and should not usually need to be set.&quot;&quot;&quot;</span>
+<span class="sd">    The parameters `calling_mod_name` and `calling_mod_dir` can be set as a</span>
+<span class="sd">    fallback in case the introspection for finding the calling module&#39;s</span>
+<span class="sd">    information fails for some reason.  The parameter `level` is the level up</span>
+<span class="sd">    the calling stack to look for the calling module and should not usually</span>
+<span class="sd">    need to be set.&quot;&quot;&quot;</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">calling_mod_dir</span><span class="p">:</span>
-        <span class="n">calling_mod_dir</span> <span class="o">=</span> <span class="n">get_calling_module_info</span><span class="p">()[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="c"># We really only need calling_mod_dir as a fallback *except* when config</span>
+    <span class="c"># files are used we also need to know the module path, since config info</span>
+    <span class="c"># is looked up and saved per-module.</span>
+    <span class="n">mod_info</span> <span class="o">=</span> <span class="n">get_calling_module_info</span><span class="p">(</span><span class="n">module_name</span><span class="o">=</span><span class="n">calling_mod_name</span><span class="p">,</span>
+                                       <span class="n">module_path</span><span class="o">=</span><span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">)</span>
+    <span class="n">calling_mod_name</span><span class="p">,</span> <span class="n">calling_mod</span><span class="p">,</span> <span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span> <span class="o">=</span> <span class="n">mod_info</span>
 
-    <span class="k">if</span> <span class="n">dirs_to_add</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-        <span class="n">dirs_to_add</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dirs_to_add</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="n">dirs_to_add</span> <span class="o">=</span> <span class="p">[</span><span class="n">dirs_to_add</span><span class="p">]</span>
+    <span class="c"># Override arguments with any values set in the config file.</span>
+    <span class="n">add_gn_parent</span> <span class="o">=</span> <span class="n">get_config_value</span><span class="p">(</span><span class="s">&quot;sys_path_add_gn_parent&quot;</span><span class="p">,</span> <span class="n">add_gn_parent</span><span class="p">,</span>
+                                             <span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">dirs_to_add</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">dirs_to_add</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dirs_to_add</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="n">dirs_to_add</span> <span class="o">=</span> <span class="p">[</span><span class="n">dirs_to_add</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">add_parent</span><span class="p">:</span>
         <span class="n">dirs_to_add</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;..&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">add_grandparent</span><span class="p">:</span>
         <span class="n">dirs_to_add</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&quot;..&quot;</span><span class="p">,</span><span class="s">&quot;..&quot;</span><span class="p">))</span>
-    <span class="k">if</span> <span class="n">add_gn_parent</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">add_gn_parent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">False</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">g_level</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">add_gn_parent</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
@@ -267,67 +245,10 @@
         <span class="n">sys</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">previous_sys_path_list</span>
         <span class="n">previous_sys_path_list</span> <span class="o">=</span> <span class="bp">None</span>
     <span class="k">return</span>
+
 </div>
-<span class="nd">@substitute_user_config_defaults</span> <span class="c"># remove level increment if removing wrapper</span>
-<div class="viewcode-block" id="auto_import"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.auto_import">[docs]</a><span class="k">def</span> <span class="nf">auto_import</span><span class="p">(</span><span class="n">noclobber</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;This function imports some pytest-helper and pytest attributes into the</span>
-<span class="sd">    calling module&#39;s global namespace.  This avoids having to explicitly do</span>
-<span class="sd">    common imports.  A `PytestHelperException` will be raised if any of those</span>
-<span class="sd">    globals already exist, unless `noclobber` is set false.</span>
-<span class="sd">    </span>
-<span class="sd">    The variables that are imported from the `pytest_helper` module are</span>
-<span class="sd">    `locals_to_globals`, and `clear_locals_from_globals`.  The module `py.test`</span>
-<span class="sd">    is imported as the single name `pytest`.  The functions from pytest that</span>
-<span class="sd">    are imported are `raises`, `fail`, `fixture`, and `skip`.&quot;&quot;&quot;</span>
-    
-    <span class="c"># TODO maybe have some options to turn on and off certain groups of autoimports.</span>
-    <span class="c"># Still need to set up, and also allow &quot;import as&quot; type things.</span>
-    <span class="c"># -----&gt; Just let user pass in a list, and do an update with it over initial</span>
-    <span class="c"># defaults.  Easy to implement, easy to document.</span>
-    <span class="c">#</span>
-    <span class="c"># user_defaults = USER_CONFIG[&quot;auto_import&quot;]</span>
-    <span class="c"># if &quot;names_to_import&quot; in user_defaults: names_to_import = user_defaults[&quot;names_to_import&quot;]</span>
-
-    <span class="c"># This `level` increment is ONLY for when the `substitute_user_config_defaults`</span>
-    <span class="c"># decorator is used, since the decorator wrapper adds one level on the stack.</span>
-    <span class="n">level</span> <span class="o">=</span> <span class="n">level</span> <span class="o">+</span> <span class="mi">1</span>
-
-    <span class="k">print</span><span class="p">(</span><span class="s">&quot;DEBUG noclobber is now&quot;</span><span class="p">,</span> <span class="n">noclobber</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">insert_in_dict</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">noclobber</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Insert (name, value) in dict d checking for noclobber.&quot;&quot;&quot;</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&quot;DEBUG called insert fun, noclobber is&quot;</span><span class="p">,</span> <span class="n">noclobber</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">noclobber</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&quot;DEBUG insert fun if, raising, noclobber is&quot;</span><span class="p">,</span> <span class="n">noclobber</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="n">PytestHelperException</span><span class="p">(</span><span class="s">&quot;The pytest_helper function auto_import&quot;</span>
-                    <span class="s">&quot;</span><span class="se">\n</span><span class="s">attempted an overwrite with noclobber set.  The attribute&quot;</span>
-                    <span class="s">&quot; is: &quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">)</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&quot;DEBUG setting in insert&quot;</span><span class="p">)</span>
-        <span class="n">d</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
-
-    <span class="n">g</span> <span class="o">=</span> <span class="n">get_calling_fun_globals_dict</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">AUTO_IMPORT_INITIAL_DEFAULTS</span><span class="p">:</span>
-        <span class="n">insert_in_dict</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">noclobber</span><span class="p">)</span>
-
-    <span class="c">## Pytest itself, imported as pytest, not py.test</span>
-    <span class="c">#insert_in_dict(g, &quot;pytest&quot;, py.test)</span>
-
-    <span class="c">## Functions from pytest.</span>
-    <span class="c">#insert_in_dict(g, &quot;raises&quot;, raises)</span>
-    <span class="c">#insert_in_dict(g, &quot;fail&quot;, fail)</span>
-    <span class="c">#insert_in_dict(g, &quot;fixture&quot;, fixture)</span>
-    <span class="c">#insert_in_dict(g, &quot;skip&quot;, skip)</span>
-
-    <span class="c">## Functions and classes from this module.</span>
-    <span class="c">##insert_in_dict(g, &quot;script_run&quot;, script_run)</span>
-    <span class="c">##insert_in_dict(g, &quot;sys_path&quot;, sys_path)</span>
-    <span class="c">##insert_in_dict(g, &quot;init&quot;, init)</span>
-    <span class="c">#insert_in_dict(g, &quot;locals_to_globals&quot;, locals_to_globals)</span>
-    <span class="c">#insert_in_dict(g, &quot;clear_locals_from_globals&quot;, clear_locals_from_globals)</span>
-    <span class="k">return</span>
-</div>
-<div class="viewcode-block" id="init"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.init">[docs]</a><span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="n">set_package</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+<div class="viewcode-block" id="init"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.init">[docs]</a><span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="n">set_package</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">conf</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">calling_mod_name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                                        <span class="n">calling_mod_path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;A function to initialize the `pytest_helper` module just after importing</span>
 <span class="sd">    it.  This function is currently only necessary in rare cases where Python&#39;s</span>
 <span class="sd">    current working directory (CWD) is changed between the time when the</span>
@@ -348,27 +269,43 @@
 <span class="sd">        </span>
 <span class="sd">        pytest_helper.init()</span>
 <span class="sd">        import set_package_attribute</span>
-<span class="sd">        </span>
+<span class="sd">       </span>
+<span class="sd">    If the parameter `conf` is set false then no configuration files will be</span>
+<span class="sd">    searched for or used.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="c"># The get_calling_module_info function caches module info, including the</span>
+    <span class="c"># calling_mod_path, as a side effect.</span>
+    <span class="n">mod_info</span> <span class="o">=</span> <span class="n">get_calling_module_info</span><span class="p">(</span><span class="n">module_name</span><span class="o">=</span><span class="n">calling_mod_name</span><span class="p">,</span>
+                                       <span class="n">module_path</span><span class="o">=</span><span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">)</span>
+    <span class="n">calling_mod_name</span><span class="p">,</span> <span class="n">calling_mod</span><span class="p">,</span> <span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span> <span class="o">=</span> <span class="n">mod_info</span>
+
+    <span class="c"># Disable the configuration file if requested.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">conf</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">ALLOW_USER_CONFIG_FILES</span><span class="p">:</span>
+        <span class="n">get_config</span><span class="p">(</span><span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="p">,</span> <span class="n">disable</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="c"># Override arguments with any values set in the config file.</span>
+    <span class="n">set_package</span> <span class="o">=</span> <span class="n">get_config_value</span><span class="p">(</span><span class="s">&quot;init_set_package&quot;</span><span class="p">,</span> <span class="n">set_package</span><span class="p">,</span>
+                                             <span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">set_package</span><span class="p">:</span>
        <span class="c"># Set the __PACKAGE__ attribute for module __main__ (if there is one).</span>
-       <span class="kn">import</span> <span class="nn">set_package_attribute</span> <span class="c"># TODO can&#39;t find from symlinks... need pip or path mods...</span>
+       <span class="k">global</span> <span class="n">set_package_attribute</span>
+       <span class="kn">import</span> <span class="nn">set_package_attribute</span>
 
-    <span class="n">get_calling_module_info</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">)</span> <span class="c"># This caches the module info.</span>
     <span class="k">return</span>
 
 <span class="c">#</span>
 <span class="c"># Functions for copying locals to globals.</span>
 <span class="c">#</span>
 
-<span class="c"># The last copied attributes are stored in the same globals dict where they were</span>
+<span class="c"># The last copied attributes are saved in the same globals dict where they were</span>
 <span class="c"># copied to, in a list with this attribute name.</span></div>
 <span class="n">last_saved_list_name</span> <span class="o">=</span> <span class="s">&quot;pytest_helper_last_copied_320gj97tr&quot;</span>
 
 <div class="viewcode-block" id="locals_to_globals"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.locals_to_globals">[docs]</a><span class="k">def</span> <span class="nf">locals_to_globals</span><span class="p">(</span><span class="n">fun_locals</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fun_globals</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">auto_clear</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> 
                       <span class="n">noclobber</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
-
     <span class="sd">&quot;&quot;&quot;Copy all local variables in the calling function&#39;s local scope to the</span>
 <span class="sd">    global scope of the module where that function was called.  The function&#39;s</span>
 <span class="sd">    parameters are ignored and are not copied.  This routine should only be</span>
@@ -477,6 +414,80 @@
 <span class="sd">    operations.&quot;&quot;&quot;</span>
     <span class="k">pass</span>
 
+
+<span class="c"># BEST WAY if NO eval is used, just explicit variable lookups:</span>
+<span class="c"># ---&gt; If you require a module name string also then you can use getattr instead</span>
+<span class="c"># of having to use eval:</span>
+<span class="c">#   if module_name = &quot;pytest_helper&quot;: module_name = __name__ # This module.</span>
+<span class="c">#   module = sys.modules[&quot;foo.bar&quot;] # ADD TEST IF NOT THERE</span>
+<span class="c">#   value = getattr(module, &quot;name_orig&quot;)</span>
+<span class="c">#   insert_in_dict(g, name_new, value, noclobber)</span>
+<span class="c"># where you look up the module from its name.... consider.  Then put that in</span>
+<span class="c"># the relevant globals() dict.</span>
+<span class="c"># So update them all to look like: (&quot;fail&quot;, &quot;fail&quot;, &quot;py.test&quot;),</span>
+<span class="c">#</span>
+<span class="c"># BUT this can FAIL if the module name is __main__ instead of expected name!</span>
+<span class="c"># BUT you don&#39;t need to import from current namespace, anyway, when using auto_import.</span>
+</div>
+<span class="n">AUTO_IMPORT_DEFAULTS</span> <span class="o">=</span> <span class="p">[(</span><span class="s">&quot;pytest&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="p">),</span> <span class="c"># (&lt;nameToImportAs&gt;, &lt;value&gt;)</span>
+                        <span class="p">(</span><span class="s">&quot;raises&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">raises</span><span class="p">),</span>
+                        <span class="p">(</span><span class="s">&quot;fail&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">fail</span><span class="p">),</span>
+                        <span class="p">(</span><span class="s">&quot;fixture&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">fixture</span><span class="p">),</span>
+                        <span class="p">(</span><span class="s">&quot;skip&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">skip</span><span class="p">),</span>
+                        <span class="p">(</span><span class="s">&quot;xfail&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">xfail</span><span class="p">),</span>
+                        <span class="p">(</span><span class="s">&quot;locals_to_globals&quot;</span><span class="p">,</span> <span class="n">locals_to_globals</span><span class="p">),</span>
+                        <span class="p">(</span><span class="s">&quot;clear_locals_from_globals&quot;</span><span class="p">,</span> <span class="n">clear_locals_from_globals</span><span class="p">)</span>
+                       <span class="p">]</span>
+
+<div class="viewcode-block" id="auto_import"><a class="viewcode-back" href="../pytest_helper.html#pytest_helper.auto_import">[docs]</a><span class="k">def</span> <span class="nf">auto_import</span><span class="p">(</span><span class="n">noclobber</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">skip</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">imports</span><span class="o">=</span><span class="n">AUTO_IMPORT_DEFAULTS</span><span class="p">,</span>
+                <span class="n">calling_mod_name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">calling_mod_path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This function imports some pytest-helper and pytest attributes into the</span>
+<span class="sd">    calling module&#39;s global namespace.  This avoids having to explicitly do</span>
+<span class="sd">    common imports.  A `PytestHelperException` will be raised if any of those</span>
+<span class="sd">    globals already exist, unless `noclobber` is set false.</span>
+
+<span class="sd">    The `imports` option is a list of (name,value) pairs to import</span>
+<span class="sd">    automatically.  Since using it each time would be as much trouble as doing</span>
+<span class="sd">    the imports, explicitly, it is mainly meant to be set in configuration</span>
+<span class="sd">    files.  In a config file the values are evaluated in the global namespace</span>
+<span class="sd">    of `pytest_helper`.  The `skip` option is a list of names to skip in</span>
+<span class="sd">    importing, if just one or two are causing problems locally to a file.</span>
+<span class="sd">    </span>
+<span class="sd">    The default variables that are imported from the `pytest_helper` module are</span>
+<span class="sd">    `locals_to_globals`, and `clear_locals_from_globals`.  The module `py.test`</span>
+<span class="sd">    is imported as the single name `pytest`.  The functions from pytest that</span>
+<span class="sd">    are imported by default are `raises`, `fail`, `fixture`, and `skip`, and</span>
+<span class="sd">    `xfail`.&quot;&quot;&quot;</span>
+
+    <span class="n">mod_info</span> <span class="o">=</span> <span class="n">get_calling_module_info</span><span class="p">(</span><span class="n">module_name</span><span class="o">=</span><span class="n">calling_mod_name</span><span class="p">,</span>
+                                       <span class="n">module_path</span><span class="o">=</span><span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">)</span>
+    <span class="n">calling_mod_name</span><span class="p">,</span> <span class="n">calling_mod</span><span class="p">,</span> <span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span> <span class="o">=</span> <span class="n">mod_info</span>
+
+    <span class="c"># Override arguments with any values set in the config file.</span>
+    <span class="n">noclobber</span> <span class="o">=</span> <span class="n">get_config_value</span><span class="p">(</span><span class="s">&quot;autoimport_noclobber&quot;</span><span class="p">,</span> <span class="n">noclobber</span><span class="p">,</span>
+                                             <span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="p">)</span>
+    <span class="n">imports</span> <span class="o">=</span> <span class="n">get_config_value</span><span class="p">(</span><span class="s">&quot;autoimport_imports&quot;</span><span class="p">,</span> <span class="n">imports</span><span class="p">,</span>
+                                             <span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="p">)</span>
+    <span class="n">skip</span> <span class="o">=</span> <span class="n">get_config_value</span><span class="p">(</span><span class="s">&quot;autoimport_skip&quot;</span><span class="p">,</span> <span class="n">skip</span><span class="p">,</span>
+                                             <span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">insert_in_dict</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">noclobber</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Insert (name, value) in dict d checking for noclobber.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">noclobber</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PytestHelperException</span><span class="p">(</span><span class="s">&quot;The pytest_helper function auto_import&quot;</span>
+                    <span class="s">&quot;</span><span class="se">\n</span><span class="s">attempted an overwrite with noclobber set.  The attribute&quot;</span>
+                    <span class="s">&quot; is: &quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">)</span>
+        <span class="n">d</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="n">g</span> <span class="o">=</span> <span class="n">get_calling_fun_globals_dict</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">imports</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;name, value&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">skip</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">skip</span><span class="p">:</span> <span class="k">continue</span>
+        <span class="n">insert_in_dict</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">noclobber</span><span class="p">)</span>
+
+    <span class="k">return</span>
+
 <span class="c">#</span>
 <span class="c"># Utility functions.</span>
 <span class="c">#</span>
@@ -530,11 +541,17 @@
 <span class="sd">    The module name and/or path can be supplied via the keyword arguments if</span>
 <span class="sd">    introspection still fails for some reason (or just to slightly improve</span>
 <span class="sd">    efficiency).&quot;&quot;&quot;</span>
+    <span class="c"># Note that caching is done with the fully qualified module names.</span>
+    <span class="c"># Not everything can be cached, but the calling_module_dir is</span>
+    <span class="c"># one thing that is cached.  The cache key is the calling module name.</span>
+    <span class="c"># TODO: note that __main__ module will not be cached the same as</span>
+    <span class="c"># when run from pytest with its normal name.</span>
 
     <span class="k">if</span> <span class="n">module_name</span><span class="p">:</span>
         <span class="n">calling_module_name</span> <span class="o">=</span> <span class="n">module_name</span>
         <span class="n">calling_module</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">calling_module_name</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
+        <span class="c"># Call low-level routine to do the introspection.</span>
         <span class="n">calling_module_name</span><span class="p">,</span> <span class="n">calling_module</span> <span class="o">=</span> <span class="n">get_calling_module</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">module_path</span><span class="p">:</span>
@@ -622,6 +639,12 @@
 <span class="sd">       level 0: Module for this function.</span>
 <span class="sd">       level 1: Module for the function calling this one (what you usually want).</span>
 <span class="sd">       level 2: Module for the function that called the one calling this one.</span>
+
+<span class="sd">    This is a low-level routine; higher-level functions should usually</span>
+<span class="sd">    call `get_calling_module_info` instead, which caches its data.</span>
+
+<span class="sd">    The returned module name is the fully qualified name, except in the</span>
+<span class="sd">    case of `__main__`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># Three lines below work, even when chdir is called; just get __name__ from</span>
     <span class="c"># the globals dict.</span>
@@ -649,78 +672,163 @@
 <span class="c"># Config file locating and reading functions.</span>
 <span class="c">#</span>
 
-<span class="n">USE_USER_CONFIG_FILE</span> <span class="o">=</span> <span class="bp">True</span> <span class="c"># Setting False turns off even looking for a config file.</span>
-<span class="n">CONFIG_FILE_NAME</span> <span class="o">=</span> <span class="s">&quot;pytest_helper.ini&quot;</span>
-<span class="n">USER_CONFIG</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># A dict of dicts containing the config file contents, if used.</span>
-
-<span class="n">AUTO_IMPORT_INITIAL_DEFAULTS</span> <span class="o">=</span> <span class="p">[(</span><span class="s">&quot;pytest&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="p">),</span>
-                                <span class="p">(</span><span class="s">&quot;raises&quot;</span><span class="p">,</span> <span class="n">raises</span><span class="p">),</span>
-                                <span class="p">(</span><span class="s">&quot;fail&quot;</span><span class="p">,</span> <span class="n">fail</span><span class="p">),</span>
-                                <span class="p">(</span><span class="s">&quot;fixture&quot;</span><span class="p">,</span> <span class="n">fixture</span><span class="p">),</span>
-                                <span class="p">(</span><span class="s">&quot;skip&quot;</span><span class="p">,</span> <span class="n">skip</span><span class="p">),</span>
-                                <span class="p">(</span><span class="s">&quot;locals_to_globals&quot;</span><span class="p">,</span> <span class="n">locals_to_globals</span><span class="p">),</span>
-                                <span class="p">(</span><span class="s">&quot;clear_locals_from_globals&quot;</span><span class="p">,</span> <span class="n">clear_locals_from_globals</span><span class="p">)</span>
-                                <span class="p">]</span>
-
 <span class="k">def</span> <span class="nf">get_importing_module_filename</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Run this during the initialization of a module to return the absolute pathname</span>
-<span class="sd">    of the module which is importing the module currently being imported.&quot;&quot;&quot;</span>
+<span class="sd">    of the module which is importing the module that is currently being imported.&quot;&quot;&quot;</span>
     <span class="n">module_filename</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getframeinfo</span><span class="p">(</span>
                       <span class="n">inspect</span><span class="o">.</span><span class="n">getouterframes</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">currentframe</span><span class="p">())[</span><span class="n">level</span><span class="p">][</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">module_filename</span><span class="p">)</span>
 
-<span class="c"># TODO need separate package name for each different package that may import it???</span>
-<span class="c"># what if a package is using another package that also imports it?????</span>
-<span class="c"># What about when a test package imports it, but the test dir is not part of</span>
-<span class="c"># the package????</span>
-
-<span class="c"># --&gt; Maybe REQUIRE the use of the init call in order to read the default config</span>
-<span class="c"># file????  Then called on each import statement, not just on the first one.</span>
-<span class="c"># THEN just use __package__ to keep a dict of the ones looked up, or have</span>
-<span class="c"># a package option for test dir, since OTHERWISE IT DOESN&#39;T KNOW WHERE TO LOOK.</span>
-
-<span class="k">def</span> <span class="nf">get_config_file</span><span class="p">():</span>
+<span class="k">def</span> <span class="nf">get_config_file_pathname</span><span class="p">(</span><span class="n">calling_mod_dir</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Get the full pathname of the configuration file, returning `None` if</span>
-<span class="sd">    not found.  If inside a package then go up the directory tree to the root of</span>
-<span class="sd">    the Python package and look there.  Otherwise, only look in the importing</span>
-<span class="sd">    module&#39;s directory.&quot;&quot;&quot;</span>
-    <span class="n">importing_module</span> <span class="o">=</span> <span class="n">get_importing_module_filename</span><span class="p">()</span>
-    <span class="k">print</span><span class="p">(</span><span class="s">&quot;DEBUG importing module is&quot;</span><span class="p">,</span> <span class="n">importing_module</span><span class="p">)</span>
-    <span class="n">dirname</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">importing_module</span><span class="p">)</span>
+<span class="sd">    nothing was found.  Go up the directory tree starting at</span>
+<span class="sd">    `calling_mod_dir`, taking the first file found with an allowed name.  If</span>
+<span class="sd">    no package are encountered by the top-level root directory, return</span>
+<span class="sd">    `None`.&quot;&quot;&quot;</span>
+    <span class="n">stop_at_package_top</span> <span class="o">=</span> <span class="bp">False</span> <span class="c"># Whether to stop search after package top.</span>
 
-    <span class="c"># Go up the package directory tree if inside a package.</span>
-    <span class="k">while</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="s">&quot;__init__.py&quot;</span><span class="p">))</span> <span class="ow">and</span>
-           <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="s">&quot;..&quot;</span><span class="p">,</span> <span class="s">&quot;__init__.py&quot;</span><span class="p">))):</span>
-        <span class="n">dirname</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">dirname</span><span class="p">)</span> 
-    
-    <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="n">CONFIG_FILE_NAME</span><span class="p">)</span>
-    <span class="k">print</span><span class="p">(</span><span class="s">&quot;DEBUG config path is&quot;</span><span class="p">,</span> <span class="n">config_path</span><span class="p">)</span>
+    <span class="n">dirname</span> <span class="o">=</span> <span class="n">calling_mod_dir</span> <span class="c"># Start looking in calling module&#39;s dir.</span>
 
-    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">config_path</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">config_path</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">None</span>
+    <span class="c"># Go up the directory tree.</span>
+    <span class="n">in_package</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="s">&quot;__init__.py&quot;</span><span class="p">)):</span>
+            <span class="n">in_package</span> <span class="o">=</span> <span class="bp">True</span>
 
-<span class="k">def</span> <span class="nf">read_config_file</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return a dict of dicts with a dict of parameter arguments for each</span>
-<span class="sd">    section of the config file.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">config_name</span> <span class="ow">in</span> <span class="n">CONFIG_FILE_NAMES</span><span class="p">:</span>
+            <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="n">config_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">config_path</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">config_path</span>
+
+        <span class="n">dirname</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">dirname</span><span class="p">)</span> <span class="c"># Go up one dir.</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span> <span class="c"># If no subdir name then we were at root dir.</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">stop_at_package_top</span> <span class="ow">and</span> <span class="n">in_package</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span>
+                                   <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="s">&quot;__init__.py&quot;</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="bp">None</span> <span class="c"># Past the top of a package, nothing found.</span>
+
+<span class="k">def</span> <span class="nf">read_and_eval_config_file</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return a dict of dicts containing a dict of parameter arguments for each</span>
+<span class="sd">    section of the config file, with the evaluated value.&quot;&quot;&quot;</span>
     <span class="n">config</span> <span class="o">=</span> <span class="n">ConfigParser</span><span class="p">()</span>
     <span class="n">config</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+    <span class="c"># Convert the ConfigParser format into a regular dict of dicts.</span>
     <span class="n">config_dict</span> <span class="o">=</span> <span class="p">{</span> <span class="n">s</span><span class="p">:</span><span class="nb">dict</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">items</span><span class="p">(</span><span class="n">s</span><span class="p">))</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">sections</span><span class="p">()</span> <span class="p">}</span>
-    <span class="k">print</span><span class="p">(</span><span class="s">&quot;DEBUG config dict is&quot;</span><span class="p">,</span> <span class="n">config_dict</span><span class="p">)</span>
+
+    <span class="c"># Evaluate each string within each config file section.</span>
+    <span class="k">for</span> <span class="n">section</span><span class="p">,</span> <span class="n">subdict</span> <span class="ow">in</span> <span class="n">config_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">subdict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">config_dict</span><span class="p">[</span><span class="n">section</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">globals</span><span class="p">())</span>
+            <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span> <span class="c"># Raised when a name cannot be found in dict.</span>
+                <span class="n">err_string</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;NameError in config file.&quot;</span>
+                              <span class="s">&quot;</span><span class="se">\n</span><span class="s">The section is &#39;{0}&#39;, the key is &#39;{1}&#39;,&quot;</span>
+                              <span class="s">&quot; and the value is &#39;{2}&#39;.&quot;</span>
+                              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">section</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">err_string</span><span class="p">)</span>
+                <span class="k">raise</span>
+            <span class="k">except</span> <span class="ne">SyntaxError</span><span class="p">:</span>
+                <span class="n">err_string</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;SyntaxError in config file.&quot;</span>
+                              <span class="s">&quot;</span><span class="se">\n</span><span class="s">The section is &#39;{0}&#39;, the key is &#39;{1}&#39;,&quot;</span>
+                              <span class="s">&quot; and the value is &#39;{2}&#39;.&quot;</span>
+                              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">section</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">err_string</span><span class="p">)</span>
+                <span class="k">raise</span>
+            <span class="c">#except ValueError: # Raised by ast.literal_eval.</span>
+            <span class="c">#    err_string = (&quot;ValueError in config file.&quot;</span>
+            <span class="c">#                  &quot;\nThe section is &#39;{0}&#39;, the key is &#39;{1}&#39;,&quot;</span>
+            <span class="c">#                  &quot; and the value is &#39;{2}&#39;.&quot;</span>
+            <span class="c">#                  .format(section, key, value))</span>
+            <span class="c">#    print(err_string)</span>
+            <span class="c">#    raise</span>
+
     <span class="k">return</span> <span class="n">config_dict</span>
 
-<span class="k">if</span> <span class="n">USE_USER_CONFIG_FILE</span><span class="p">:</span>
-    <span class="n">config_filename</span> <span class="o">=</span> <span class="n">get_config_file</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">config_filename</span><span class="p">:</span>
-        <span class="n">USER_CONFIG</span> <span class="o">=</span> <span class="n">read_config_file</span><span class="p">(</span><span class="n">config_filename</span><span class="p">)</span>
+<span class="n">per_module_config_dict</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># Cache the config dict for each module by module filename.</span>
+<span class="n">config_disabled_modules</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># Save booleans for which modules look for config.</span>
+<span class="n">config_dict_cache</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># Cache config dicts by their filenames (save space and time).</span>
+
+<span class="k">def</span> <span class="nf">get_config</span><span class="p">(</span><span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="p">,</span> <span class="n">disable</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the configuration corresponding to the module with pathname</span>
+<span class="sd">    `calling_mod_path`.  Return an empty dict if no config is found.  Caches</span>
+<span class="sd">    its values based on pathnames of module (to avoid problems with `__main__`</span>
+<span class="sd">    when run as a script) as well as on the pathnames of config files.  If</span>
+<span class="sd">    nothing is found in the cache, it looks for the file and reads it in if</span>
+<span class="sd">    possible.  If `disable` is set for a module then it will always return an</span>
+<span class="sd">    empty config dict for the given module and skip searching for the file.&quot;&quot;&quot;</span>
+
+    <span class="c"># TODO, maybe: Could speed up even more by using a cache on each pathname</span>
+    <span class="c"># up to the config file.  A bit more space but faster.</span>
+
+    <span class="n">cache_key</span> <span class="o">=</span> <span class="n">calling_mod_path</span> <span class="c"># Use pathname to avoid __main__ problems.</span>
+
+    <span class="c"># Disable config files for the module if that flag is set.</span>
+    <span class="k">if</span> <span class="n">disable</span><span class="p">:</span>
+        <span class="n">config_disabled_modules</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="c"># If module not enabled (by current or prev call with enable=True) return empty.</span>
+    <span class="k">if</span> <span class="n">cache_key</span> <span class="ow">in</span> <span class="n">config_disabled_modules</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="k">if</span> <span class="n">cache_key</span> <span class="ow">in</span> <span class="n">per_module_config_dict</span><span class="p">:</span> <span class="c"># Look in per-module cache.</span>
+        <span class="n">config_dict</span> <span class="o">=</span> <span class="n">per_module_config_dict</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+
+    <span class="k">else</span><span class="p">:</span> <span class="c"># If not in per-module cache, look for a config file.</span>
+        <span class="n">config_file_path</span> <span class="o">=</span> <span class="n">get_config_file_pathname</span><span class="p">(</span><span class="n">calling_mod_dir</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">config_file_path</span> <span class="ow">in</span> <span class="n">config_dict_cache</span><span class="p">:</span> <span class="c"># Look in the config dict cache.</span>
+            <span class="n">config_dict</span> <span class="o">=</span> <span class="n">config_dict_cache</span><span class="p">[</span><span class="n">config_file_path</span><span class="p">]</span>
+
+        <span class="k">elif</span> <span class="n">config_file_path</span><span class="p">:</span> <span class="c"># Some path was set.</span>
+            <span class="n">config_dict</span> <span class="o">=</span> <span class="n">read_and_eval_config_file</span><span class="p">(</span><span class="n">config_file_path</span><span class="p">)</span>
+            <span class="n">config_dict_cache</span><span class="p">[</span><span class="n">config_file_path</span><span class="p">]</span> <span class="o">=</span> <span class="n">config_dict</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c"># Returned None from config_file_path.</span>
+            <span class="k">if</span> <span class="n">FAIL_ON_MISSING_CONFIG</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PytestHelperException</span><span class="p">(</span><span class="s">&quot;Config file specified but&quot;</span>
+                        <span class="s">&quot; not found in the directory tree.  At least an&quot;</span>
+                        <span class="s">&quot; empty file must be present.&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">config_dict</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># Assume it is empty if not found and no fail.</span>
+
+        <span class="n">per_module_config_dict</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">config_dict</span> <span class="c"># Put in cache for module.</span>
+
+    <span class="k">return</span> <span class="n">config_dict</span>
+
+<span class="k">def</span> <span class="nf">get_config_value</span><span class="p">(</span><span class="n">config_key</span><span class="p">,</span> <span class="n">default</span><span class="p">,</span> <span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the config value from the config file corresponding to the key</span>
+<span class="sd">    `config_key`.  Return the value `default` if no config value is set.&quot;&quot;&quot;</span>
+    <span class="n">config_dict</span> <span class="o">=</span> <span class="n">get_config</span><span class="p">(</span><span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">CONFIG_SECTION_STRING</span> <span class="ow">in</span> <span class="n">config_dict</span><span class="p">:</span>
+        <span class="n">config_dict</span> <span class="o">=</span> <span class="n">config_dict</span><span class="p">[</span><span class="n">CONFIG_SECTION_STRING</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">default</span>
+
+    <span class="k">if</span> <span class="n">config_key</span> <span class="ow">in</span> <span class="n">config_dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">config_dict</span><span class="p">[</span><span class="n">config_key</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">default</span>
 
 <span class="c">#</span>
 <span class="c"># Test this file when invoked as a script.</span>
 <span class="c">#</span>
 
+<span class="n">init</span><span class="p">(</span><span class="n">set_package</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="c"># TODO remove this or set a real config file in path</span>
 <span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span> <span class="c"># This guard is optional, but slightly more efficient.</span>
     <span class="n">script_run</span><span class="p">(</span><span class="s">&quot;test&quot;</span><span class="p">,</span> <span class="n">pytest_args</span><span class="o">=</span><span class="s">&quot;-v&quot;</span><span class="p">)</span>
+    <span class="c">#script_run(self_test=True, pytest_args=&quot;-v -s&quot;, exit=True)</span>
+
+<span class="n">auto_import</span><span class="p">()</span>
+<span class="c">#print(&quot;skipped is&quot;, skip)</span>
+<span class="c">#globals()[&quot;skip&quot;] = fail</span>
+<span class="nb">dir</span><span class="p">(</span><span class="n">set_package_attribute</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_config</span><span class="p">():</span>
+    <span class="c">#fail()</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&quot;skipped inside fun is&quot;</span><span class="p">,</span> <span class="n">skip</span><span class="p">)</span>
+    <span class="c">#fail()</span>
+    <span class="n">skip</span><span class="p">()</span>
 </pre></div>
 
           </div>

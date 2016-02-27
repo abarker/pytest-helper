@@ -78,7 +78,9 @@ at all).  This is especially true for beginners.</p>
 <p>Below is a simple example to illustrate the idea.  This is a Python module
 which is possibly part of a larger package.  It contains its own test functions
 at the bottom.  Whenever the module is run as a script the tests will be run
-with pytest; otherwise the module runs normally.</p>
+with pytest; otherwise the module runs normally.  So as the module is being
+written or modified the developer can execute the file and see the results of
+the pytest tests for the module, as well as add tests to the file.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pytest_helper</span>
 
 <span class="c"># Regular program code goes here.</span>
@@ -110,7 +112,8 @@ with pytest; otherwise the module runs normally.</p>
 </div>
 <p>There are more examples in the <a class="reference internal" href="#examples"><em>Examples</em></a> section below, including the
 case where tests to be run are in separate files and the case of a test file
-itself, located in a separate test directory.</p>
+itself, located in a separate test directory.  It is easy to move tests
+originally written inside the module being tested to a separate test file.</p>
 <p>Some of the provided helper functions are general-purpose, but several are
 specific to the <a class="reference external" href="http://pytest.org">pytest</a> testing framework.  The functions
 are independent of each other and can be used (or not used) as desired.  These
@@ -191,7 +194,7 @@ functionality.  Perhaps the most useful added feature is the ability to use a
 configuration file.  See the section <a class="reference internal" href="#configuration"><em>Configuration files</em></a> below.  This
 function should be called directly after importing <tt class="code docutils literal"><span class="pre">pytest_helper</span></tt>:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pytest_helper</span>
-<span class="n">pytest_helper</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">set_package</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">pytest_helper</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
 </pre></div>
 </div>
 <p>Using an early <tt class="code docutils literal"><span class="pre">init</span></tt> call provides the additional benefit of making sure
@@ -211,9 +214,9 @@ import before any relative imports:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">set_package_attribute</span>
 </pre></div>
 </div>
-<p>An alternate way to do the same thing is to pass a keyword argument to the
-optional pytest-helper initialization function just after importing
-<tt class="code docutils literal"><span class="pre">pytest_helper</span></tt>, as described above.</p>
+<p>An alternate way to do the same thing is to call the optional pytest-helper
+initialization function just after importing <tt class="code docutils literal"><span class="pre">pytest_helper</span></tt>, as described
+above, using the keyword argument <tt class="code docutils literal"><span class="pre">set_package=True</span></tt>.</p>
 </div></blockquote>
 </li>
 </ul>
@@ -227,9 +230,11 @@ optional pytest-helper initialization function just after importing
 <blockquote>
 <div><p>The <tt class="code docutils literal"><span class="pre">auto_import</span></tt> function is a convenience function that automatically imports
 certain pytest-helper and pytest functions into the calling module&#8217;s global
-namespace.  It imports the <tt class="code docutils literal"><span class="pre">py.test</span></tt> module as <tt class="code docutils literal"><span class="pre">pytest</span></tt>.  From pytest-helper it
-imports <tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt>, and <tt class="code docutils literal"><span class="pre">clear_locals_from_globals</span></tt>.  From pytest it
-imports <tt class="code docutils literal"><span class="pre">raises</span></tt>, <tt class="code docutils literal"><span class="pre">fail</span></tt>, <tt class="code docutils literal"><span class="pre">fixture</span></tt>, and <tt class="code docutils literal"><span class="pre">skip</span></tt>.</p>
+namespace.  The names can then be used like builtins in the test code.</p>
+<p>By default this function imports the <tt class="code docutils literal"><span class="pre">py.test</span></tt> module as <tt class="code docutils literal"><span class="pre">pytest</span></tt>.  From
+pytest-helper it imports <tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt>, and
+<tt class="code docutils literal"><span class="pre">clear_locals_from_globals</span></tt>.  From pytest it imports <tt class="code docutils literal"><span class="pre">raises</span></tt>, <tt class="code docutils literal"><span class="pre">fail</span></tt>,
+<tt class="code docutils literal"><span class="pre">fixture</span></tt>, <tt class="code docutils literal"><span class="pre">skip</span></tt>, and <tt class="code docutils literal"><span class="pre">xskip</span></tt>.</p>
 <p>This function is usually called without arguments:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">pytest_helper</span><span class="o">.</span><span class="n">auto_import</span><span class="p">()</span>
 </pre></div>
@@ -275,8 +280,8 @@ difference.</p>
 <p>Whenever <tt class="code docutils literal"><span class="pre">script_run</span></tt> is called in the examples below the optional <tt class="code docutils literal"><span class="pre">if</span> <span class="pre">__name__</span>
 <span class="pre">==</span> <span class="pre">&quot;__main__&quot;</span></tt> guard conditional is not used.  This is slightly less efficient
 (including in ordinary code runs) since the module&#8217;s name then has to be looked
-up by introspection to see if anything should be done.  You can always
-explicitly use the guard conditional around calls to <tt class="code docutils literal"><span class="pre">script_run</span></tt>.</p>
+up by introspection to see if anything should be done.  The guard conditional
+can always be explicitly used around calls to <tt class="code docutils literal"><span class="pre">script_run</span></tt>.</p>
 <ul>
 <li><p class="first"><strong>Running tests in separate test files and test directories.</strong></p>
 <blockquote>
@@ -349,7 +354,45 @@ pathname.</p>
 </div>
 <div class="section" id="configuration-files">
 <span id="configuration"></span><h2>Configuration files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h2>
-<p>The use of <tt class="code docutils literal"><span class="pre">init</span></tt> is required.</p>
+<p>Several of the pytest-helper functions have arguments which can be overridden
+by values in a configuration file.  The file must be named <tt class="code docutils literal"><span class="pre">pytest_helper.ini</span></tt>,
+and each module separately searches for and parses a file with that name.
+(Config files are loaded per-module since many different modules across
+different packages may import and use the pytest-helper functions.)  The search
+conducted from the directory of the module up to the root directory, taking the
+first such file encountered.  Caching is used to speed up the process.  Locating
+and using config files can be disabled altogether by passing the argument <tt class="code docutils literal"><span class="pre">conf=False</span></tt>
+to the <tt class="code docutils literal"><span class="pre">init</span></tt> function:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pytest_helper</span>
+<span class="n">init</span><span class="p">(</span><span class="n">conf</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Below is an example <tt class="code docutils literal"><span class="pre">pytest_helper.ini</span></tt> configuration, which sets a value for
+all the options which are settable from the config file.  Any other sections of
+the file or options are silently ignored.  The options are all constructed from
+the name of the function concatanated with the name of the parameter they
+override</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="n">pytest_helper</span><span class="p">]</span>
+
+<span class="n">init_set_package</span> <span class="o">=</span> <span class="bp">True</span>
+
+<span class="n">script_run_pytest_args</span> <span class="o">=</span> <span class="s">&quot;-v -s&quot;</span>
+
+<span class="n">sys_path_add_gn_parent</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="n">autoimport_noclobber</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="n">autoimport_skip</span> <span class="o">=</span> <span class="p">[</span><span class="s">&quot;pytest&quot;</span><span class="p">,</span> <span class="s">&quot;locals_to_globals&quot;</span><span class="p">]</span>
+<span class="n">autoimport_imports</span> <span class="o">=</span> <span class="p">[(</span><span class="s">&quot;pytest&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="p">),</span>
+                      <span class="p">(</span><span class="s">&quot;raises&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">raises</span><span class="p">),</span>
+                      <span class="p">(</span><span class="s">&quot;fail&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">fail</span><span class="p">),</span>
+                      <span class="p">(</span><span class="s">&quot;fixture&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">fixture</span><span class="p">),</span>
+                      <span class="p">(</span><span class="s">&quot;skip&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">skip</span><span class="p">),</span>
+                      <span class="p">(</span><span class="s">&quot;xfail&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">xfail</span><span class="p">),</span>
+                      <span class="p">(</span><span class="s">&quot;locals_to_globals&quot;</span><span class="p">,</span> <span class="n">locals_to_globals</span><span class="p">),</span>
+                      <span class="p">(</span><span class="s">&quot;clear_locals_from_globals&quot;</span><span class="p">,</span> <span class="n">clear_locals_from_globals</span><span class="p">)</span>
+                     <span class="p">]</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="module-contents">
 <h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
