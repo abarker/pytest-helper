@@ -46,7 +46,9 @@ at all).  This is especially true for beginners.
 Below is a simple example to illustrate the idea.  This is a Python module
 which is possibly part of a larger package.  It contains its own test functions
 at the bottom.  Whenever the module is run as a script the tests will be run
-with pytest; otherwise the module runs normally. ::
+with pytest; otherwise the module runs normally.  So as the module is being
+written or modified the developer can execute the file and see the results of
+the pytest tests for the module, as well as add tests to the file. ::
 
    import pytest_helper
 
@@ -78,7 +80,8 @@ with pytest; otherwise the module runs normally. ::
    
 There are more examples in the :ref:`Examples` section below, including the
 case where tests to be run are in separate files and the case of a test file
-itself, located in a separate test directory.
+itself, located in a separate test directory.  It is easy to move tests
+originally written inside the module being tested to a separate test file.
 
 Some of the provided helper functions are general-purpose, but several are
 specific to the `pytest <http://pytest.org>`_ testing framework.  The functions
@@ -250,8 +253,8 @@ difference.
 Whenever `script_run` is called in the examples below the optional `if __name__
 == "__main__"` guard conditional is not used.  This is slightly less efficient
 (including in ordinary code runs) since the module's name then has to be looked
-up by introspection to see if anything should be done.  You can always
-explicitly use the guard conditional around calls to `script_run`.
+up by introspection to see if anything should be done.  The guard conditional
+can always be explicitly used around calls to `script_run`.
 
 * **Running tests in separate test files and test directories.**
 
