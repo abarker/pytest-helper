@@ -88,8 +88,7 @@ def process_args(f, args, kwargs, arg_names, arg_indices, name_to_index,
     calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
 
     # Get the dict of module config parameters.
-    calling_mod_config_dict = get_config(calling_mod_name, calling_mod_path,
-                                                            calling_mod_dir)
+    calling_mod_config_dict = get_config(calling_mod_path, calling_mod_dir)
 
     # Look up any default config settings for the calling module.
     config_section_defaults = f.__name__ + CONFIG_DEFAULT_SUFFIX
@@ -348,8 +347,10 @@ def init(conf=False, set_package=False, calling_mod_name=None,
 
     # Read in the configuration file.
     if conf and ALLOW_USER_CONFIG_FILES:
-        get_config(calling_mod_name, calling_mod_path, calling_mod_dir, enable=True)
+        get_config(calling_mod_path, calling_mod_dir, enable=True)
 
+    value = get_config_value("noclobber", "default", calling_mod_path, calling_mod_dir)
+    print("YYYYYYYYYY  Looked up value is", value)
     return
 
 #
@@ -757,7 +758,7 @@ def get_config_file_pathname(calling_mod_dir):
                                    os.path.join(dirname, "__init__.py")):
             return None # Past the top of a package, nothing found.
 
-def read_and_eval_config_file(filename, calling_mod_name):
+def read_and_eval_config_file(filename):
     """Return a dict of dicts containing a dict of parameter arguments for each
     section of the config file, with the evaluated value."""
     config = ConfigParser()
@@ -799,13 +800,19 @@ per_module_config_dict = {} # Cache the config dict for each module by module fi
 config_enabled_modules = {} # Save booleans for which modules look for config.
 config_dict_cache = {} # Cache config dicts by their filenames (save space and time).
 
-def get_config(calling_mod_name, calling_mod_path, calling_mod_dir, enable=False):
-    """Return the configuration corresponding to the module `calling_mod_name`.
-    Return an empty dict if no config is found.  Caches its values based on
-    both module names and the module directory.  If nothing in the cache, it
-    looks for the file and reads it in if possible.  If `enable` is not set
-    for a module (called once with enable set) then it will always return an
-    empty dict for the given module and skip searching for the file."""
+def get_config(calling_mod_path, calling_mod_dir, enable=False):
+
+    """Return the configuration corresponding to the module with pathname
+    `calling_mod_path`.  Return an empty dict if no config is found.  Caches
+    its values based on pathnames of module (to avoid problems with `__main__`
+    when run as a script) as well as on the pathnames of config files.  If
+    nothing is found in the cache, it looks for the file and reads it in if
+    possible.  If `enable` is not set for a module (called once with enable
+    set) then it will always return an empty dict for the given module and skip
+    searching for the file."""
+
+    # TODO, maybe: Could speed up even more by using a cache on each pathname
+    # up to the config file.  A bit more space but faster.
 
     cache_key = calling_mod_path # Use pathname to avoid __main__ problems.
 
@@ -834,8 +841,7 @@ def get_config(calling_mod_name, calling_mod_path, calling_mod_dir, enable=False
             config_dict = config_dict_cache[config_file_path]
 
         elif config_file_path: # Some path was set.
-            config_dict = read_and_eval_config_file(
-                                          config_file_path, calling_mod_name)
+            config_dict = read_and_eval_config_file(config_file_path)
             config_dict_cache[config_file_path] = config_dict
             print("READ CONFIG FILE ==========")
         else: # Returned None from config_file_path.
@@ -850,14 +856,35 @@ def get_config(calling_mod_name, calling_mod_path, calling_mod_dir, enable=False
 
     return config_dict
 
+#CONFIG_SECTION_STRING = "pytest_helper"
+CONFIG_SECTION_STRING = "auto_import_defaults"
+
+def get_config_value(config_key, default, calling_mod_path, calling_mod_dir):
+    """Return the config value from the config file corresponding to the key
+    `config_key`.  Return the value `default` if no config value is set."""
+    config_dict = get_config(calling_mod_path, calling_mod_dir)
+    print("WWW config dict is", config_dict)
+
+    print("WWW config dict is", config_dict)
+    if CONFIG_SECTION_STRING in config_dict:
+        config_dict = config_dict[CONFIG_SECTION_STRING]
+    else:
+        return default
+
+    print("WWW config dict is", config_dict)
+    if config_key in config_dict:
+        return config_dict[config_key]
+    else:
+        return default
+
 #
 # Test this file when invoked as a script.
 #
 
 init(conf=True, set_package=True) # TODO remove this or set a real config file in path
 if __name__ == "__main__": # This guard is optional, but slightly more efficient.
-    script_run("test", pytest_args="-v")
-    #script_run(self_test=True, pytest_args="-v", exit=True)
+    #script_run("test", pytest_args="-v")
+    script_run(self_test=True, pytest_args="-v", exit=True)
 
 auto_import()
 #print("skipped is", skip)
