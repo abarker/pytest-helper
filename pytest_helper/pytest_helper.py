@@ -15,6 +15,13 @@ framework.
 
 # TODO Add tests of the config file stuff.
 
+# TODO consider this and what effects it might have:
+# https://www.python.org/dev/peps/pep-0008/#imports
+# Absolute imports are recommended, as they are usually more readable and
+# tend to be better behaved (or at least give better error messages) if the
+# import system is incorrectly configured (such as when a directory inside a
+# package ends up on sys.path ):
+
 from __future__ import print_function, division, absolute_import
 import inspect
 import sys
@@ -411,7 +418,6 @@ def auto_import(noclobber=True, skip=None, imports=AUTO_IMPORT_DEFAULTS,
     g = get_calling_fun_globals_dict(level=level)
 
     for name, value in imports:
-        print("name, value", name, value)
         if skip and name in skip: continue
         insert_in_dict(g, name, value, noclobber)
 
@@ -656,21 +662,21 @@ def read_and_eval_config_file(filename):
                               "\nThe section is '{0}', the key is '{1}',"
                               " and the value is '{2}'."
                               .format(section, key, value))
-                print(err_string)
+                print(err_string, file=sys.stderr)
                 raise
             except SyntaxError:
                 err_string = ("SyntaxError in config file."
                               "\nThe section is '{0}', the key is '{1}',"
                               " and the value is '{2}'."
                               .format(section, key, value))
-                print(err_string)
+                print(err_string, file=sys.stderr)
                 raise
             #except ValueError: # Raised by ast.literal_eval.
             #    err_string = ("ValueError in config file."
             #                  "\nThe section is '{0}', the key is '{1}',"
             #                  " and the value is '{2}'."
             #                  .format(section, key, value))
-            #    print(err_string)
+            #    print(err_string, file=sys.stderr)
             #    raise
 
     return config_dict
