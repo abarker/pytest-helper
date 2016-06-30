@@ -58,41 +58,46 @@ from __future__ import print_function, division, absolute_import
 import os
 import sys
 
-# Get the module named __main__ from sys.modules.
-main_found = True
-try:
-    main_module = sys.modules["__main__"]
-except KeyError:
-    main_found = False
+def set_package_attribute():
+    """Set the `__package__` attribute of the module `__main__` if it is not
+    already set."""
+    # Get the module named __main__ from sys.modules.
+    main_found = True
+    try:
+        main_module = sys.modules["__main__"]
+    except KeyError:
+        main_found = False
 
-# Do nothing unless the program was started from a script.
-if main_found and main_module.__package__ is None:
+    # Do nothing unless the program was started from a script.
+    if main_found and main_module.__package__ is None:
 
-    importing_file = main_module.__file__
-    dirname, filename = os.path.split(
-                           os.path.realpath(os.path.abspath(importing_file)))
-    filename = os.path.splitext(filename)[0]
-    parent_dirs = [] # A reverse list of package name parts to build up.
+        importing_file = main_module.__file__
+        dirname, filename = os.path.split(
+                               os.path.realpath(os.path.abspath(importing_file)))
+        filename = os.path.splitext(filename)[0]
+        parent_dirs = [] # A reverse list of package name parts to build up.
 
-    # Go up the dirname tree to find the top-level package dirname.
-    while os.path.exists(os.path.join(dirname, "__init__.py")):
-        dirname, name = os.path.split(dirname) 
-        parent_dirs.append(name)
+        # Go up the dirname tree to find the top-level package dirname.
+        while os.path.exists(os.path.join(dirname, "__init__.py")):
+            dirname, name = os.path.split(dirname) 
+            parent_dirs.append(name)
 
-    if parent_dirs: # Do nothing if no __init__.py file was found.
+        if parent_dirs: # Do nothing if no __init__.py file was found.
 
-        # Get the package name and set the __package__ variable.
-        full_package_name = ".".join(reversed(parent_dirs))
-        main_module.__package__ = full_package_name
+            # Get the package name and set the __package__ variable.
+            full_package_name = ".".join(reversed(parent_dirs))
+            main_module.__package__ = full_package_name
 
-        # Now do the actual import of the full package.
-        try:
-            package_module = __import__(full_package_name)
-        except ImportError:
-            # Failure; insert dirname in sys.path, then try the import again.
-            sys.path.insert(0, dirname)
-            package_module = __import__(full_package_name)
+            # Now do the actual import of the full package.
+            try:
+                package_module = __import__(full_package_name)
+            except ImportError:
+                # Failure; insert dirname in sys.path, then try the import again.
+                sys.path.insert(0, dirname)
+                package_module = __import__(full_package_name)
 
-        # Add the package's module to sys.modules.
-        sys.modules[full_package_name] = package_module
+            # Add the package's module to sys.modules.
+            sys.modules[full_package_name] = package_module
+
+set_package_attribute()
 

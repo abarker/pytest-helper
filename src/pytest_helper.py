@@ -22,13 +22,43 @@ framework.
 # import system is incorrectly configured (such as when a directory inside a
 # package ends up on sys.path ):
 
+# Possible enhancement: It might be useful to go up the tree to find the
+# project root (one above package root), and let that be a keyword arg to
+# sys_paths.  E.g.,
+#
+# pytest_helper.sys_paths(from_proj_root="test")
+#
+# Is there an efficient way?  Then a top-level tests directory would be easy to
+# specify in sys_paths keywords.  BUT, how do you find that?  The top level
+# will not have an __init__.py file.  You can go up from a module in the
+# package, though, and take the first one without an __init__.py file.  It
+# could even be calculated on the fly, and probably would need to be, since
+# packages can import other packages, all using pytest-helper.
+# 
+# What about a general routine to go up the tree and save important data,
+# caching based on canonical filenames to reduce future lookup times?  This
+# could also set the __PACKAGE__ attribute fairly easily in __main__.  A module
+# could also consult the pytest_helper module to find out its own data, such as
+# current directory, saving having to look up itself.  More general-purpose
+# than just helping run pytest tests.
+#
+# Add an option to the pytest-helper.conf file which allows for an arbitrary
+# directory to be added to the sys.path.  So, in test dir at root of repo you
+# can just put in that file for the distribution directory and not have to use
+# any other sys_paths command!!!!!!!  LATER when you want to use pip local
+# install (when setup.py is set up and you are ready to package) you can just
+# delete that line from the file!!!!!!!!!!!!!!!!!!  BUT, the difficulty is that
+# any relative files should be relative to that file itself, NOT the importing
+# file... should be a fairly easy conversion barring the problems with changing
+# the local python directory (needs to be done early, if possible).
+
 from __future__ import print_function, division, absolute_import
 import inspect
 import sys
 import os
 try:
     from configparser import ConfigParser
-except ImportError: # Must be Python 2, use old names.
+except ImportError: # Must be Python 2; use old names.
     from ConfigParser import SafeConfigParser as ConfigParser
 import functools # Imported just for the wraps decorator.
 import py.test
@@ -145,8 +175,14 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
     calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
 
     # Override arguments with any values set in the config file.
+    # TODO what if you want more than one gn parent?  Could take list of numbers?
     add_gn_parent = get_config_value("sys_path_add_gn_parent", add_gn_parent,
                                              calling_mod_path, calling_mod_dir)
+    # Get the config file extra paths; note added to *end* of list above, but
+    # all are inserted, so the last ones come later in the sys.path list.
+    # TODO: needs more consideration, see paragraph near top.
+    #config_always_add_paths = get_config_value("sys_path_always_add", [],
+    #                                         calling_mod_path, calling_mod_dir)
 
     if dirs_to_add is None: dirs_to_add = []
     if isinstance(dirs_to_add, str): dirs_to_add = [dirs_to_add]
@@ -170,6 +206,8 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
         dirs_to_add.append(parent_string)
     if add_self:
         dirs_to_add.append(".")
+
+    #dirs_to_add.extend[config_always_add_paths] # Extend with the config file list.
 
     dirs_to_add = [os.path.expanduser(p) for p in dirs_to_add]
 
@@ -683,7 +721,10 @@ def read_and_eval_config_file(filename):
 
 per_module_config_dict = {} # Cache the config dict for each module by module filename.
 config_disabled_modules = {} # Save booleans for which modules look for config.
-config_dict_cache = {} # Cache config dicts by their filenames (save space and time).
+
+# Note the below cache precludes dynamically changing the config file, which
+# seems like a bad idea to allow anyway but might have uses.
+config_dict_cache = {} # Cache config dicts by their full filenames (save space and time).
 
 def get_config(calling_mod_path, calling_mod_dir, disable=False):
     """Return the configuration corresponding to the module with pathname
@@ -750,12 +791,12 @@ def get_config_value(config_key, default, calling_mod_path, calling_mod_dir):
 # Test this file when invoked as a script.
 #
 
-init(set_package=False) # TODO remove this or set a real config file in path
+#init(set_package=False) # TODO remove this or set a real config file in path
 if __name__ == "__main__": # This guard is optional, but slightly more efficient.
-    script_run("test", pytest_args="-v")
+    script_run("../test", pytest_args="-v")
     #script_run(self_test=True, pytest_args="-v -s", exit=True)
 
-auto_import(noclobber=False)
+#auto_import(noclobber=False)
 #print("skipped is", skip)
 #globals()["skip"] = fail
 def test_config():

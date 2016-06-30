@@ -1,14 +1,17 @@
+"""
+A setuptools-based setup module.
 
-"""A setuptools based setup module.
 See:
-https://packaging.python.org/en/latest/distributing.html
-https://github.com/pypa/sampleproject
+   https://packaging.python.org/en/latest/distributing.html
+   https://github.com/pypa/sampleproject
+
+Docs on the setup function kwargs:
+   https://packaging.python.org/distributing/#setup-args
+
 """
 
-# Always prefer setuptools over distutils
-from setuptools import setup, find_packages
-# To use a consistent encoding
-from codecs import open
+from setuptools import setup, find_packages # Prefer setuptools over distutils.
+from codecs import open # Use a consistent encoding.
 from os import path
 
 here = path.abspath(path.dirname(__file__))
@@ -72,13 +75,9 @@ setup(
     #package_dir={"": "pytest_helper"}, # Treat pytest_helper as root package.
     #packages=["pytest_helper"],
 
-    # NOTE I had to symlink these modules in the root package and remove any
-    # __init__.py in the pytest_helper dir to make this work to only include
-    # the two modules.  The package_dir kwarg does not seem to work, nor do
-    # other variations.  Might be the package/module name shadowing, or something else.
-    py_modules=["pytest_helper", "set_package_attribute"],
-    #py_modules=[splitext(basename(i))[0] for i in glob.glob("pytest_helper/*.py")]
-    #py_modules=["pytest_helper.pytest_helper", "pytest_helper.set_package_attribute"],
+    # NOTE I had to symlink these modules in the root of the project to provide
+    # these two modules and nothing else.
+    py_modules=["src/pytest_helper", "src/set_package_attribute"],
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip"s

@@ -1,1 +1,1 @@
-./pytest_helper/set_package_attribute.py
+src/set_package_attribute.py
