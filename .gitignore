@@ -1,0 +1,18 @@
+
+# Rope
+.ropeproject
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Sphinx documentation
+_build
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Setuptools stuff
+*.egg-info
+
