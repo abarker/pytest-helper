@@ -1,1 +1,0 @@
-src/set_package_attribute.py

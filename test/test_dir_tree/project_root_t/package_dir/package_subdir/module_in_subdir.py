@@ -3,12 +3,13 @@ from __future__ import print_function, division, absolute_import
 import os
 import inspect
 import pytest_helper
+pytest_helper.init(set_package=True)
 
 # This line is all this module really does; obviously a real, non-test module
 # would do more.
 test_string = "in_child_dir"
 
-import set_package_attribute # Test setting the package attribute for scripts.
+#import set_package_attribute # Test setting the package attribute for scripts.
 from . import dummy_module # Works! now this doesn't give an error.
 from .. import dummy_module # Works! now this doesn't give an error.
 
