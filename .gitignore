@@ -16,3 +16,8 @@ pip-delete-this-directory.txt
 # Setuptools stuff
 *.egg-info
 
+# py.test cashe
+.cache
+
+# vim swap
+*.swp
