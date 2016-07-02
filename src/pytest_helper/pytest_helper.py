@@ -800,7 +800,10 @@ def get_config_value(config_key, default, calling_mod_path, calling_mod_dir):
 
 #init(set_package=False) # TODO remove this or set a real config file in path
 if __name__ == "__main__": # This guard is optional, but slightly more efficient.
-    script_run("../test", pytest_args="-v")
+    pass
+    # TODO: cannot run own scripts because of relative import of set_package_attribute
+    # Fix or delete this whole part... probably the latter.
+    #script_run("../../test", pytest_args="-v")
     #script_run(self_test=True, pytest_args="-v -s", exit=True)
 
 #auto_import(noclobber=False)
