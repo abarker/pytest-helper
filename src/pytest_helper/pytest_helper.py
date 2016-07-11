@@ -67,8 +67,6 @@ try:
     from configparser import ConfigParser
 except ImportError: # Must be Python 2; use old names.
     from ConfigParser import SafeConfigParser as ConfigParser
-# import functools # Imported just for the wraps decorator.
-from . import set_package_attribute
 import py.test
 pytest = py.test # Alias, usable in config files.
 
@@ -261,12 +259,12 @@ def init(set_package=False, conf=True, calling_mod_name=None,
     The `init` function takes an optional keyword argument `set_package`.  If
     it is true then the package attribute of module `__main__` will be
     automatically set.  This allows for using relative imports fromp scripts,
-    but it must be called before the relative imports are attempted.  The
-    function call `pytest_helper.init(set_package=True)` is equivalent to::
+    but it must be called before the relative imports are attempted.  If the
+    calling module was run as a script the
+    function call `pytest_helper.init(set_package=True)` will import the
+    `set_package_attribute` package and initialize it.  Otherwise, it will do
+    the same as the ordinary call.
         
-        pytest_helper.init()
-        import set_package_attribute
-       
     If the parameter `conf` is set false then no configuration files will be
     searched for or used.
     """
@@ -287,8 +285,10 @@ def init(set_package=False, conf=True, calling_mod_name=None,
                                              calling_mod_path, calling_mod_dir)
 
     if set_package:
-       # Set the __PACKAGE__ attribute for module __main__ (if there is one).
-       set_package_attribute.set_package_attribute()
+        if calling_mod_name == "__main__":
+            print("----------------------------------> importing s.p.a. and init")
+            import set_package_attribute
+            set_package_attribute.init()
 
     return
 
