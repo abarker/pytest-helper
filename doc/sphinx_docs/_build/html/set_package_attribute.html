@@ -34,9 +34,6 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="pytest_helper.html" title="pytest_helper module"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">pytest_helper  documentation</a> &raquo;</li> 
@@ -50,48 +47,6 @@
             
   <div class="section" id="set-package-attribute-module">
 <h1>set_package_attribute module<a class="headerlink" href="#set-package-attribute-module" title="Permalink to this headline">¶</a></h1>
-<span class="target" id="module-set_package_attribute"><span id="set-package-attribute"></span></span><div class="section" id="description">
-<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
-<p>In order to run a module inside a package as a script and have relative imports
-work, the <tt class="code docutils literal"><span class="pre">__package__</span></tt> attribute of the module should be set.  Importing this
-module sets the <tt class="code docutils literal"><span class="pre">__package__</span></tt> attribute of the module <tt class="code docutils literal"><span class="pre">__main__</span></tt>.  This module
-is intended to be imported by modules which might be run as a script inside a
-package which uses relative imports.</p>
-<p>To use the module, just import it before any of the non-system files, inside
-any module that you want to possibly run as a script.  Nothing else is
-required.  This module needs to be imported before any relative imports or
-modules which use relative imports.  Any existing <tt class="code docutils literal"><span class="pre">__package__</span></tt> attributes will
-remain unchanged.</p>
-</div>
-<div class="section" id="further-details">
-<h2>Further details<a class="headerlink" href="#further-details" title="Permalink to this headline">¶</a></h2>
-<p>On initial import this module searches for the module <tt class="code docutils literal"><span class="pre">__main__</span></tt> in
-<tt class="code docutils literal"><span class="pre">sys.modules</span></tt>.  If that module is not found then the current runtime was not
-started from a script and nothing is done.  If module <tt class="code docutils literal"><span class="pre">__main__</span></tt> is found then
-the current runtime was started from a script.  In that case the <tt class="code docutils literal"><span class="pre">__package__</span></tt>
-attribute for the <tt class="code docutils literal"><span class="pre">__main__</span></tt> module is computed and set in that module&#8217;s
-namespace.  (If there already was a <tt class="code docutils literal"><span class="pre">__package__</span></tt> attribute in the namespace
-then nothing is done.)  The package is then imported under the full package
-name and the module is also added to <tt class="code docutils literal"><span class="pre">sys.modules</span></tt> under the full package name.</p>
-<p>In order for a script to find this module to import it obviously must be saved
-somewhere which is in (or is added to) the Python path.  One such place is
-(usually) in the same directory as the script.  This package cannot be imported
-via a relative import.</p>
-<div class="admonition seealso">
-<p class="first admonition-title">See also</p>
-<p class="last">This module is based on the basic method described in the answers on this
-StackOverflow page: <a class="reference external" href="http://stackoverflow.com/questions/2943847/">http://stackoverflow.com/questions/2943847/</a></p>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">As of 2007 Guido van Rossum viewed running scripts that are inside packages
-as an anti-pattern (see
-<a class="reference external" href="https://mail.python.org/pipermail/python-3000/2007-April/006793.html">https://mail.python.org/pipermail/python-3000/2007-April/006793.html</a>).
-Nevertheless, it can be a convenient and useful pattern in certain
-situations.  He did later approve PEP 366, which defined the <tt class="code docutils literal"><span class="pre">__package__</span></tt>
-attribute to handle the situation.</p>
-</div>
-</div>
 </div>
 
 
@@ -100,15 +55,6 @@ attribute to handle the situation.</p>
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">set_package_attribute module</a><ul>
-<li><a class="reference internal" href="#description">Description</a></li>
-<li><a class="reference internal" href="#further-details">Further details</a></li>
-</ul>
-</li>
-</ul>
-
   <h4>Previous topic</h4>
   <p class="topless"><a href="pytest_helper.html"
                         title="previous chapter">pytest_helper module</a></p>
@@ -140,9 +86,6 @@ attribute to handle the situation.</p>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li class="right" >
           <a href="pytest_helper.html" title="pytest_helper module"
              >previous</a> |</li>

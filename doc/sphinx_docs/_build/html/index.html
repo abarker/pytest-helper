@@ -203,34 +203,21 @@ work even if some intervening command or module import changes the Python
 CWD (which is rare, but it happens).</p>
 </div></blockquote>
 </li>
-<li><p class="first"><a class="reference internal" href="set_package_attribute.html#set-package-attribute"><em>set_package_attribute</em></a></p>
-<blockquote>
-<div><p>The pytest-helper package provides a module called <tt class="code docutils literal"><span class="pre">set_package_attribute</span></tt>.
-Simply importing this module before any relative imports allows those
-relative imports to continue working when the module is invoked as a script.
-(This is done by setting the <tt class="code docutils literal"><span class="pre">__package__</span></tt> attribute for <tt class="code docutils literal"><span class="pre">__main__</span></tt>, but
-requires some other steps, too.)  So to use the module, you would make this
-import before any relative imports:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">set_package_attribute</span>
-</pre></div>
-</div>
-<p>An alternate way to do the same thing is to call the optional pytest-helper
-initialization function just after importing <tt class="code docutils literal"><span class="pre">pytest_helper</span></tt>, as described
-above, using the keyword argument <tt class="code docutils literal"><span class="pre">set_package=True</span></tt>.</p>
-</div></blockquote>
-</li>
 </ul>
 <p>See <a class="reference internal" href="pytest_helper.html#help-running"><em>Functions to help with running tests</em></a> for detailed documentation of these functions.</p>
 </div>
 <div class="section" id="functions-to-help-in-writing-tests">
 <h2>Functions to help in writing tests<a class="headerlink" href="#functions-to-help-in-writing-tests" title="Permalink to this headline">¶</a></h2>
-<p>These functions are used to help in writing the tests themselves.</p>
+<p>These functions are used to help in writing the tests themselves.  They are
+good for quickly setting up tests.  They can always be replaced by their
+more-conventional (non-magic) equivalents.</p>
 <ul>
 <li><p class="first"><a class="reference internal" href="pytest_helper.html#auto-import"><em>pytest_helper.auto_import</em></a></p>
 <blockquote>
-<div><p>The <tt class="code docutils literal"><span class="pre">auto_import</span></tt> function is a convenience function that automatically imports
-certain pytest-helper and pytest functions into the calling module&#8217;s global
-namespace.  The names can then be used like builtins in the test code.</p>
+<div><p>The <tt class="code docutils literal"><span class="pre">auto_import</span></tt> function is a convenience function that automatically
+imports certain pytest-helper and pytest functions into the calling module&#8217;s
+global namespace.  The names can then be used essentially as builtins in the
+test code.</p>
 <p>By default this function imports the <tt class="code docutils literal"><span class="pre">py.test</span></tt> module as <tt class="code docutils literal"><span class="pre">pytest</span></tt>.  From
 pytest-helper it imports <tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt>, and
 <tt class="code docutils literal"><span class="pre">clear_locals_from_globals</span></tt>.  From pytest it imports <tt class="code docutils literal"><span class="pre">raises</span></tt>, <tt class="code docutils literal"><span class="pre">fail</span></tt>,
@@ -239,6 +226,8 @@ pytest-helper it imports <tt class="code docutils literal"><span class="pre">loc
 <div class="highlight-python"><div class="highlight"><pre><span class="n">pytest_helper</span><span class="o">.</span><span class="n">auto_import</span><span class="p">()</span>
 </pre></div>
 </div>
+<p>Note that some linters will complain about variables being used without
+being set.</p>
 </div></blockquote>
 </li>
 <li><p class="first"><a class="reference internal" href="pytest_helper.html#locals-to-globals"><em>pytest_helper.locals_to_globals</em></a></p>
@@ -253,6 +242,8 @@ on its previous call so they do not accidentally affect the current tests.</p>
 <p>This function is usually called without arguments, near the end of a setup
 function or fixture.  If <tt class="code docutils literal"><span class="pre">auto_import</span></tt> is used then it is automatically
 imported into the module&#8217;s global namespace.</p>
+<p>Note that some linters will complain about variables being used without
+being set.</p>
 </div></blockquote>
 </li>
 <li><p class="first"><a class="reference internal" href="pytest_helper.html#clear-locals-from-globals"><em>pytest_helper.clear_locals_from_globals</em></a></p>
@@ -403,11 +394,6 @@ override</p>
 <li class="toctree-l2"><a class="reference internal" href="pytest_helper.html#functions-to-help-with-running-tests">Functions to help with running tests</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pytest_helper.html#functions-to-help-in-writing-tests">Functions to help in writing tests</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pytest_helper.html#exceptions">Exceptions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="set_package_attribute.html">set_package_attribute module</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="set_package_attribute.html#description">Description</a></li>
-<li class="toctree-l2"><a class="reference internal" href="set_package_attribute.html#further-details">Further details</a></li>
 </ul>
 </li>
 </ul>

@@ -62,14 +62,51 @@
 
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="c"># TODO pytest has ini file stuff of its own.  Maybe do the same as they do, or even</span>
-<span class="c"># use the same config file if they allow arbitrary sections to be added.</span>
-<span class="c"># https://pytest.org/latest/customize.html</span>
+<span class="c"># TODO Add tests of the config file stuff.</span>
+
+<span class="c"># TODO consider this and what effects it might have:</span>
+<span class="c"># https://www.python.org/dev/peps/pep-0008/#imports</span>
+<span class="c"># Absolute imports are recommended, as they are usually more readable and</span>
+<span class="c"># tend to be better behaved (or at least give better error messages) if the</span>
+<span class="c"># import system is incorrectly configured (such as when a directory inside a</span>
+<span class="c"># package ends up on sys.path ):</span>
+
+<span class="c"># Possible enhancement: It might be useful to go up the tree to find the</span>
+<span class="c"># project root (one above package root), and let that be a keyword arg to</span>
+<span class="c"># sys_paths.  E.g.,</span>
 <span class="c">#</span>
-<span class="c"># ---&gt; You can set pytest options in pytest.ini file, but might not hurt</span>
-<span class="c">#      to also allow in pytest_helper.ini file.</span>
+<span class="c"># pytest_helper.sys_paths(from_proj_root=&quot;test&quot;)</span>
 <span class="c">#</span>
-<span class="c"># ---&gt; Setting set_package from the init function would also be useful.</span>
+<span class="c"># Is there an efficient way?  Then a top-level tests directory would be easy to</span>
+<span class="c"># specify in sys_paths keywords.  BUT, how do you find that?  The top level</span>
+<span class="c"># will not have an __init__.py file.  You can go up from a module in the</span>
+<span class="c"># package, though, and take the first one without an __init__.py file.  It</span>
+<span class="c"># could even be calculated on the fly, and probably would need to be, since</span>
+<span class="c"># packages can import other packages, all using pytest-helper.</span>
+<span class="c"># </span>
+<span class="c"># What about a general routine to go up the tree and save important data,</span>
+<span class="c"># caching based on canonical filenames to reduce future lookup times?  This</span>
+<span class="c"># could also set the __PACKAGE__ attribute fairly easily in __main__.  A module</span>
+<span class="c"># could also consult the pytest_helper module to find out its own data, such as</span>
+<span class="c"># current directory, saving having to look up itself.  More general-purpose</span>
+<span class="c"># than just helping run pytest tests.</span>
+<span class="c">#</span>
+<span class="c"># Add an option to the pytest-helper.conf file which allows for an arbitrary</span>
+<span class="c"># directory to be added to the sys.path.  So, in test dir at root of repo you</span>
+<span class="c"># can just put in that file for the distribution directory and not have to use</span>
+<span class="c"># any other sys_paths command!!!!!!!  LATER when you want to use pip local</span>
+<span class="c"># install (when setup.py is set up and you are ready to package) you can just</span>
+<span class="c"># delete that line from the file!!!!!!!!!!!!!!!!!!  BUT, the difficulty is that</span>
+<span class="c"># any relative files should be relative to that file itself, NOT the importing</span>
+<span class="c"># file... should be a fairly easy conversion barring the problems with changing</span>
+<span class="c"># the local python directory (needs to be done early, if possible).</span>
+<span class="c">#</span>
+<span class="c"># TODO: make the set_package option of pytest_helper.init function default</span>
+<span class="c"># True if an __init__.py file is found in same directory!  Otherwise, default</span>
+<span class="c"># False.  Implementation idea: have a general filesystem info scan first</span>
+<span class="c"># that gets the config file *and* gets the info of whether in a package (and</span>
+<span class="c"># maybe also subsumes the set_package_attribute() function, too, while</span>
+<span class="c"># scanning up the dir tree).</span>
 
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">absolute_import</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
@@ -77,9 +114,8 @@
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">configparser</span> <span class="kn">import</span> <span class="n">ConfigParser</span>
-<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span> <span class="c"># Must be Python 2, use old names.</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span> <span class="c"># Must be Python 2; use old names.</span>
     <span class="kn">from</span> <span class="nn">ConfigParser</span> <span class="kn">import</span> <span class="n">SafeConfigParser</span> <span class="k">as</span> <span class="n">ConfigParser</span>
-<span class="kn">import</span> <span class="nn">functools</span> <span class="c"># Imported just for the wraps decorator.</span>
 <span class="kn">import</span> <span class="nn">py.test</span>
 <span class="n">pytest</span> <span class="o">=</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span> <span class="c"># Alias, usable in config files.</span>
 
@@ -194,8 +230,14 @@
     <span class="n">calling_mod_name</span><span class="p">,</span> <span class="n">calling_mod</span><span class="p">,</span> <span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span> <span class="o">=</span> <span class="n">mod_info</span>
 
     <span class="c"># Override arguments with any values set in the config file.</span>
+    <span class="c"># TODO what if you want more than one gn parent?  Could take list of numbers?</span>
     <span class="n">add_gn_parent</span> <span class="o">=</span> <span class="n">get_config_value</span><span class="p">(</span><span class="s">&quot;sys_path_add_gn_parent&quot;</span><span class="p">,</span> <span class="n">add_gn_parent</span><span class="p">,</span>
                                              <span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="p">)</span>
+    <span class="c"># Get the config file extra paths; note added to *end* of list above, but</span>
+    <span class="c"># all are inserted, so the last ones come later in the sys.path list.</span>
+    <span class="c"># TODO: needs more consideration, see paragraph near top.</span>
+    <span class="c">#config_always_add_paths = get_config_value(&quot;sys_path_always_add&quot;, [],</span>
+    <span class="c">#                                         calling_mod_path, calling_mod_dir)</span>
 
     <span class="k">if</span> <span class="n">dirs_to_add</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">dirs_to_add</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dirs_to_add</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="n">dirs_to_add</span> <span class="o">=</span> <span class="p">[</span><span class="n">dirs_to_add</span><span class="p">]</span>
@@ -219,6 +261,8 @@
         <span class="n">dirs_to_add</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parent_string</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">add_self</span><span class="p">:</span>
         <span class="n">dirs_to_add</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;.&quot;</span><span class="p">)</span>
+
+    <span class="c">#dirs_to_add.extend[config_always_add_paths] # Extend with the config file list.</span>
 
     <span class="n">dirs_to_add</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">dirs_to_add</span><span class="p">]</span>
 
@@ -264,16 +308,16 @@
 <span class="sd">    The `init` function takes an optional keyword argument `set_package`.  If</span>
 <span class="sd">    it is true then the package attribute of module `__main__` will be</span>
 <span class="sd">    automatically set.  This allows for using relative imports fromp scripts,</span>
-<span class="sd">    but it must be called before the relative imports are attempted.  The</span>
-<span class="sd">    function call `pytest_helper.init(set_package=True)` is equivalent to::</span>
+<span class="sd">    but it must be called before the relative imports are attempted.  If the</span>
+<span class="sd">    calling module was run as a script the</span>
+<span class="sd">    function call `pytest_helper.init(set_package=True)` will import the</span>
+<span class="sd">    `set_package_attribute` package and initialize it.  Otherwise, it will do</span>
+<span class="sd">    the same as the ordinary call.</span>
 <span class="sd">        </span>
-<span class="sd">        pytest_helper.init()</span>
-<span class="sd">        import set_package_attribute</span>
-<span class="sd">       </span>
 <span class="sd">    If the parameter `conf` is set false then no configuration files will be</span>
 <span class="sd">    searched for or used.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
+    <span class="c"># TODO:  update docs above, no longer separate import</span>
 
     <span class="c"># The get_calling_module_info function caches module info, including the</span>
     <span class="c"># calling_mod_path, as a side effect.</span>
@@ -290,9 +334,10 @@
                                              <span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">set_package</span><span class="p">:</span>
-       <span class="c"># Set the __PACKAGE__ attribute for module __main__ (if there is one).</span>
-       <span class="k">global</span> <span class="n">set_package_attribute</span>
-       <span class="kn">import</span> <span class="nn">set_package_attribute</span>
+        <span class="k">if</span> <span class="n">calling_mod_name</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;----------------------------------&gt; importing s.p.a. and init&quot;</span><span class="p">)</span>
+            <span class="kn">import</span> <span class="nn">set_package_attribute</span>
+            <span class="n">set_package_attribute</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
 
     <span class="k">return</span>
 
@@ -413,21 +458,6 @@
     <span class="sd">&quot;&quot;&quot;Raised only when there is an error related to the `locals_to_globals`</span>
 <span class="sd">    operations.&quot;&quot;&quot;</span>
     <span class="k">pass</span>
-
-
-<span class="c"># BEST WAY if NO eval is used, just explicit variable lookups:</span>
-<span class="c"># ---&gt; If you require a module name string also then you can use getattr instead</span>
-<span class="c"># of having to use eval:</span>
-<span class="c">#   if module_name = &quot;pytest_helper&quot;: module_name = __name__ # This module.</span>
-<span class="c">#   module = sys.modules[&quot;foo.bar&quot;] # ADD TEST IF NOT THERE</span>
-<span class="c">#   value = getattr(module, &quot;name_orig&quot;)</span>
-<span class="c">#   insert_in_dict(g, name_new, value, noclobber)</span>
-<span class="c"># where you look up the module from its name.... consider.  Then put that in</span>
-<span class="c"># the relevant globals() dict.</span>
-<span class="c"># So update them all to look like: (&quot;fail&quot;, &quot;fail&quot;, &quot;py.test&quot;),</span>
-<span class="c">#</span>
-<span class="c"># BUT this can FAIL if the module name is __main__ instead of expected name!</span>
-<span class="c"># BUT you don&#39;t need to import from current namespace, anyway, when using auto_import.</span>
 </div>
 <span class="n">AUTO_IMPORT_DEFAULTS</span> <span class="o">=</span> <span class="p">[(</span><span class="s">&quot;pytest&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="p">),</span> <span class="c"># (&lt;nameToImportAs&gt;, &lt;value&gt;)</span>
                         <span class="p">(</span><span class="s">&quot;raises&quot;</span><span class="p">,</span> <span class="n">py</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">raises</span><span class="p">),</span>
@@ -482,7 +512,6 @@
     <span class="n">g</span> <span class="o">=</span> <span class="n">get_calling_fun_globals_dict</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">imports</span><span class="p">:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&quot;name, value&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">skip</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">skip</span><span class="p">:</span> <span class="k">continue</span>
         <span class="n">insert_in_dict</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">noclobber</span><span class="p">)</span>
 
@@ -674,7 +703,7 @@
 
 <span class="k">def</span> <span class="nf">get_importing_module_filename</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Run this during the initialization of a module to return the absolute pathname</span>
-<span class="sd">    of the module which is importing the module that is currently being imported.&quot;&quot;&quot;</span>
+<span class="sd">    of the module that it is being imported from.&quot;&quot;&quot;</span>
     <span class="n">module_filename</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getframeinfo</span><span class="p">(</span>
                       <span class="n">inspect</span><span class="o">.</span><span class="n">getouterframes</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">currentframe</span><span class="p">())[</span><span class="n">level</span><span class="p">][</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">module_filename</span><span class="p">)</span>
@@ -727,28 +756,31 @@
                               <span class="s">&quot;</span><span class="se">\n</span><span class="s">The section is &#39;{0}&#39;, the key is &#39;{1}&#39;,&quot;</span>
                               <span class="s">&quot; and the value is &#39;{2}&#39;.&quot;</span>
                               <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">section</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
-                <span class="k">print</span><span class="p">(</span><span class="n">err_string</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">err_string</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
                 <span class="k">raise</span>
             <span class="k">except</span> <span class="ne">SyntaxError</span><span class="p">:</span>
                 <span class="n">err_string</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;SyntaxError in config file.&quot;</span>
                               <span class="s">&quot;</span><span class="se">\n</span><span class="s">The section is &#39;{0}&#39;, the key is &#39;{1}&#39;,&quot;</span>
                               <span class="s">&quot; and the value is &#39;{2}&#39;.&quot;</span>
                               <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">section</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
-                <span class="k">print</span><span class="p">(</span><span class="n">err_string</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">err_string</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
                 <span class="k">raise</span>
             <span class="c">#except ValueError: # Raised by ast.literal_eval.</span>
             <span class="c">#    err_string = (&quot;ValueError in config file.&quot;</span>
             <span class="c">#                  &quot;\nThe section is &#39;{0}&#39;, the key is &#39;{1}&#39;,&quot;</span>
             <span class="c">#                  &quot; and the value is &#39;{2}&#39;.&quot;</span>
             <span class="c">#                  .format(section, key, value))</span>
-            <span class="c">#    print(err_string)</span>
+            <span class="c">#    print(err_string, file=sys.stderr)</span>
             <span class="c">#    raise</span>
 
     <span class="k">return</span> <span class="n">config_dict</span>
 
 <span class="n">per_module_config_dict</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># Cache the config dict for each module by module filename.</span>
 <span class="n">config_disabled_modules</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># Save booleans for which modules look for config.</span>
-<span class="n">config_dict_cache</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># Cache config dicts by their filenames (save space and time).</span>
+
+<span class="c"># Note the below cache precludes dynamically changing the config file, which</span>
+<span class="c"># seems like a bad idea to allow anyway but might have uses.</span>
+<span class="n">config_dict_cache</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># Cache config dicts by their full filenames (save space and time).</span>
 
 <span class="k">def</span> <span class="nf">get_config</span><span class="p">(</span><span class="n">calling_mod_path</span><span class="p">,</span> <span class="n">calling_mod_dir</span><span class="p">,</span> <span class="n">disable</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return the configuration corresponding to the module with pathname</span>
@@ -815,15 +847,17 @@
 <span class="c"># Test this file when invoked as a script.</span>
 <span class="c">#</span>
 
-<span class="n">init</span><span class="p">(</span><span class="n">set_package</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="c"># TODO remove this or set a real config file in path</span>
+<span class="c">#init(set_package=False) # TODO remove this or set a real config file in path</span>
 <span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span> <span class="c"># This guard is optional, but slightly more efficient.</span>
-    <span class="n">script_run</span><span class="p">(</span><span class="s">&quot;test&quot;</span><span class="p">,</span> <span class="n">pytest_args</span><span class="o">=</span><span class="s">&quot;-v&quot;</span><span class="p">)</span>
+    <span class="k">pass</span>
+    <span class="c"># TODO: cannot run own scripts because of relative import of set_package_attribute</span>
+    <span class="c"># Fix or delete this whole part... probably the latter.</span>
+    <span class="c">#script_run(&quot;../../test&quot;, pytest_args=&quot;-v&quot;)</span>
     <span class="c">#script_run(self_test=True, pytest_args=&quot;-v -s&quot;, exit=True)</span>
 
-<span class="n">auto_import</span><span class="p">()</span>
+<span class="c">#auto_import(noclobber=False)</span>
 <span class="c">#print(&quot;skipped is&quot;, skip)</span>
 <span class="c">#globals()[&quot;skip&quot;] = fail</span>
-<span class="nb">dir</span><span class="p">(</span><span class="n">set_package_attribute</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">test_config</span><span class="p">():</span>
     <span class="c">#fail()</span>
     <span class="k">print</span><span class="p">(</span><span class="s">&quot;skipped inside fun is&quot;</span><span class="p">,</span> <span class="n">skip</span><span class="p">)</span>

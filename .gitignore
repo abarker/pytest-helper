@@ -7,7 +7,7 @@ __pycache__/
 *.py[cod]
 
 # Sphinx documentation
-_build
+# _build # Can't exclude with current gh-pages setup.
 
 # Installer logs
 pip-log.txt

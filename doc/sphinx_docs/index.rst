@@ -177,27 +177,14 @@ test file.
    work even if some intervening command or module import changes the Python
    CWD (which is rare, but it happens).
 
-* :ref:`set_package_attribute<set_package_attribute>`
-
-   The pytest-helper package provides a module called `set_package_attribute`.
-   Simply importing this module before any relative imports allows those
-   relative imports to continue working when the module is invoked as a script.
-   (This is done by setting the `__package__` attribute for `__main__`, but
-   requires some other steps, too.)  So to use the module, you would make this
-   import before any relative imports::
-
-      import set_package_attribute
-
-   An alternate way to do the same thing is to call the optional pytest-helper
-   initialization function just after importing `pytest_helper`, as described
-   above, using the keyword argument `set_package=True`.
-
 See :ref:`help_running` for detailed documentation of these functions.
 
 Functions to help in writing tests
 ==================================
 
-These functions are used to help in writing the tests themselves.
+These functions are used to help in writing the tests themselves.  They are
+good for quickly setting up tests.  They can always be replaced by their
+more-conventional (non-magic) equivalents.
 
 * :ref:`pytest_helper.auto_import<auto_import>`
 
@@ -231,6 +218,9 @@ These functions are used to help in writing the tests themselves.
    This function is usually called without arguments, near the end of a setup
    function or fixture.  If `auto_import` is used then it is automatically
    imported into the module's global namespace.
+   
+   Note that some linters will complain about variables being used without
+   being set.
 
 * :ref:`pytest_helper.clear_locals_from_globals<clear_locals_from_globals>`
 
@@ -380,7 +370,6 @@ Module contents
    :maxdepth: 4
 
    pytest_helper
-   set_package_attribute
 
 Indices and tables
 ==================

@@ -24,7 +24,6 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="pytest_helper  documentation" href="index.html" />
-    <link rel="next" title="set_package_attribute module" href="set_package_attribute.html" />
     <link rel="prev" title="pytest-helper" href="index.html" /> 
   </head>
   <body>
@@ -37,9 +36,6 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="right" >
-          <a href="set_package_attribute.html" title="set_package_attribute module"
-             accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="index.html" title="pytest-helper"
              accesskey="P">previous</a> |</li>
@@ -139,12 +135,11 @@ this function should work.</p>
 <p>The <tt class="code docutils literal"><span class="pre">init</span></tt> function takes an optional keyword argument <tt class="code docutils literal"><span class="pre">set_package</span></tt>.  If
 it is true then the package attribute of module <tt class="code docutils literal"><span class="pre">__main__</span></tt> will be
 automatically set.  This allows for using relative imports fromp scripts,
-but it must be called before the relative imports are attempted.  The
-function call <tt class="code docutils literal"><span class="pre">pytest_helper.init(set_package=True)</span></tt> is equivalent to:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">pytest_helper</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
-<span class="kn">import</span> <span class="nn">set_package_attribute</span>
-</pre></div>
-</div>
+but it must be called before the relative imports are attempted.  If the
+calling module was run as a script the
+function call <tt class="code docutils literal"><span class="pre">pytest_helper.init(set_package=True)</span></tt> will import the
+<tt class="code docutils literal"><span class="pre">set_package_attribute</span></tt> package and initialize it.  Otherwise, it will do
+the same as the ordinary call.</p>
 <p>If the parameter <tt class="code docutils literal"><span class="pre">conf</span></tt> is set false then no configuration files will be
 searched for or used.</p>
 </dd></dl>
@@ -154,7 +149,7 @@ searched for or used.</p>
 <span id="help-writing"></span><h2>Functions to help in writing tests<a class="headerlink" href="#functions-to-help-in-writing-tests" title="Permalink to this headline">¶</a></h2>
 <span class="target" id="auto-import"></span><dl class="function">
 <dt id="pytest_helper.auto_import">
-<tt class="descclassname">pytest_helper.</tt><tt class="descname">auto_import</tt><big>(</big><em>noclobber=True, skip=None, imports=[('pytest', &lt;AliasModule 'py.test' for 'pytest'&gt;), ('raises', &lt;function raises at 0x2b598df03e60&gt;), ('fail', &lt;function fail at 0x2b598dc770c8&gt;), ('fixture', &lt;function fixture at 0x2b598ddd7d70&gt;), ('skip', &lt;function skip at 0x2b598dc77050&gt;), ('xfail', &lt;function xfail at 0x2b598df22668&gt;), ('locals_to_globals', &lt;function locals_to_globals at 0x2b598daab1b8&gt;), ('clear_locals_from_globals', &lt;function clear_locals_from_globals at 0x2b598daab230&gt;)], calling_mod_name=None, calling_mod_path=None, level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#auto_import"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.auto_import" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">auto_import</tt><big>(</big><em>noclobber=True, skip=None, imports=[('pytest', &lt;AliasModule 'py.test' for 'pytest'&gt;), ('raises', &lt;function raises at 0x2ae280c92b18&gt;), ('fail', &lt;function fail at 0x2ae280544de8&gt;), ('fixture', &lt;function fixture at 0x2ae280c70a28&gt;), ('skip', &lt;function skip at 0x2ae280544d70&gt;), ('xfail', &lt;function xfail at 0x2ae280db6320&gt;), ('locals_to_globals', &lt;function locals_to_globals at 0x2ae2806fbed8&gt;), ('clear_locals_from_globals', &lt;function clear_locals_from_globals at 0x2ae2806fbf50&gt;)], calling_mod_name=None, calling_mod_path=None, level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#auto_import"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.auto_import" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function imports some pytest-helper and pytest attributes into the
 calling module&#8217;s global namespace.  This avoids having to explicitly do
 common imports.  A <tt class="code docutils literal"><span class="pre">PytestHelperException</span></tt> will be raised if any of those
@@ -270,9 +265,6 @@ operations.</p>
   <h4>Previous topic</h4>
   <p class="topless"><a href="index.html"
                         title="previous chapter">pytest-helper</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="set_package_attribute.html"
-                        title="next chapter">set_package_attribute module</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/pytest_helper.txt"
@@ -304,9 +296,6 @@ operations.</p>
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="right" >
-          <a href="set_package_attribute.html" title="set_package_attribute module"
-             >next</a> |</li>
         <li class="right" >
           <a href="index.html" title="pytest-helper"
              >previous</a> |</li>
