@@ -201,9 +201,10 @@ These functions are used to help in writing the tests themselves.
 
 * :ref:`pytest_helper.auto_import<auto_import>`
 
-   The `auto_import` function is a convenience function that automatically imports
-   certain pytest-helper and pytest functions into the calling module's global
-   namespace.  The names can then be used like builtins in the test code.
+   The `auto_import` function is a convenience function that automatically
+   imports certain pytest-helper and pytest functions into the calling module's
+   global namespace.  The names can then be used essentially as builtins in the
+   test code.
    
    By default this function imports the `py.test` module as `pytest`.  From
    pytest-helper it imports `locals_to_globals`, and
@@ -213,6 +214,9 @@ These functions are used to help in writing the tests themselves.
    This function is usually called without arguments::
 
       pytest_helper.auto_import()
+
+   Note that some linters will complain about variables being used without
+   being set.
 
 * :ref:`pytest_helper.locals_to_globals<locals_to_globals>`
 

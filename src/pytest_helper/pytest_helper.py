@@ -654,7 +654,7 @@ def get_calling_module(level=2):
 
 def get_importing_module_filename(level=2):
     """Run this during the initialization of a module to return the absolute pathname
-    of the module which is importing the module that is currently being imported."""
+    of the module that it is being imported from."""
     module_filename = inspect.getframeinfo(
                       inspect.getouterframes(inspect.currentframe())[level][0])[0]
     return os.path.abspath(module_filename)
