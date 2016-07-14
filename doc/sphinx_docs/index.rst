@@ -3,7 +3,20 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. thing TODO: include the github command to clone or else the zipped file pathname.
+.. thing TODO: make putting the call to script_run at the top of the file the
+   recommended way, and only mention the other way as a possible alternative.
+   Since the rest of the module init will run.  Especially, the imports will be
+   imported and need to work -- may require set_package option.  Of course Pytest
+   will have to be able to import them, too, on self-test, so not a big difference
+   in that way.
+   .
+   Consider what pytest will do with imports when it imports something from the
+   middle of a package... that may not work with Python 3 style references.
+   You are still calling pytest to run on the file and not importing the
+   package...
+   .
+   See the in_same_dir.py test case, it DOES fail when pytest tries the import...
+   Consider options, don't know how to get pytest to import as module....
 
 ===============================
 pytest-helper
@@ -13,7 +26,10 @@ pytest-helper
 
 This package provides several functions which make it easier to set up and run
 unit tests in Python using the `pytest <http://pytest.org>`_ testing framework.
-It makes use of pytest but is not part of the official pytest project.
+For example, there are functions to simplify modifying the search path with
+relative pathnames and to make files self-testing when they are executed as
+scripts.  This package makes use of pytest but is not part of the official
+pytest project.
 
 Installation
 ============
@@ -105,7 +121,7 @@ described in the sections below.
 Functions to help in running tests
 ==================================
 
-These are the main functions which simplify the invocation pytest on a given
+These are the main functions which simplify the invocation of pytest on a given
 test file.
 
 * :ref:`pytest_helper.sys_path<sys_path>`

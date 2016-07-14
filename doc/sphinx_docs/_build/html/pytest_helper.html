@@ -50,16 +50,11 @@
             
   <div class="section" id="module-pytest_helper">
 <span id="pytest-helper-module"></span><h1>pytest_helper module<a class="headerlink" href="#module-pytest_helper" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="description">
-<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
-<p>This module contains helper functions for using the pytest unit testing
-framework.</p>
-</div>
 <div class="section" id="functions-to-help-with-running-tests">
 <span id="help-running"></span><h2>Functions to help with running tests<a class="headerlink" href="#functions-to-help-with-running-tests" title="Permalink to this headline">¶</a></h2>
 <span class="target" id="script-run"></span><dl class="function">
 <dt id="pytest_helper.script_run">
-<tt class="descclassname">pytest_helper.</tt><tt class="descname">script_run</tt><big>(</big><em>testfile_paths=None</em>, <em>self_test=False</em>, <em>pytest_args=None</em>, <em>calling_mod_name=None</em>, <em>calling_mod_path=None</em>, <em>exit=True</em>, <em>always_run=False</em>, <em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#script_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.script_run" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">script_run</tt><big>(</big><em>testfile_paths=None</em>, <em>self_test=False</em>, <em>pytest_args=None</em>, <em>calling_mod_name=None</em>, <em>calling_mod_path=None</em>, <em>exit=True</em>, <em>always_run=False</em>, <em>level=2</em><big>)</big><a class="headerlink" href="#pytest_helper.script_run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run pytest on the specified test files when the calling module is run as
 a script.  Using this function requires at least Pytest 2.0.</p>
 <p>The argument <tt class="code docutils literal"><span class="pre">testfile_paths</span></tt> should be either the pathname to a file or
@@ -91,7 +86,7 @@ calling module and should not usually need to be set.</p>
 
 <span class="target" id="sys-path"></span><dl class="function">
 <dt id="pytest_helper.sys_path">
-<tt class="descclassname">pytest_helper.</tt><tt class="descname">sys_path</tt><big>(</big><em>dirs_to_add=None</em>, <em>add_parent=False</em>, <em>add_grandparent=False</em>, <em>add_gn_parent=False</em>, <em>add_self=False</em>, <em>calling_mod_name=None</em>, <em>calling_mod_path=None</em>, <em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#sys_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.sys_path" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">sys_path</tt><big>(</big><em>dirs_to_add=None</em>, <em>add_parent=False</em>, <em>add_grandparent=False</em>, <em>add_gn_parent=False</em>, <em>add_self=False</em>, <em>calling_mod_name=None</em>, <em>calling_mod_path=None</em>, <em>level=2</em><big>)</big><a class="headerlink" href="#pytest_helper.sys_path" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add the canonical absolute pathname of each directory in the list
 <tt class="code docutils literal"><span class="pre">dirs_to_add</span></tt> to <tt class="code docutils literal"><span class="pre">sys.path</span></tt> (but only if it isn&#8217;t there already).  A single
 string representing a path can also be passed to <tt class="code docutils literal"><span class="pre">dirs_to_add</span></tt>.  Relative
@@ -113,14 +108,14 @@ need to be set.</p>
 
 <span class="target" id="restore-previous-sys-path"></span><dl class="function">
 <dt id="pytest_helper.restore_previous_sys_path">
-<tt class="descclassname">pytest_helper.</tt><tt class="descname">restore_previous_sys_path</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#restore_previous_sys_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.restore_previous_sys_path" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">restore_previous_sys_path</tt><big>(</big><big>)</big><a class="headerlink" href="#pytest_helper.restore_previous_sys_path" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function undoes the effect of the last call to <tt class="code docutils literal"><span class="pre">sys_path</span></tt>, returning
 <tt class="code docutils literal"><span class="pre">sys.path</span></tt> to its previous, saved value.  This can be useful at times.</p>
 </dd></dl>
 
 <span class="target" id="init"></span><dl class="function">
 <dt id="pytest_helper.init">
-<tt class="descclassname">pytest_helper.</tt><tt class="descname">init</tt><big>(</big><em>set_package=False</em>, <em>conf=True</em>, <em>calling_mod_name=None</em>, <em>calling_mod_path=None</em>, <em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.init" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">init</tt><big>(</big><em>set_package=False</em>, <em>conf=True</em>, <em>calling_mod_name=None</em>, <em>calling_mod_path=None</em>, <em>level=2</em><big>)</big><a class="headerlink" href="#pytest_helper.init" title="Permalink to this definition">¶</a></dt>
 <dd><p>A function to initialize the <tt class="code docutils literal"><span class="pre">pytest_helper</span></tt> module just after importing
 it.  This function is currently only necessary in rare cases where Python&#8217;s
 current working directory (CWD) is changed between the time when the
@@ -133,15 +128,17 @@ changes the CWD and which doesn&#8217;t change it back afterward.  Importing
 <tt class="code docutils literal"><span class="pre">pytest_helper</span></tt> just after the system imports and then immediately calling
 this function should work.</p>
 <p>The <tt class="code docutils literal"><span class="pre">init</span></tt> function takes an optional keyword argument <tt class="code docutils literal"><span class="pre">set_package</span></tt>.  If
-it is true then the package attribute of module <tt class="code docutils literal"><span class="pre">__main__</span></tt> will be
-automatically set.  This allows for using relative imports fromp scripts,
-but it must be called before the relative imports are attempted.  If the
-calling module was run as a script the
-function call <tt class="code docutils literal"><span class="pre">pytest_helper.init(set_package=True)</span></tt> will import the
-<tt class="code docutils literal"><span class="pre">set_package_attribute</span></tt> package and initialize it.  Otherwise, it will do
-the same as the ordinary call.</p>
+it is true then whenever the calling module is a script the package
+attribute of module <tt class="code docutils literal"><span class="pre">__main__</span></tt> will be automatically set.  This allows for
+using explicit relative imports from scripts, but it must be called before
+the explicit relative imports are attempted.  If the calling module was run
+as a script then the function call <tt class="code docutils literal"><span class="pre">pytest_helper.init(set_package=True)</span></tt>
+will import the <tt class="code docutils literal"><span class="pre">set_package_attribute</span></tt> package and initialize it.
+Otherwise, it will do the same as the ordinary call.</p>
 <p>If the parameter <tt class="code docutils literal"><span class="pre">conf</span></tt> is set false then no configuration files will be
-searched for or used.</p>
+searched for or used.  Otherwise, the configuration file will be searched
+for by any function which has an option settable in a config file
+(including the <tt class="code docutils literal"><span class="pre">init</span></tt> function itself).</p>
 </dd></dl>
 
 </div>
@@ -149,7 +146,7 @@ searched for or used.</p>
 <span id="help-writing"></span><h2>Functions to help in writing tests<a class="headerlink" href="#functions-to-help-in-writing-tests" title="Permalink to this headline">¶</a></h2>
 <span class="target" id="auto-import"></span><dl class="function">
 <dt id="pytest_helper.auto_import">
-<tt class="descclassname">pytest_helper.</tt><tt class="descname">auto_import</tt><big>(</big><em>noclobber=True, skip=None, imports=[('pytest', &lt;AliasModule 'py.test' for 'pytest'&gt;), ('raises', &lt;function raises at 0x2ae280c92b18&gt;), ('fail', &lt;function fail at 0x2ae280544de8&gt;), ('fixture', &lt;function fixture at 0x2ae280c70a28&gt;), ('skip', &lt;function skip at 0x2ae280544d70&gt;), ('xfail', &lt;function xfail at 0x2ae280db6320&gt;), ('locals_to_globals', &lt;function locals_to_globals at 0x2ae2806fbed8&gt;), ('clear_locals_from_globals', &lt;function clear_locals_from_globals at 0x2ae2806fbf50&gt;)], calling_mod_name=None, calling_mod_path=None, level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#auto_import"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.auto_import" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">auto_import</tt><big>(</big><em>noclobber=True, skip=None, imports=[('pytest', &lt;AliasModule 'py.test' for 'pytest'&gt;), ('raises', &lt;function raises at 0x2b6343556f50&gt;), ('fail', &lt;function fail at 0x2b63434c62a8&gt;), ('fixture', &lt;function fixture at 0x2b6343531e60&gt;), ('skip', &lt;function skip at 0x2b63434c6230&gt;), ('xfail', &lt;function xfail at 0x2b6343076758&gt;), ('locals_to_globals', &lt;function locals_to_globals at 0x2b634328a398&gt;), ('clear_locals_from_globals', &lt;function clear_locals_from_globals at 0x2b634328a410&gt;)], calling_mod_name=None, calling_mod_path=None, level=2</em><big>)</big><a class="headerlink" href="#pytest_helper.auto_import" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function imports some pytest-helper and pytest attributes into the
 calling module&#8217;s global namespace.  This avoids having to explicitly do
 common imports.  A <tt class="code docutils literal"><span class="pre">PytestHelperException</span></tt> will be raised if any of those
@@ -169,7 +166,7 @@ are imported by default are <tt class="code docutils literal"><span class="pre">
 
 <span class="target" id="locals-to-globals"></span><dl class="function">
 <dt id="pytest_helper.locals_to_globals">
-<tt class="descclassname">pytest_helper.</tt><tt class="descname">locals_to_globals</tt><big>(</big><em>fun_locals=None</em>, <em>fun_globals=None</em>, <em>auto_clear=True</em>, <em>noclobber=True</em>, <em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#locals_to_globals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.locals_to_globals" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">locals_to_globals</tt><big>(</big><em>fun_locals=None</em>, <em>fun_globals=None</em>, <em>auto_clear=True</em>, <em>noclobber=True</em>, <em>level=2</em><big>)</big><a class="headerlink" href="#pytest_helper.locals_to_globals" title="Permalink to this definition">¶</a></dt>
 <dd><p>Copy all local variables in the calling function&#8217;s local scope to the
 global scope of the module where that function was called.  The function&#8217;s
 parameters are ignored and are not copied.  This routine should only be
@@ -217,7 +214,7 @@ one.</p>
 
 <span class="target" id="clear-locals-from-globals"></span><dl class="function">
 <dt id="pytest_helper.clear_locals_from_globals">
-<tt class="descclassname">pytest_helper.</tt><tt class="descname">clear_locals_from_globals</tt><big>(</big><em>level=2</em><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#clear_locals_from_globals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.clear_locals_from_globals" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">clear_locals_from_globals</tt><big>(</big><em>level=2</em><big>)</big><a class="headerlink" href="#pytest_helper.clear_locals_from_globals" title="Permalink to this definition">¶</a></dt>
 <dd><p>Clear all the global variables that were added by locals_to_globals.
 This is called automatically by <tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt> unless that function
 is run with <tt class="code docutils literal"><span class="pre">auto_clear</span></tt> set false.  This only affects the module from
@@ -231,13 +228,13 @@ which the function is called.</p>
 They are all subclasses of <tt class="code docutils literal"><span class="pre">PytestHelperException</span></tt>.</p>
 <dl class="function">
 <dt id="pytest_helper.PytestHelperException">
-<tt class="descclassname">pytest_helper.</tt><tt class="descname">PytestHelperException</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#PytestHelperException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.PytestHelperException" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">PytestHelperException</tt><big>(</big><big>)</big><a class="headerlink" href="#pytest_helper.PytestHelperException" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raised by the routines to help with running tests.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="pytest_helper.LocalsToGlobalsError">
-<tt class="descclassname">pytest_helper.</tt><tt class="descname">LocalsToGlobalsError</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pytest_helper.html#LocalsToGlobalsError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.LocalsToGlobalsError" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">pytest_helper.</tt><tt class="descname">LocalsToGlobalsError</tt><big>(</big><big>)</big><a class="headerlink" href="#pytest_helper.LocalsToGlobalsError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raised only when there is an error related to the <tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt>
 operations.</p>
 </dd></dl>
@@ -254,7 +251,6 @@ operations.</p>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">pytest_helper module</a><ul>
-<li><a class="reference internal" href="#description">Description</a></li>
 <li><a class="reference internal" href="#functions-to-help-with-running-tests">Functions to help with running tests</a></li>
 <li><a class="reference internal" href="#functions-to-help-in-writing-tests">Functions to help in writing tests</a></li>
 <li><a class="reference internal" href="#exceptions">Exceptions</a></li>
