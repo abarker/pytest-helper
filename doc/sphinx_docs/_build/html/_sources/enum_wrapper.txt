@@ -1,7 +1,0 @@
-enum_wrapper module
-===================
-
-.. automodule:: enum_wrapper
-    :members:
-    :undoc-members:
-    :show-inheritance:

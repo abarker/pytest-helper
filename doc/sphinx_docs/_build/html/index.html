@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pytest-helper &mdash; pytest_helper  documentation</title>
+    <title>pytest-helper &mdash; pytest-helper  documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -23,8 +23,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pytest_helper  documentation" href="#" />
-    <link rel="next" title="pytest_helper module" href="pytest_helper.html" /> 
+    <link rel="top" title="pytest-helper  documentation" href="#" />
+    <link rel="next" title="pytest_helper package" href="pytest_helper.html" /> 
   </head>
   <body>
     <div class="related">
@@ -37,9 +37,9 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="pytest_helper.html" title="pytest_helper module"
+          <a href="pytest_helper.html" title="pytest_helper package"
              accesskey="N">next</a> |</li>
-        <li><a href="#">pytest_helper  documentation</a> &raquo;</li> 
+        <li><a href="#">pytest-helper  documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -137,7 +137,7 @@ described in the sections below.</p>
 <p>These are the main functions which simplify the invocation of pytest on a given
 test file.</p>
 <ul>
-<li><p class="first"><a class="reference internal" href="pytest_helper.html#sys-path"><em>pytest_helper.sys_path</em></a></p>
+<li><p class="first"><a class="reference internal" href="pytest_helper.pytest_helper_main.html#sys-path"><em>pytest_helper.sys_path</em></a></p>
 <blockquote>
 <div><p>The function <tt class="code docutils literal"><span class="pre">sys_path</span></tt> takes a directory path or a list of paths and
 inserts them into Python&#8217;s <tt class="code docutils literal"><span class="pre">sys.path</span></tt> list.  This is often necessary in
@@ -160,7 +160,7 @@ makes it more portable.</p>
 </div>
 </div></blockquote>
 </li>
-<li><p class="first"><a class="reference internal" href="pytest_helper.html#script-run"><em>pytest_helper.script_run</em></a></p>
+<li><p class="first"><a class="reference internal" href="pytest_helper.pytest_helper_main.html#script-run"><em>pytest_helper.script_run</em></a></p>
 <blockquote>
 <div><p>The <tt class="code docutils literal"><span class="pre">script_run</span></tt> function is used to actually invoke pytest on a test file or
 list of files.  It takes a path or list of paths and, when called from a
@@ -190,7 +190,7 @@ file named <tt class="docutils literal"><span class="pre">test/test_foobar.py</s
 function call does nothing.</p>
 </div></blockquote>
 </li>
-<li><p class="first"><a class="reference internal" href="pytest_helper.html#init"><em>pytest_helper.init</em></a></p>
+<li><p class="first"><a class="reference internal" href="pytest_helper.pytest_helper_main.html#init"><em>pytest_helper.init</em></a></p>
 <blockquote>
 <div><p>The <tt class="code docutils literal"><span class="pre">pytest_helper.init</span></tt> function call is optional, but adds some
 functionality.  Perhaps the most useful added feature is the ability to use a
@@ -207,7 +207,7 @@ CWD (which is rare, but it happens).</p>
 </div></blockquote>
 </li>
 </ul>
-<p>See <a class="reference internal" href="pytest_helper.html#help-running"><em>Functions to help with running tests</em></a> for detailed documentation of these functions.</p>
+<p>See <a class="reference internal" href="pytest_helper.pytest_helper_main.html#help-running"><em>Functions to help with running tests</em></a> for detailed documentation of these functions.</p>
 </div>
 <div class="section" id="functions-to-help-in-writing-tests">
 <h2>Functions to help in writing tests<a class="headerlink" href="#functions-to-help-in-writing-tests" title="Permalink to this headline">¶</a></h2>
@@ -215,7 +215,7 @@ CWD (which is rare, but it happens).</p>
 good for quickly setting up tests.  They can always be replaced by their
 more-conventional (non-magic) equivalents.</p>
 <ul>
-<li><p class="first"><a class="reference internal" href="pytest_helper.html#auto-import"><em>pytest_helper.auto_import</em></a></p>
+<li><p class="first"><a class="reference internal" href="pytest_helper.pytest_helper_main.html#auto-import"><em>pytest_helper.auto_import</em></a></p>
 <blockquote>
 <div><p>The <tt class="code docutils literal"><span class="pre">auto_import</span></tt> function is a convenience function that automatically
 imports certain pytest-helper and pytest functions into the calling module&#8217;s
@@ -233,7 +233,7 @@ pytest-helper it imports <tt class="code docutils literal"><span class="pre">loc
 being set.</p>
 </div></blockquote>
 </li>
-<li><p class="first"><a class="reference internal" href="pytest_helper.html#locals-to-globals"><em>pytest_helper.locals_to_globals</em></a></p>
+<li><p class="first"><a class="reference internal" href="pytest_helper.pytest_helper_main.html#locals-to-globals"><em>pytest_helper.locals_to_globals</em></a></p>
 <blockquote>
 <div><p>The <tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt> function is intended to be run from a fixture (i.e.,
 from a test setup function) in the same module as the tests.  It mimics the
@@ -249,7 +249,7 @@ imported into the module&#8217;s global namespace.</p>
 being set.</p>
 </div></blockquote>
 </li>
-<li><p class="first"><a class="reference internal" href="pytest_helper.html#clear-locals-from-globals"><em>pytest_helper.clear_locals_from_globals</em></a></p>
+<li><p class="first"><a class="reference internal" href="pytest_helper.pytest_helper_main.html#clear-locals-from-globals"><em>pytest_helper.clear_locals_from_globals</em></a></p>
 <blockquote>
 <div><p>By default the <tt class="code docutils literal"><span class="pre">clear_locals_from_globals</span></tt> function is always called by
 <tt class="code docutils literal"><span class="pre">locals_to_globals</span></tt> in order to clear any previously-set globals.  This
@@ -258,7 +258,7 @@ function can also be explicitly called to do the clearing, such as when
 </div></blockquote>
 </li>
 </ul>
-<p>See <a class="reference internal" href="pytest_helper.html#help-writing"><em>Functions to help in writing tests</em></a> for detailed documentation of these functions.</p>
+<p>See <a class="reference internal" href="pytest_helper.pytest_helper_main.html#help-writing"><em>Functions to help in writing tests</em></a> for detailed documentation of these functions.</p>
 </div>
 <div class="section" id="examples">
 <span id="id3"></span><h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
@@ -388,14 +388,26 @@ override</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="module-contents">
-<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="package-contents">
+<h2>Package contents<a class="headerlink" href="#package-contents" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="pytest_helper.html">pytest_helper module</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="pytest_helper.html#functions-to-help-with-running-tests">Functions to help with running tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pytest_helper.html#functions-to-help-in-writing-tests">Functions to help in writing tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pytest_helper.html#exceptions">Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pytest_helper.html">pytest_helper package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytest_helper.html#submodules">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytest_helper.pytest_helper_main.html">pytest_helper_main module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytest_helper.pytest_helper_main.html#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytest_helper.pytest_helper_main.html#functions-to-help-with-running-tests">Functions to help with running tests</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytest_helper.pytest_helper_main.html#functions-to-help-in-writing-tests">Functions to help in writing tests</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytest_helper.pytest_helper_main.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytest_helper.config_file_handler.html">pytest_helper.config_file_handler module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytest_helper.config_file_handler.html#description">Description</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytest_helper.html#module-pytest_helper">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -426,7 +438,7 @@ override</p>
 <li><a class="reference internal" href="#functions-to-help-in-writing-tests">Functions to help in writing tests</a></li>
 <li><a class="reference internal" href="#examples">Examples</a></li>
 <li><a class="reference internal" href="#configuration-files">Configuration files</a></li>
-<li><a class="reference internal" href="#module-contents">Module contents</a></li>
+<li><a class="reference internal" href="#package-contents">Package contents</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 </li>
@@ -434,7 +446,7 @@ override</p>
 
   <h4>Next topic</h4>
   <p class="topless"><a href="pytest_helper.html"
-                        title="next chapter">pytest_helper module</a></p>
+                        title="next chapter">pytest_helper package</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/index.txt"
@@ -467,13 +479,13 @@ override</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="pytest_helper.html" title="pytest_helper module"
+          <a href="pytest_helper.html" title="pytest_helper package"
              >next</a> |</li>
-        <li><a href="#">pytest_helper  documentation</a> &raquo;</li> 
+        <li><a href="#">pytest-helper  documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2015, Allen Barker.
+        &copy; Copyright 2016, Allen Barker.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>

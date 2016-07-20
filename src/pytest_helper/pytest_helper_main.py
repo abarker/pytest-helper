@@ -13,6 +13,9 @@ framework.
 
 """
 
+# TODO: exception called in config file will fail... maybe separate file
+# for exceptions and global config settings.
+
 # TODO Add tests of the config file stuff.
 
 # TODO consider this and what effects it might have:
@@ -41,6 +44,20 @@ framework.
 # could also consult the pytest_helper module to find out its own data, such as
 # current directory, saving having to look up itself.  More general-purpose
 # than just helping run pytest tests.
+
+# IDEA: is there a way to put some kind of guard conditional in the __init__.py
+# files so that they can do nothing on tests, but do whatever when doing their
+# usual import?  Some kind of special variable that can be set and tested when
+# script_run is called?  A way that doesn't stop working when used with other
+# packages that also use pytest_helper?  You *only* want it to be True when
+# you are in an __init__.py inside the same package as the one that the script was
+# launched from.  Test if __package__ == __main__.__package__, maybe after testing
+# for __main__ existing?  Could have a pytest_helper function to do it, too, but
+# you would have to import it in __init__.py files.  Note this is only useful for
+# self-testing files in packages or packages that contain their own tests.  If
+# you run script_run early and import the package-name version instead of the
+# filename version the Pytest will do the '-m' style imports, too.  Could still
+# prevent that.
 
 from __future__ import print_function, division, absolute_import
 import inspect
@@ -384,7 +401,7 @@ class PytestHelperException(Exception):
 
 class LocalsToGlobalsError(PytestHelperException):
     """Raised only when there is an error related to the `locals_to_globals`
-    operations."""
+    operations.  Inherits from `PytestHelperException`."""
     pass
 
 AUTO_IMPORT_DEFAULTS = [("pytest", py.test), # (<nameToImportAs>, <value>)

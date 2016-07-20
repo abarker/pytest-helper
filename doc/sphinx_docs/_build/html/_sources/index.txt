@@ -1,5 +1,5 @@
-.. pytest_helper documentation master file, created by
-   sphinx-quickstart on Sat Oct  3 12:36:24 2015.
+.. pytest-helper documentation master file, created by
+   sphinx-quickstart on Wed Jul 20 11:47:54 2016.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
@@ -379,8 +379,12 @@ override
                          ("clear_locals_from_globals", clear_locals_from_globals)
                         ]
 
-Module contents
-===============
+
+
+.. ======================================= keep below, from new package generated ====
+
+Package contents
+================
 
 .. toctree::
    :maxdepth: 4
