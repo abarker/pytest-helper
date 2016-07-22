@@ -26,10 +26,12 @@ pytest-helper
 
 This package provides several functions which make it easier to set up and run
 unit tests in Python using the `pytest <http://pytest.org>`_ testing framework.
-For example, there are functions to simplify modifying the search path with
-relative pathnames and to make files self-testing when they are executed as
-scripts.  This package makes use of pytest but is not part of the official
-pytest project.
+For example, there is a functions to simplify modifying the search path, using
+relative pathnames, and a function to make files self-testing whenever they are
+executed as scripts.  Perhaps the most useful feature is that relative
+pathnames are always relative to the file they occur in, not the package root
+or the working directory.  This package makes use of pytest but is not part of
+the official pytest project.
 
 Installation
 ============
