@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-These are older tests of the techniques used in pytest helper.  There are
-also a couple of experimental ways tried.
+
+These are tests of `locals_to_globals` and older tests of the techniques used
+in pytest helper.  There are also a couple of early experimental approaches.
 
 """
 

@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""
+
+A test file run from a child test directory.
+
+"""
+
 from __future__ import print_function, division, absolute_import
 import pytest_helper
 from pytest_helper import PytestHelperException, LocalsToGlobalsError
@@ -11,7 +17,7 @@ os.chdir("..") # Causes an error if pytest_helper.init() is not called above.
 
 pytest_helper.script_run(self_test=True, pytest_args="-v -s")
 # More efficient to put below two lines after script_run (won't run twice).
-pytest_helper.sys_path(add_parent=True)
+#pytest_helper.sys_path(add_parent=True) # Fails because in_child_dir uses relative import.
 pytest_helper.auto_import()
 
 # The module to be tested is in_child_dir.

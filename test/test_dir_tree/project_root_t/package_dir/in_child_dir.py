@@ -1,8 +1,21 @@
 #!/usr/bin/env python
+
+"""
+Test calling tests in a child directory.
+"""
+
 from __future__ import print_function, division, absolute_import
 import os
 import inspect
 import pytest_helper
+
+# The line below is needed for the explicit relative import after it.
+# The import fails without it.  This works, but the recommended alternative is do
+# the script_run call at the top of the file, before the relative import.
+pytest_helper.init(set_package=True)
+
+# TODO: Below fails in the import from child dir; fix to import file as module...
+#from .dummy_module import test_string
 
 # This line is all this module really does; obviously a real, non-test module
 # would do more.

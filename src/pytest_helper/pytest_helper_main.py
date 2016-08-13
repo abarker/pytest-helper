@@ -13,9 +13,6 @@ framework.
 
 """
 
-# TODO: exception called in config file will fail... maybe separate file
-# for exceptions and global config settings.
-
 # TODO Add tests of the config file stuff.
 
 # TODO consider this and what effects it might have:
@@ -59,6 +56,8 @@ framework.
 # filename version the Pytest will do the '-m' style imports, too.  Could still
 # prevent that.
 
+# TODO: have a separate file introspection_utilities.py for that stuff.
+
 from __future__ import print_function, division, absolute_import
 import inspect
 import sys
@@ -67,7 +66,8 @@ import py.test
 pytest = py.test # Alias, usable in config files.
 from pytest_helper.config_file_handler import get_config_value
 
-ALLOW_USER_CONFIG_FILES = True # Setting False turns off even looking for a config file.
+from global_settings import (PytestHelperException, LocalsToGlobalsError,
+                             ALLOW_USER_CONFIG_FILES)
 
 def script_run(testfile_paths=None, self_test=False, pytest_args=None,
                calling_mod_name=None, calling_mod_path=None, exit=True,
@@ -395,15 +395,6 @@ def clear_locals_from_globals(level=2):
             pass # Ignore if not there.
     del last_copied_names[:] # Empty out last_copied_names in place.
 
-class PytestHelperException(Exception):
-    """Raised by the routines to help with running tests."""
-    pass
-
-class LocalsToGlobalsError(PytestHelperException):
-    """Raised only when there is an error related to the `locals_to_globals`
-    operations.  Inherits from `PytestHelperException`."""
-    pass
-
 AUTO_IMPORT_DEFAULTS = [("pytest", py.test), # (<nameToImportAs>, <value>)
                         ("raises", py.test.raises),
                         ("fail", py.test.fail),
@@ -650,15 +641,13 @@ def get_calling_module(level=2):
 #init(set_package=False) # TODO remove this or set a real config file in path
 if __name__ == "__main__": # This guard is optional, but slightly more efficient.
     pass
-    # TODO: cannot run own scripts because of relative import of set_package_attribute
-    # Fix or delete this whole part... probably the latter.
-    #script_run("../../test", pytest_args="-v")
-    #script_run(self_test=True, pytest_args="-v -s", exit=True)
+    script_run("../../test", pytest_args="-v")
+    script_run(self_test=True, pytest_args="-v -s", exit=True)
 
-#auto_import(noclobber=False)
-#print("skipped is", skip)
-#globals()["skip"] = fail
 def test_config():
+    auto_import(noclobber=False)
+    #print("skipped is", skip)
+    #globals()["skip"] = fail
     #fail()
     print("skipped inside fun is", skip)
     #fail()

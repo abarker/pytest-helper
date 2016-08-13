@@ -7,7 +7,6 @@ testing_var = "foo"
 # Test running below, but only when the module is invoked as a script.
 
 if __name__ == "__main__":  # This guard conditional is optional.
-
    pytest_helper.script_run(self_test=True, pytest_args="-v")
 
 pytest_helper.auto_import()  # Do some basic imports automatically.
