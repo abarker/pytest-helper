@@ -7,11 +7,12 @@ import pytest_helper
 #pytest_helper.sys_path("..")
 #import package_dir
 
+# TODO
 #from . import dummy_module # Fails!!!!!!!!!!!!!!!
 
 """
 
-TODO: to fix this, may need to have a special "pyargs" argument.  It helps to
+TODO: to fix above, may need to have a special "pyargs" argument.  It helps to
 run script at top, too, since otherwise you need the set_package_attribute.
 Basically, find the package root (like during setup file discovery), and then
 add it to sys.path, and then the "pyargs" arguments do not get made into full

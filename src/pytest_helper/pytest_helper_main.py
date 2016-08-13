@@ -66,8 +66,9 @@ import py.test
 pytest = py.test # Alias, usable in config files.
 from pytest_helper.config_file_handler import get_config_value
 
-from global_settings import (PytestHelperException, LocalsToGlobalsError,
-                             ALLOW_USER_CONFIG_FILES)
+from pytest_helper.global_settings import (PytestHelperException,
+                                           LocalsToGlobalsError,
+                                           ALLOW_USER_CONFIG_FILES)
 
 def script_run(testfile_paths=None, self_test=False, pytest_args=None,
                calling_mod_name=None, calling_mod_path=None, exit=True,

@@ -3,12 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. thing TODO: make putting the call to script_run at the top of the file the
-   recommended way, and only mention the other way as a possible alternative.
-   Since the rest of the module init will run.  Especially, the imports will be
-   imported and need to work -- may require set_package option.  Of course Pytest
-   will have to be able to import them, too, on self-test, so not a big difference
-   in that way.
+..
    .
    Consider what pytest will do with imports when it imports something from the
    middle of a package... that may not work with Python 3 style references.
@@ -71,16 +66,13 @@ written or modified the developer can execute the file and see the results of
 the pytest tests for the module, as well as add tests to the file. ::
 
    import pytest_helper
+   # Run the tests, but only when the module is invoked as a script.
+   if __name__ == "__main__":  # This guard conditional is optional.
+       pytest_helper.script_run(self_test=True, pytest_args="-v")
 
-   # Regular program code goes here.
+   # Regular imports and program code go here.
 
    testing_var = "foo"
-
-   # Run the tests, but only when the module is invoked as a script.
-
-   if __name__ == "__main__":  # This guard conditional is optional.
-
-       pytest_helper.script_run(self_test=True, pytest_args="-v")
 
    # Test functions are below; these can easily be moved to a separate module.
    
@@ -256,19 +248,22 @@ Examples
 
 Below are examples of using the pytest-helper functions in different cases.
 Note that when `script_run` is called from a regular module (one which contains
-code which is being tested) it is invoked near the end of the file.  This is
-only because it is traditional and convenient to put testing code near the end.
-It is actually more efficient to put calls to `script_run` near the beginning
-of such a module, since otherwise the module's initialization code is run
-twice.  This is usually insignificant in interactive user-testing scenarios,
-but for some modules (such as modules with a long setup time) it can make a
-difference.
+the code which is being tested) it is best to call it from the beginning of the
+file, especially for files inside packages which do intra-package imports.
+
+It is more traditional to run tests from at end of the file.  This is possible,
+too, but it is more efficient to put calls to `script_run` near the beginning
+since otherwise the module's initialization code is run twice.  If `script_run`
+called near the end of a module problems can also arise with intra-package
+imports, since the file needs to be run as a module to find them.  In that it
+would be necessary to import `pytest_helper` near the top and call its `init`
+function with the `set_package` flag set before any such imports.
 
 Whenever `script_run` is called in the examples below the optional `if __name__
-== "__main__"` guard conditional is not used.  This is slightly less efficient
-(including in ordinary code runs) since the module's name then has to be looked
-up by introspection to see if anything should be done.  The guard conditional
-can always be explicitly used around calls to `script_run`.
+== "__main__"` guard conditional is used.  It can be left off, but it is
+slightly more efficient to use it since without it the module's name has to be
+looked up by introspection to see if anything should be done.  Using the
+conditional also makes the code more explicit in what it is doing.
 
 * **Running tests in separate test files and test directories.**
 
@@ -277,18 +272,16 @@ can always be explicitly used around calls to `script_run`.
    then runs only the test file ``test_var_set.py`` in a sibling-level test
    directory called ``test2``::
 
-      # Regular program code goes here.
-
-      testing_var = "foo"
-
       # Run test files below, but only when the module is invoked as a script.
       # The guard conditional is optional, but slightly more efficient.
-
       if __name__ == "__main__":
          import pytest_helper
          pytest_helper.script_run(["test", "../test2/test_var_set.py"],
                                   pytest_args="-v")
 
+      # Regular imports and program code goes here.
+
+      testing_var = "foo"
 
 * **Using pytest-helper inside a separate test file.**
 
@@ -302,8 +295,9 @@ can always be explicitly used around calls to `script_run`.
    `script_run` or via the usual invocation of pytest from the command line. ::
 
       import pytest_helper
-
       pytest_helper.script_run(self_test=True, pytest_args="-v")
+
+      # Put these pytest_helper calls after the script_run call.
       pytest_helper.auto_import()  # Do some basic imports automatically.
       pytest_helper.sys_path(add_parent=True)
       # pytest_helper.sys_path("..")  # Does the same thing as the line above.

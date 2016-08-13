@@ -8,6 +8,7 @@ Submodules
 
    pytest_helper.pytest_helper_main
    pytest_helper.config_file_handler
+   pytest_helper.global_settings
 
 Module contents
 ---------------
@@ -16,3 +17,4 @@ Module contents
     :members:
     :undoc-members:
     :show-inheritance:
+

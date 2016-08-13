@@ -37,7 +37,7 @@ except ImportError: # Must be Python 2; use old names.
 import py.test
 pytest = py.test # Alias, usable in config files.
 
-from global_settings import (
+from pytest_helper.global_settings import (
         CONFIG_FILE_NAMES, # Filenames for config files, searched in order.
         FAIL_ON_MISSING_CONFIG, # Raise exception if config enabled but not found.
         CONFIG_SECTION_STRING) # Label for active section of the config file.
