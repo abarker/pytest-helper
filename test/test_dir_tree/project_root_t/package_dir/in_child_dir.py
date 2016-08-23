@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 
 """
-Test calling tests in a child directory.
+
+Test calling tests in a child directory.  This file is tested by a script
+`test_in_child_dir.py` in the test directory.  No `__init__.py` in test
+dir.
+
+Call to script_run at bottom, but not recommended.
+
 """
 
 from __future__ import print_function, division, absolute_import
@@ -38,5 +44,11 @@ path_to_second_test = os.path.join(this_files_dir, "test/test_second_in_child.py
 # Use both relative and absolute pathnames in specifying the test file paths.
 # Also include the full directory in the list to check that that works.
 pytest_helper.script_run(testfile_paths=["test/test_in_child_dir.py",
-                         path_to_second_test, "test"], pytest_args="-v")
+                         path_to_second_test, "test"], pytest_args="-v", exit=False)
+
+# Try running as a package module.
+pytest_helper.sys_path("..")
+pytest_helper.script_run(testfile_paths="package_dir.package_subdir.test_in_package_subdir",
+                         pytest_args="-v", pyargs=True)
+
 

@@ -7,8 +7,8 @@ Submodules
 .. toctree::
 
    pytest_helper.pytest_helper_main
-   pytest_helper.config_file_handler
    pytest_helper.global_settings
+   pytest_helper.config_file_handler
 
 Module contents
 ---------------

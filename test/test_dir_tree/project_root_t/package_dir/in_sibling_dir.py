@@ -1,4 +1,12 @@
 #!/usr/bin/env python
+
+"""
+
+This module is tested by a module `test_in_sibling_dir` which is located in a
+sibling test dir, `../test`, without an `__init__.py` file.
+
+"""
+
 from __future__ import print_function, division, absolute_import
 import os
 import inspect

@@ -3,6 +3,7 @@
 
 These are tests of `locals_to_globals` and older tests of the techniques used
 in pytest helper.  There are also a couple of early experimental approaches.
+Mostly stuff related to locals_to_globals and alternatives.
 
 """
 
@@ -12,9 +13,8 @@ import sys
 import pytest_helper
 pytest_helper.script_run(self_test=True)
 pytest_helper.auto_import()
-pytest_helper.sys_path(add_parent=True)
 
-from py.test import raises, fail, fixture, skip
+#from py.test import raises, fail, fixture, skip  # Done by auto_import.
 
 def dummy_fun(): pass # just to test function objects
 
@@ -27,7 +27,8 @@ def set_up_test_copy_to_globals(request):
     df = dummy_fun
 
     locals_to_globals()
-    def finalize(): clear_locals_from_globals() # works but no auto_clear is easier
+    def finalize():
+        clear_locals_from_globals() # works but no clear is easier
     request.addfinalizer(finalize)
 
 def test_copy_locals_to_globals(set_up_test_copy_to_globals):

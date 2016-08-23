@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 
-A test file run from a child test directory.
+A test file run from a child test directory, with no __init__.py file.
+The file being tested is in the parent dir.
 
 """
 
@@ -22,7 +23,9 @@ pytest_helper.auto_import()
 
 # The module to be tested is in_child_dir.
 # The import below defines test_string="in_child_dir".
-from in_child_dir import *
+pytest_helper.sys_path(add_parent=True)
+from in_child_dir import *  # Note this is imported as a module, not a package.
+
 
 os.chdir(old_cwd) # Return to prev dir so as not to mess up later tests.
 
@@ -50,33 +53,4 @@ def test_autoimports(basic_setup):
 
 def test_skip():
     skip()
-
-# Note that the below tests are testing some unusual use-patterns of
-# locals_to_globals just to make sure things work as expected.  Normally you'd
-# just put the call at the end of the setup functions.
-
-def test_locals_to_globals():
-    global teststr # REQUIRED only because teststr is first used, then set to a value.
-    assert teststr == "water"
-    new_var = "car"
-    clear_locals_from_globals() # This clears the global teststr, since it was copied.
-    with raises(NameError):
-        assert teststr == "water"
-    locals_to_globals() # This copies only new_var, which is saved to delete later.
-    with raises(LocalsToGlobalsError):
-        locals_to_globals(auto_clear=False)
-    teststr = "house" # This now sets a global, which will NOT be cleared.
-    locals_to_globals()
-   
-class TestInClass(object):
-    def test_in_class(self):
-        assert teststr == "house" # Still defined, since it was set as global.
-        assert new_var == "car"
-        locals_to_globals()
-        with raises(NameError):
-            assert new_var == "car" # Unset and no longer defined globally.
-        # Below line is needed to run these tests again, or else locals_to_globals
-        # refuses to overwrite teststr.  Could also make the first call use
-        # noclobber=False.  Double-running test files is not usually done.
-        del globals()["teststr"]
 

@@ -13,6 +13,21 @@ framework.
 
 """
 
+# TODO Pytest is NOT smart enough to run files inside modules as tests.
+# Consider options.  See example in test_in_package_subdir.py file (forced
+# to fail() for now).  Look at pytest docs for discussion of running tests
+# where test dir has __init__.py (even though they don't recommend it).
+
+# TODO: rework the interface on locals_to_globals, make it easier to use,
+# especially with multiple fixtures.  What if you want to use locals_to_globals
+# to run two or three setup files, and write all globals to locals?  Cannot do
+# that easily now.  Seems like it should just save them all and clear whenever
+# called without clear=False.
+#
+# Consider: noclobber only after a clear unless explicitly set (or two
+# different settings).  Clear clears *all* vars from *all* previous calls to
+# the fun.
+
 # TODO Add tests of the config file stuff.
 
 # TODO consider this and what effects it might have:
@@ -42,20 +57,6 @@ framework.
 # current directory, saving having to look up itself.  More general-purpose
 # than just helping run pytest tests.
 
-# IDEA: is there a way to put some kind of guard conditional in the __init__.py
-# files so that they can do nothing on tests, but do whatever when doing their
-# usual import?  Some kind of special variable that can be set and tested when
-# script_run is called?  A way that doesn't stop working when used with other
-# packages that also use pytest_helper?  You *only* want it to be True when
-# you are in an __init__.py inside the same package as the one that the script was
-# launched from.  Test if __package__ == __main__.__package__, maybe after testing
-# for __main__ existing?  Could have a pytest_helper function to do it, too, but
-# you would have to import it in __init__.py files.  Note this is only useful for
-# self-testing files in packages or packages that contain their own tests.  If
-# you run script_run early and import the package-name version instead of the
-# filename version the Pytest will do the '-m' style imports, too.  Could still
-# prevent that.
-
 # TODO: have a separate file introspection_utilities.py for that stuff.
 
 from __future__ import print_function, division, absolute_import
@@ -70,7 +71,7 @@ from pytest_helper.global_settings import (PytestHelperException,
                                            LocalsToGlobalsError,
                                            ALLOW_USER_CONFIG_FILES)
 
-def script_run(testfile_paths=None, self_test=False, pytest_args=None,
+def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=False,
                calling_mod_name=None, calling_mod_path=None, exit=True,
                always_run=False, level=2):
     """Run pytest on the specified test files when the calling module is run as
@@ -81,10 +82,26 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None,
     paths.  Any relative paths will be interpreted relative to the directory of
     the module which calls this function.
     
+    The recommended use of `script_run` is to place it inside a guard
+    conditional which runs only for scripts, and to call it before doing any
+    other non-system imports.  The early call avoids possible problems with
+    relative imports when running it from inside modules that are part of
+    packages.  The use of the guard conditional is optional, but is more
+    explicit and slightly more efficient.
+    
     If `self_test` is `True` then pytest will be run on the file of the calling
     script itself, i.e., tests are assumed to be in the same file as the code
     to test.
-    
+
+    The `pyargs` option defaults to false.  When true it automatically runs
+    Pytest with the `--pyargs` option, which allows a mix of filenames and
+    Python package names to be passed to pytest as test files.  Also, any path
+    which has no slash path separator character in it will be left unprocessed.
+    To include a file relative to the current directory in this case, without
+    it being treated as a package, use `./filename` rather than simply
+    `filename`.  The pytest option `--pyargs` will not work correctly unless
+    this flag is set.
+
     Using relative paths can fail in cases where Python's CWD is changed
     between the loading of the calling module and the call of this function.
     (Most programs do not change the CWD like that, or they return it to its
@@ -128,7 +145,21 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None,
         testfile_paths.append(calling_mod_path)
 
     testfile_paths = [os.path.expanduser(p) for p in testfile_paths]
-    testfile_paths = [expand_relative(p, calling_mod_dir) for p in testfile_paths]
+
+    # If pyargs is set, don't expand any arguments which do not have a slash in
+    # them.  In that case it was not a relative pathname anyway (except to
+    # current dir, which necessitates the use of "./filename" rather than
+    # "filename").  Will be treated as a package if pyargs=True.
+    if pyargs:
+        testfile_paths = [expand_relative(p, calling_mod_dir)
+                          if os.path.sep in p else p for p in testfile_paths]
+        print("paths are", testfile_paths)
+    else:
+        testfile_paths = [expand_relative(p, calling_mod_dir) for p in testfile_paths]
+
+    # Add "--pyargs" to arguments if not there and no flag not to.
+    if pyargs and pytest_args and "--pyargs" not in pytest_args:
+        pytest_args += " --pyargs"
 
     # Generate calling string and call pytest on the file.
     for t in testfile_paths:
@@ -137,6 +168,7 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None,
             pytest_string = pytest_args + " " + pytest_string
 
         # Call pytest; this requires pytest 2.0 or greater.
+        print("args are", pytest_string)
         py.test.main(pytest_string)
 
     if exit:
@@ -281,7 +313,6 @@ def init(set_package=False, conf=True, calling_mod_name=None,
 
     if set_package:
         if calling_mod_name == "__main__":
-            print("----------------------------------> importing s.p.a. and init")
             import set_package_attribute
             set_package_attribute.init()
 
@@ -291,46 +322,49 @@ def init(set_package=False, conf=True, calling_mod_name=None,
 # Functions for copying locals to globals.
 #
 
-# The last copied attributes are saved in the same globals dict where they were
-# copied to, in a list with this attribute name.
-last_saved_list_name = "pytest_helper_last_copied_320gj97tr"
+# The copied attributes are saved in the same globals dict where they were
+# copied to, in a list having this attribute name.  Currently not forced to
+# be unique, but should be. TODO.
+list_of_saved_global_names = "pytest_helper_last_copied_320gj97tr"
 
-def locals_to_globals(fun_locals=None, fun_globals=None, auto_clear=True, 
+def locals_to_globals(fun_locals=None, fun_globals=None, clear=False, 
                       noclobber=True, level=2):
-    """Copy all local variables in the calling function's local scope to the
-    global scope of the module where that function was called.  The function's
-    parameters are ignored and are not copied.  This routine should only be
-    called once, near the end of a test function or fixture.  It allows for
-    variables to be shared with another test function as globals.  This
-    function does not allow any existing global variables to be overwritten
-    unless they were either set by a previous run of this function or
-    `noclobber` is false.  A `LocalsToGlobalsError` will be raised on any
-    attempt to overwrite an existing global variable.  This avoids accidentally
-    overwriting important global attributes.
+    """Copy all local variables in the calling test function's local scope to
+    the global scope of the module from which that function was called.  The
+    test function's parameters are ignored (i.e., they are local variables but
+    they are not made global).
+    
+    This routine should generally be called near the end of a test function or
+    fixture.  It allows for variables to be shared with other test functions,
+    as globals.
+    
+    Calls to `locals_to_globals` do not allow existing global variables to be
+    overwritten unless they were either 1) set by a previous run of this
+    function, or 2) `noclobber` is set false.  Otherwise a
+    `LocalsToGlobalsError` will be raised.  This avoids accidentally
+    overwriting important global attributes (especially when tests are in the
+    same module being tested).
     
     This routine's effect is similar to the effect of explicitly declaring each
-    of a function's variables to be `global`, or doing
-    `globals().update(locals())`, except that it 1) ignores local variables
-    which are function parameters, 2) adds more error checks, and 3) clears any
-    previously-set values.
+    of a function's local variables to be `global`, or doing
+    `globals().update(locals())`, except that 1) it ignores local variables
+    which are function parameters, 2) it adds more error checks, and 3) it can
+    clear any previously-set values.
     
     Note that the globals set with `locals_to_globals` can be accessed and used
-    in any function in the module, but they are still read-only (as usual with
-    globals).  An attribute must be explicitly declared `global` in order to
-    modify the global value.  (it is then no longer local to the function so
-    the next calls to `locals_to_globals` will clear it but not set it).  If
-    `locals_to_globals` set it before, though, it will still be deleted when
-    `locals_to_globals` is called again with default `auto_clear` or
-    `clear_locals_from_globals` is called.
+    in any other test function in the module, but they are still read-only (as
+    usual with globals).  An attribute must be explicitly declared `global` in
+    order to modify the global value.  (It is then no longer local to the
+    function, so `locals_to_globals` will not affect it, but `clear` will still
+    remember it and clear it if called.)
     
-    If `auto_clear` is true (the default) then any variable that was set on the
-    last run of this function will be automatically cleared before any new ones
-    are set.  This avoids "false positives" where a later test succeeds only
-    because of a global left over from a previous test.  Note that this clears
-    globals on the saved list of globals even if their values were later
-    modified.  If `auto_clear` is false then `clear_locals_from_globals` must
-    be explicitly called before calling this function again (or else a
-    `LocalsToGlobalsError` will be raised).
+    If `clear` is true (the default is false) then any variable that was set on
+    the last run of this function will be automatically cleared before any new
+    ones are set.  This is good to call in the first-run fixture or setup
+    function, since it helps avoid "false positives" where a later test
+    succeeds only because of a global left over from a previous test.  Note
+    globals on the saved list of globals are cleared even if their values
+    were later modified.
     
     The argument `fun_locals` can be used as a fallback to pass the `locals()`
     dict from the function in case the introspection technique does not work
@@ -353,19 +387,14 @@ def locals_to_globals(fun_locals=None, fun_globals=None, auto_clear=True,
     if not fun_globals:
         fun_globals = get_calling_fun_globals_dict(level)
 
-    if last_saved_list_name in fun_globals:
-        last_copied_names = fun_globals[last_saved_list_name]
+    if list_of_saved_global_names in fun_globals:
+        globals_copied_to_list = fun_globals[list_of_saved_global_names]
     else:
-        last_copied_names = []
-        fun_globals[last_saved_list_name] = last_copied_names
+        globals_copied_to_list = []
+        fun_globals[list_of_saved_global_names] = globals_copied_to_list
 
-    # If last_copied_names isn't empty assume the user forgot to clear it.
-    if last_copied_names:
-        if auto_clear:
-            clear_locals_from_globals(level=level+1) # One extra level from this fun.
-        else:
-            raise LocalsToGlobalsError("Failure to call clear_locals_from_globals()"
-                                      " after previous copy (auto_clear is False).")
+    if clear:
+        clear_locals_from_globals(level=level+1) # One extra level from this fun.
 
     # Get the function's parameters so we can ignore them as locals.
     params, values = get_calling_fun_parameters(level)
@@ -374,27 +403,28 @@ def locals_to_globals(fun_locals=None, fun_globals=None, auto_clear=True,
     for k, v in fun_locals.items():
         if k in params: continue
         # The following line filters out some weird pytest vars starting with @.
-        if not (k[0].isalpha() or k[0] == "_"): continue
-        if k in fun_globals and noclobber:
+        if not (k[0].isalpha() or k[0] == "_"):
+            continue
+        if k in fun_globals and noclobber and k not in globals_copied_to_list:
             raise LocalsToGlobalsError("Attempt to overwrite existing "
                                        "module-global variable: " + k)
         fun_globals[k] = fun_locals[k]
-        last_copied_names.append(k)
+        globals_copied_to_list.append(k)
     return
 
 def clear_locals_from_globals(level=2):
     """Clear all the global variables that were added by locals_to_globals.
     This is called automatically by `locals_to_globals` unless that function
-    is run with `auto_clear` set false.  This only affects the module from
+    is run with `clear` set false.  This only affects the module from
     which the function is called."""
     g = get_calling_fun_globals_dict(level)
-    last_copied_names = g[last_saved_list_name]
-    for k in last_copied_names:
+    globals_copied_to_list = g[list_of_saved_global_names]
+    for k in globals_copied_to_list:
         try:
             del g[k]
         except KeyError:
             pass # Ignore if not there.
-    del last_copied_names[:] # Empty out last_copied_names in place.
+    del globals_copied_to_list[:] # Empty out globals_copied_to_list in-place.
 
 AUTO_IMPORT_DEFAULTS = [("pytest", py.test), # (<nameToImportAs>, <value>)
                         ("raises", py.test.raises),

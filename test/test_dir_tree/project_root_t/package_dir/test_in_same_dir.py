@@ -3,20 +3,36 @@
 from __future__ import print_function, division, absolute_import
 import pytest_helper
 from pytest_helper import PytestHelperException, LocalsToGlobalsError
+
+# TODO see the in_same_dir file for details!!!
+
+# TODO script_fun FAILS if the below is used!!!!!!!!
+#if __name__ == "__main__":
+#    import set_package_attribute
+#    set_package_attribute.init()
+print("in test_in_same_dir, the __package__ attribute is", __package__)
+#pytest_helper.sys_path("..")
+#from .in_same_dir import * # fails *without* above, but script_run fails with it
+#from package_dir.in_same_dir import * # still works in both cases if .. in path
+
 pytest_helper.init() # Needed because of testing chdir call inserted below.
 
 import os
 old_cwd = os.getcwd()
 os.chdir("..") # Causes an error if pytest_helper.init() is not called above.
 
-pytest_helper.script_run(self_test=True, pytest_args="-v -s")
+#pytest_helper.script_run(self_test=True, pytest_args="-v -s")
+print("calling script_run in test file")
+pytest_helper.script_run("package_dir.test_in_same_dir", pytest_args="-v -s --pyargs")
+print("made it past script_run call in test file")
+
 # More efficient to put below two lines after script_run (won't run twice).
 pytest_helper.auto_import()
 pytest_helper.sys_path(add_self=True) # Needs to add own dir when run as test.
 
 # The module to be tested is in_same_dir.
 # The import below defines test_string="in_same_dir".
-from in_same_dir import *
+from .in_same_dir import *  # Needs the dot or fails when run from in_same_dir.py
 
 # Test restoring the system path.
 pytest_helper.sys_path("../package_dir/test")
@@ -50,53 +66,4 @@ def test_autoimports(basic_setup):
 
 def test_skip():
     skip()
-
-# Note that the below tests are testing some unusual use-patterns of
-# locals_to_globals just to make sure things work as expected.  Normally you'd
-# only put the call at the end of the setup functions.
-
-def test_locals_to_globals():
-    global teststr # REQUIRED only because teststr is first used, then set to a value.
-    assert teststr == "water"
-    new_var = "car"
-    clear_locals_from_globals() # This CLEARS the global teststr, since it was copied.
-    with raises(NameError):
-        assert teststr == "water"
-
-    # Below line copies only new_var, which is saved to delete later.  But teststr is
-    # still global, and is set below.  Can causes problems calling locals_to_globals
-    # not at the end of setup functions when some are made global and later modified.
-    locals_to_globals()
-
-    with raises(LocalsToGlobalsError):
-        locals_to_globals(auto_clear=False)
-    teststr = "house" # This now sets a global, which will NOT be cleared.
-    locals_to_globals()
-    assert teststr == "house"
-   
-class TestInClass(object):
-    def test_in_class(self):
-        # TODO DEBUG uncomment below to see nasty bug after multiple runs.
-        #assert teststr == "house" # Test the previously-set global.
-        locals_to_globals() # This clears previously-set globals as a side-effect.
-        #assert teststr == "house" # Still defined, since it was set as global.
-        with raises(NameError):
-            assert new_var == "car" # No longer defined; copied on call before last.
-
-        # Below del is NEEDED if a later test wants to copy a local of same name,
-        # unless called with noclobber set to False (as currently set below).
-        #del globals()["teststr"]
-        #with raises(NameError):
-        #    assert teststr == "house"
-
-def test_final1():
-    teststr = "water"
-    locals_to_globals(noclobber=False)
-    assert teststr == "water"
-
-def test_final2():
-    assert teststr == "water"
-    locals_to_globals(locals(), globals())
-    with raises(NameError):
-        assert teststr == "water"
 

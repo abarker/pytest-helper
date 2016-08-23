@@ -19,19 +19,19 @@ pytest-helper
 
 .. default-role:: code
 
-This package provides several functions which make it easier to set up and run
-unit tests in Python using the `pytest <http://pytest.org>`_ testing framework.
-For example, there is a functions to simplify modifying the search path, using
-relative pathnames, and a function to make files self-testing whenever they are
-executed as scripts.  Perhaps the most useful feature is that relative
-pathnames are always relative to the file they occur in, not the package root
-or the working directory.  This package makes use of pytest but is not part of
-the official pytest project.
+The pytest-helper package provides several functions which make it easier to
+set up and run unit tests in Python using the `pytest <http://pytest.org>`_
+testing framework.  For example, there is a function to make files self-testing
+whenever they are executed as scripts, and a function to simplify modifying the
+search path.  One of the most useful features is that relative pathnames are
+always relative to the file they occur in, not the package root or the working
+directory.  This package makes use of pytest but is independent of the official
+pytest project.
 
 Installation
 ============
 
-The easiest way to install is to use ``pip``, which also allows for easy
+The easiest way to install is to use `pip`, which also allows for easy
 uninstallation.  Either download the zipped directory from GitHub and unzip it,
 or else use `git` to clone the GitHub repo.  Then run:
 
@@ -40,12 +40,12 @@ or else use `git` to clone the GitHub repo.  Then run:
    pip install file:///path/to/the/new/pytest_helper/dir
 
 replacing the path with the one where you saved the directory.  (Run the
-command with ``sudo`` or equivalent administrator privileges if installing as
+command with `sudo` or equivalent administrator privileges if installing as
 a system Python package rather than as a local one.)
 
-Alternately, you can run the package's ``setup.py`` program directly with
-``python setup.py install``.  Or, you can just add the ``pytest_helper``
-subdirectory to your ``PYTHONPATH`` environment variable.
+Alternately, you can run the package's `setup.py` program directly with
+`python setup.py install`.  Or, you can just add the `pytest_helper`
+subdirectory to your `PYTHONPATH` environment variable.
 
 .. _Introduction:
 
@@ -58,6 +58,12 @@ and run tests, the more likely they are to write their tests as they code
 rather than waiting until later to do so (or perhaps not writing formal tests
 at all).  This is especially true for beginners.
 
+When developing a Python module it is nice to be able to quickly run some tests
+specific to that module, without having to run all the tests for the full
+package.  By using pytest-helper it is easy to make files self-testing whenever
+they are run as scripts.  During development you can then just run the file,
+say from your editor or IDE, to see the test results.
+
 Below is a simple example to illustrate the idea.  This is a Python module
 which is possibly part of a larger package.  It contains its own test functions
 at the bottom.  Whenever the module is run as a script the tests will be run
@@ -67,14 +73,14 @@ the pytest tests for the module, as well as add tests to the file. ::
 
    import pytest_helper
    # Run the tests, but only when the module is invoked as a script.
-   if __name__ == "__main__":  # This guard conditional is optional.
+   if __name__ == "__main__": # Guard conditional, optional but recommended.
        pytest_helper.script_run(self_test=True, pytest_args="-v")
 
    # Regular imports and program code go here.
 
    testing_var = "foo"
 
-   # Test functions are below; these can easily be moved to a separate module.
+   # Test functions are below; they can easily be moved to a separate module.
    
    pytest_helper.auto_import()  # Do some basic imports automatically.
 
@@ -132,7 +138,7 @@ test file.
    makes it more portable.
 
    The line below shows how to use `sys_path` to add both the directory
-   ``../test`` and the parent directory to Python's ``sys.path``::
+   `../test` and the parent directory to Python's `sys.path`::
 
       pytest_helper.sys_path("../test", add_parent=True)
 
@@ -143,19 +149,26 @@ test file.
 * :ref:`pytest_helper.script_run<script_run>`
 
    The `script_run` function is used to actually invoke pytest on a test file or
-   list of files.  It takes a path or list of paths and, when called from a
-   script, will run pytest on all those files.  If it is not called from a
-   script's `__main__` module then it returns without doing anything.  Any
-   relative paths passed to the function are expanded relative to the directory of
-   the module from which the `script_run` function is called.
+   list of files.  It takes a path or a list of paths and, when called from a
+   script, will run pytest on all those files.
+   
+   To include dotted Python package descriptors, use the `script_run` option
+   `pyargs=True`.  Then if any of the names do not contain a slash
+   (path-separator) character they are left unprocessed.  The `script_run`
+   function will also set the pytest argument `--pyargs`.
+
+   If `script_run` is not called from a script's `__main__` module then it
+   returns without doing anything.  Any relative paths passed to the function
+   are expanded relative to the directory of the module from which the
+   `script_run` function is called.
 
    The `script_run` function is useful because it allows Python modules to be
    easily made self-testing when they are run as scripts.  When working on a
    module in, say, Vim you can invoke a command to run the current file as a
-   script in order to see if it still passes whatever tests are defined for it.
-   Those tests can be in the same file and/or in other files.  Test files
-   themselves can similarly be made self-executing when run as a script, which can
-   be useful when writing tests.
+   script in order to verify that it still passes whatever tests are defined
+   for it.  Those tests can be in the same file and/or in other files.  Test
+   files themselves can similarly be made self-executing when run as a script,
+   which can be useful when writing tests.
 
    One use of modules with self-contained tests, like in the example in the
    :ref:`Introduction`, is to quickly start writing a simple module while
@@ -164,8 +177,8 @@ test file.
 
    The example in the :ref:`Introduction` shows how to use `script_run` to run
    a self-test on a file.  The line below shows how the `script_run` function
-   would be used to run pytest, with the ``-v`` verbose argument, on a test
-   file named ``test/test_foobar.py``::
+   would be used to run pytest, with the `-v` verbose argument, on a test
+   file named `test/test_foobar.py`::
    
       pytest_helper.script_run("test/test_foobar.py", pytest_args="-v")
 
@@ -248,16 +261,17 @@ Examples
 
 Below are examples of using the pytest-helper functions in different cases.
 Note that when `script_run` is called from a regular module (one which contains
-the code which is being tested) it is best to call it from the beginning of the
-file, especially for files inside packages which do intra-package imports.
+the code which is being tested) to run a test file it is best to call it from
+the beginning of the file, especially for files inside packages which do
+intra-package imports.  This avoids some potential headaches with imports.
 
-It is more traditional to run tests from at end of the file.  This is possible,
-too, but it is more efficient to put calls to `script_run` near the beginning
-since otherwise the module's initialization code is run twice.  If `script_run`
-called near the end of a module problems can also arise with intra-package
-imports, since the file needs to be run as a module to find them.  In that it
-would be necessary to import `pytest_helper` near the top and call its `init`
-function with the `set_package` flag set before any such imports.
+It is more traditional to run tests from the end of a Python module.  This is
+not recommended, but it works in many cases.  It can cause problems with
+explicit relative imports.  Some such problems can be fixed by importing
+`pytest_helper` near the top of the module and, before any explicit relative
+imports, calling its `init` function with the `set_package` flag set.  Putting
+the `script_run` call near the end of the module is also less efficient, since
+the module's initialization code gets run twice.
 
 Whenever `script_run` is called in the examples below the optional `if __name__
 == "__main__"` guard conditional is used.  It can be left off, but it is
@@ -268,9 +282,9 @@ conditional also makes the code more explicit in what it is doing.
 * **Running tests in separate test files and test directories.**
 
    This example is a module with tests in separate test files and directories.
-   When invoked as a script it runs all the tests in the subdirectory ``test`` and
-   then runs only the test file ``test_var_set.py`` in a sibling-level test
-   directory called ``test2``::
+   When invoked as a script it runs all the tests in the subdirectory `test` and
+   then runs only the test file `test_var_set.py` in a sibling-level test
+   directory called `test2`::
 
       # Run test files below, but only when the module is invoked as a script.
       # The guard conditional is optional, but slightly more efficient.
@@ -279,7 +293,7 @@ conditional also makes the code more explicit in what it is doing.
          pytest_helper.script_run(["test", "../test2/test_var_set.py"],
                                   pytest_args="-v")
 
-      # Regular imports and program code goes here.
+      # Regular imports and program code from here to the end.
 
       testing_var = "foo"
 
@@ -287,23 +301,24 @@ conditional also makes the code more explicit in what it is doing.
 
    The next example is separate tests-only file, which when run as a script
    executes pytest on itself.  This file is assumed to be inside a test
-   subdirectory, and to import the file ``do_things.py`` from its parent
+   subdirectory, and to import the file `do_things.py` from its parent
    directory.  That directory is added to Python's `sys.path` by a call to
    `sys_path` (the test directory is not in the package of the parent directory,
-   since it is usually not recommended to have an ``__init__.py`` file in test
+   since it is usually not recommended to have an `__init__.py` file in test
    directories).  The test file below can still be run from other files with
    `script_run` or via the usual invocation of pytest from the command line. ::
 
       import pytest_helper
-      pytest_helper.script_run(self_test=True, pytest_args="-v")
+      if __name__ == "__main__":
+          pytest_helper.script_run(self_test=True, pytest_args="-v")
 
-      # Put these pytest_helper calls after the script_run call.
+      # Put these pytest_helper calls AFTER the script_run call.
       pytest_helper.auto_import()  # Do some basic imports automatically.
       pytest_helper.sys_path(add_parent=True)
       # pytest_helper.sys_path("..")  # Does the same thing as the line above.
       # pytest_helper.sys_path([".."])  # Does the same as the two lines above.
 
-      from do_things import *  # Since we're testing that module, import all.
+      from do_things import *  # Since we're testing this module, import all.
 
       @fixture
       def my_fixture():

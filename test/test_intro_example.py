@@ -13,7 +13,7 @@ pytest_helper.auto_import()  # Do some basic imports automatically.
 
 def my_setup(): # Could be a pytest fixture instead of a regular function.
    setup_var = "bar"
-   locals_to_globals()  # Copies setup_var to the module's global namespace.
+   locals_to_globals(clear=True)  # Copies setup_var to the module's global namespace.
 
 def test_var_values():
    my_setup()
