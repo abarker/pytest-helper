@@ -3,15 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-..
+.. TODO
    .
    Consider what pytest will do with imports when it imports something from the
    middle of a package... that may not work with Python 3 style references.
    You are still calling pytest to run on the file and not importing the
    package...
-   .
-   See the in_same_dir.py test case, it DOES fail when pytest tries the import...
-   Consider options, don't know how to get pytest to import as module....
 
 ===============================
 pytest-helper
@@ -205,9 +202,33 @@ See :ref:`help_running` for detailed documentation of these functions.
 Functions to help in writing tests
 ==================================
 
-These functions are used to help in writing the tests themselves.  They are
-good for quickly setting up tests.  They can always be replaced by their
-more-conventional (non-magic) equivalents.
+These convenience functions are used to help in writing the tests themselves.
+They are good for quickly setting up tests.  They can always be replaced by
+their more-conventional (non-magic) equivalents.
+
+* :ref:`pytest_helper.locals_to_globals<locals_to_globals>`
+
+   The `locals_to_globals` function is intended to be run from a fixture (i.e.,
+   from a test setup function) in the same module as the tests.  It mimics the
+   effect of declaring all the local variables in the setup function global in
+   order to access them from the test functions that use the setup.  By default
+   it never overwrites an existing global variable unless that variable was set
+   by a previous run of `locals_to_globals`.  Can optionally clear any
+   variables set on previous calls so that they do not accidentally affect the
+   current tests.
+
+   This function is usually called without arguments, near the end of a setup
+   function or fixture.  If `auto_import` is used then it is automatically
+   imported into the module's global namespace.
+   
+   Note that some linters will complain about variables being used without
+   being set.
+
+* :ref:`pytest_helper.clear_locals_from_globals<clear_locals_from_globals>`
+
+   The `clear_locals_from_globals` function is called by `locals_to_globals`
+   when `clear` is set true.  This function can also be explicitly called to do
+   the clearing.
 
 * :ref:`pytest_helper.auto_import<auto_import>`
 
@@ -227,30 +248,6 @@ more-conventional (non-magic) equivalents.
 
    Note that some linters will complain about variables being used without
    being set.
-
-* :ref:`pytest_helper.locals_to_globals<locals_to_globals>`
-
-   The `locals_to_globals` function is intended to be run from a fixture (i.e.,
-   from a test setup function) in the same module as the tests.  It mimics the
-   effect of declaring all the local variables in the setup function global in
-   order to access them from the test functions that use the setup.  By default
-   it never overwrites an existing global variable unless that variable was set
-   by a previous run of `locals_to_globals`.  It also clears any variables set
-   on its previous call so they do not accidentally affect the current tests.
-
-   This function is usually called without arguments, near the end of a setup
-   function or fixture.  If `auto_import` is used then it is automatically
-   imported into the module's global namespace.
-   
-   Note that some linters will complain about variables being used without
-   being set.
-
-* :ref:`pytest_helper.clear_locals_from_globals<clear_locals_from_globals>`
-
-   By default the `clear_locals_from_globals` function is always called by
-   `locals_to_globals` in order to clear any previously-set globals.  This
-   function can also be explicitly called to do the clearing, such as when
-   `locals_to_globals` is run with `auto_clear` set false.
 
 See :ref:`help_writing` for detailed documentation of these functions.
 
@@ -279,12 +276,12 @@ slightly more efficient to use it since without it the module's name has to be
 looked up by introspection to see if anything should be done.  Using the
 conditional also makes the code more explicit in what it is doing.
 
-* **Running tests in separate test files and test directories.**
+* **Running tests contained in separate test files and test directories.**
 
-   This example is a module with tests in separate test files and directories.
-   When invoked as a script it runs all the tests in the subdirectory `test` and
-   then runs only the test file `test_var_set.py` in a sibling-level test
-   directory called `test2`::
+   This is an example of a module with its tests in separate test files and
+   directories.  When invoked as a script it the module will run all the tests
+   in the subdirectory `test` and then run only the test file `test_var_set.py`
+   in a sibling-level test directory called `test2`::
 
       # Run test files below, but only when the module is invoked as a script.
       # The guard conditional is optional, but slightly more efficient.
@@ -299,14 +296,15 @@ conditional also makes the code more explicit in what it is doing.
 
 * **Using pytest-helper inside a separate test file.**
 
-   The next example is separate tests-only file, which when run as a script
-   executes pytest on itself.  This file is assumed to be inside a test
-   subdirectory, and to import the file `do_things.py` from its parent
-   directory.  That directory is added to Python's `sys.path` by a call to
-   `sys_path` (the test directory is not in the package of the parent directory,
-   since it is usually not recommended to have an `__init__.py` file in test
-   directories).  The test file below can still be run from other files with
-   `script_run` or via the usual invocation of pytest from the command line. ::
+   In this example there is a separate file, containing only tests, which when
+   run as a script executes pytest on itself.  This file is assumed to be
+   inside a test subdirectory, and to import the file `do_things.py` from its
+   parent directory.  That directory is added to Python's `sys.path` by a call
+   to `sys_path` (the test directory is not in the package of the parent
+   directory, since it is usually not recommended to have an `__init__.py` file
+   in test directories).  The test file below can still be run from other files
+   with `script_run` or via the usual invocation of pytest from the command
+   line. ::
 
       import pytest_helper
       if __name__ == "__main__":
@@ -365,7 +363,7 @@ to the `init` function::
 Below is an example `pytest_helper.ini` configuration, which sets a value for
 all the options which are settable from the config file.  Any other sections of
 the file or options are silently ignored.  The options are all constructed from
-the name of the function concatanated with the name of the parameter they
+the name of the function concatenated with the name of the parameter they
 override
 
 ::
@@ -390,9 +388,6 @@ override
                          ("clear_locals_from_globals", clear_locals_from_globals)
                         ]
 
-
-
-.. ======================================= keep below, from new package generated ====
 
 Package contents
 ================

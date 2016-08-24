@@ -46,9 +46,10 @@ path_to_second_test = os.path.join(this_files_dir, "test/test_second_in_child.py
 pytest_helper.script_run(testfile_paths=["test/test_in_child_dir.py",
                          path_to_second_test, "test"], pytest_args="-v", exit=False)
 
-# Try running as a package module.
-pytest_helper.sys_path("..")
-pytest_helper.script_run(testfile_paths="package_dir.package_subdir.test_in_package_subdir",
+# Try running as a package module.  Note it can start at package_subdir.
+# Doesn't need the path modification.
+#pytest_helper.sys_path("..")
+pytest_helper.script_run(testfile_paths="package_subdir.test_in_package_subdir",
                          pytest_args="-v", pyargs=True)
 
 

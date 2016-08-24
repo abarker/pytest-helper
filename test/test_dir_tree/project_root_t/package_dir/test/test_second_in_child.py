@@ -12,7 +12,7 @@ pytest_helper.script_run(self_test=True)
 pytest_helper.sys_path(add_parent=True)
 pytest_helper.auto_import()
 
-from in_child_dir import *
+from in_child_dir import * # Imported as a regular module, NOT part of a package.
 
 def test_basic_stuff():
     assert test_string == "in_child_dir"
@@ -22,3 +22,4 @@ def test_autoimports():
     with pytest.raises(KeyError):
         raise KeyError
     locals_to_globals()
+

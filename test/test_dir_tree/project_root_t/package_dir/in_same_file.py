@@ -69,6 +69,3 @@ def test_autoimports(basic_setup):
     # the global (and fail) if locals_to_globals did not ignore parameters.
     locals_to_globals()
 
-def test_skip():
-    skip()
-

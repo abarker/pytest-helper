@@ -13,6 +13,9 @@ config files.
 
 """
 
+# TODO: Where possible switch from the saved dict in this namespace to saving
+# in the per-module info dict.
+
 # TODO: Add tests of the config file stuff.
 
 # TODO, maybe: Add an option to the pytest-helper.conf file which allows for an
@@ -34,13 +37,14 @@ try:
     from configparser import ConfigParser
 except ImportError: # Must be Python 2; use old names.
     from ConfigParser import SafeConfigParser as ConfigParser
-import py.test
-pytest = py.test # Alias, usable in config files.
+#import py.test
+#pytest = py.test # Alias, usable in config files.
 
 from pytest_helper.global_settings import (
         CONFIG_FILE_NAMES, # Filenames for config files, searched in order.
         FAIL_ON_MISSING_CONFIG, # Raise exception if config enabled but not found.
-        CONFIG_SECTION_STRING) # Label for active section of the config file.
+        CONFIG_SECTION_STRING, # Label for active section of the config file.
+        NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT)
 
 #
 # Config file locating and reading functions.
@@ -188,24 +192,4 @@ def get_config_value(config_key, default, calling_mod_path, calling_mod_dir):
     else:
         return default
 
-#
-# Test this file when invoked as a script.
-#
-
-#init(set_package=False) # TODO remove this or set a real config file in path
-if __name__ == "__main__": # This guard is optional, but slightly more efficient.
-    pass
-    # TODO: cannot run own scripts because of relative import of set_package_attribute
-    # Fix or delete this whole part... probably the latter.
-    #script_run("../../test", pytest_args="-v")
-    #script_run(self_test=True, pytest_args="-v -s", exit=True)
-
-#auto_import(noclobber=False)
-#print("skipped is", skip)
-#globals()["skip"] = fail
-def test_config():
-    #fail()
-    print("skipped inside fun is", skip)
-    #fail()
-    skip()
 

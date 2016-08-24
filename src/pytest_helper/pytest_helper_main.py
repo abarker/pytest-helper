@@ -13,33 +13,11 @@ framework.
 
 """
 
-# TODO Pytest is NOT smart enough to run files inside modules as tests.
-# Consider options.  See example in test_in_package_subdir.py file (forced
-# to fail() for now).  Look at pytest docs for discussion of running tests
-# where test dir has __init__.py (even though they don't recommend it).
-
-# TODO: rework the interface on locals_to_globals, make it easier to use,
-# especially with multiple fixtures.  What if you want to use locals_to_globals
-# to run two or three setup files, and write all globals to locals?  Cannot do
-# that easily now.  Seems like it should just save them all and clear whenever
-# called without clear=False.
-#
-# Consider: noclobber only after a clear unless explicitly set (or two
-# different settings).  Clear clears *all* vars from *all* previous calls to
-# the fun.
-
 # TODO Add tests of the config file stuff.
 
-# TODO consider this and what effects it might have:
-# https://www.python.org/dev/peps/pep-0008/#imports
-# Absolute imports are recommended, as they are usually more readable and
-# tend to be better behaved (or at least give better error messages) if the
-# import system is incorrectly configured (such as when a directory inside a
-# package ends up on sys.path ):
-
 # Possible enhancement: It might be useful to go up the tree to find the
-# project root (one above package root), and let that be a keyword arg to
-# sys_paths.  E.g.,
+# project root (the one above package root), and let that be a keyword arg to
+# sys_paths and script_run.  E.g.,
 #
 # pytest_helper.sys_paths(from_proj_root="test")
 #
@@ -56,8 +34,10 @@ framework.
 # could also consult the pytest_helper module to find out its own data, such as
 # current directory, saving having to look up itself.  More general-purpose
 # than just helping run pytest tests.
-
-# TODO: have a separate file introspection_utilities.py for that stuff.
+#
+# Interface idea: allow all paths to start with [pkg_root] or [proj_root] and
+# fill it in for them.  Should not conflict with any sane thing. So
+#    pytest_helper.sys_path("[proj_root]/test")
 
 from __future__ import print_function, division, absolute_import
 import inspect
@@ -69,13 +49,14 @@ from pytest_helper.config_file_handler import get_config_value
 
 from pytest_helper.global_settings import (PytestHelperException,
                                            LocalsToGlobalsError,
-                                           ALLOW_USER_CONFIG_FILES)
+                                           ALLOW_USER_CONFIG_FILES,
+                                           NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT)
 
 def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=False,
-               calling_mod_name=None, calling_mod_path=None, exit=True,
-               always_run=False, level=2):
+               mod_path=True, calling_mod_name=None, calling_mod_path=None,
+               exit=True, always_run=False, level=2):
     """Run pytest on the specified test files when the calling module is run as
-    a script.  Using this function requires at least Pytest 2.0.
+    a script.  Using this function requires at least pytest 2.0.
     
     The argument `testfile_paths` should be either the pathname to a file or
     directory to run pytest on, or else a list of such file paths and directory
@@ -93,14 +74,27 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     script itself, i.e., tests are assumed to be in the same file as the code
     to test.
 
-    The `pyargs` option defaults to false.  When true it automatically runs
-    Pytest with the `--pyargs` option, which allows a mix of filenames and
-    Python package names to be passed to pytest as test files.  Also, any path
-    which has no slash path separator character in it will be left unprocessed.
-    To include a file relative to the current directory in this case, without
-    it being treated as a package, use `./filename` rather than simply
-    `filename`.  The pytest option `--pyargs` will not work correctly unless
-    this flag is set.
+    The pytest command-line argument `--pyargs` allows a mix of filenames and
+    Python package names to be passed to pytest as test files.  Note that
+    pytest *always* imports modules as part of a package if there is an
+    `__init__.py` file in the directory; the `--pyargs` just allows
+    Python-style module names.  When `pyargs` is set true pytest will be run
+    with the `--pyargs` option set (if it isn't already), and any items in
+    `testfile_paths` which contain no path-separator character (slash) will be
+    left unprocessed rather than being converted into absolute pathnames.  The
+    pytest option `--pyargs` will not work correctly unless this flag is set.
+    The default is `pyargs=False`, i.e., by default all paths are converted to
+    absolute pathnames.  It usually will not matter, but in this mode you can
+    specify a directory name relative to the current directory and not have it
+    treated as a Python module name by using `./dirname` rather than simply
+    `filename`.
+
+    If `mod_path` is set true (the default is false) the first item in the
+    `sys.path` list is deleted.  When a file is run as a script Python always
+    adds the directory of the script as the first item in `sys.path`.  This can
+    cause problems with imports when directories inside paths are inserted on
+    `sys.path`.  This flag is probably not needed because pytest seems to
+    already take care of this.
 
     Using relative paths can fail in cases where Python's CWD is changed
     between the loading of the calling module and the call of this function.
@@ -136,6 +130,9 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     pytest_args = get_config_value("script_run_pytest_args", pytest_args,
                                              calling_mod_path, calling_mod_dir)
 
+    if mod_path:
+        del sys.path[0]
+
     if isinstance(testfile_paths, str):
         testfile_paths = [testfile_paths]
     elif testfile_paths is None:
@@ -158,8 +155,11 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
         testfile_paths = [expand_relative(p, calling_mod_dir) for p in testfile_paths]
 
     # Add "--pyargs" to arguments if not there and no flag not to.
-    if pyargs and pytest_args and "--pyargs" not in pytest_args:
-        pytest_args += " --pyargs"
+    if pyargs:
+        if pytest_args and "--pyargs" not in pytest_args:
+            pytest_args += " --pyargs"
+        else:
+            pytest_args = "--pyargs"
 
     # Generate calling string and call pytest on the file.
     for t in testfile_paths:
@@ -322,11 +322,6 @@ def init(set_package=False, conf=True, calling_mod_name=None,
 # Functions for copying locals to globals.
 #
 
-# The copied attributes are saved in the same globals dict where they were
-# copied to, in a list having this attribute name.  Currently not forced to
-# be unique, but should be. TODO.
-list_of_saved_global_names = "pytest_helper_last_copied_320gj97tr"
-
 def locals_to_globals(fun_locals=None, fun_globals=None, clear=False, 
                       noclobber=True, level=2):
     """Copy all local variables in the calling test function's local scope to
@@ -387,11 +382,15 @@ def locals_to_globals(fun_locals=None, fun_globals=None, clear=False,
     if not fun_globals:
         fun_globals = get_calling_fun_globals_dict(level)
 
-    if list_of_saved_global_names in fun_globals:
-        globals_copied_to_list = fun_globals[list_of_saved_global_names]
+    if NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT in fun_globals:
+        globals_copied_to_list = fun_globals[
+                NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT].get(
+                        "list_of_globals_copied_to_locals", [])
     else:
+        fun_globals[NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT] = {}
         globals_copied_to_list = []
-        fun_globals[list_of_saved_global_names] = globals_copied_to_list
+        fun_globals[NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT][
+                "list_of_globals_copied_to_locals"] = globals_copied_to_list
 
     if clear:
         clear_locals_from_globals(level=level+1) # One extra level from this fun.
@@ -418,7 +417,8 @@ def clear_locals_from_globals(level=2):
     is run with `clear` set false.  This only affects the module from
     which the function is called."""
     g = get_calling_fun_globals_dict(level)
-    globals_copied_to_list = g[list_of_saved_global_names]
+    globals_copied_to_list = g[NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT].get(
+            "list_of_globals_copied_to_locals", [])
     for k in globals_copied_to_list:
         try:
             del g[k]
@@ -577,7 +577,7 @@ def get_calling_module_info(level=2, check_exists=True,
     return module_info
 
 def view_locals_up_stack(num_levels=4):
-    """To get an idea of what things look like.  Run from somewhere and see."""
+    """Just to get an idea of what things look like.  Run from somewhere and see."""
     print("Viewing local variable dict keys up the stack.\n")
     for i in reversed(range(num_levels)):
         calling_fun_frame = inspect.stack()[i][0]
@@ -669,18 +669,8 @@ def get_calling_module(level=2):
 # Test this file when invoked as a script.
 #
 
-#init(set_package=False) # TODO remove this or set a real config file in path
 if __name__ == "__main__": # This guard is optional, but slightly more efficient.
     pass
     script_run("../../test", pytest_args="-v")
     script_run(self_test=True, pytest_args="-v -s", exit=True)
-
-def test_config():
-    auto_import(noclobber=False)
-    #print("skipped is", skip)
-    #globals()["skip"] = fail
-    #fail()
-    print("skipped inside fun is", skip)
-    #fail()
-    skip()
 

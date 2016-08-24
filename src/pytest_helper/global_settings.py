@@ -18,6 +18,11 @@ CONFIG_FILE_NAMES = ["pytest_helper.ini"] # List of filenames, searched for in o
 FAIL_ON_MISSING_CONFIG = False # Raise exception if config file enabled but not found.
 CONFIG_SECTION_STRING = "pytest_helper" # Label for active section of the config file.
 
+# Pytest-helper saves module-specific information in a dict as a special
+# attribute of the modules themselves.  This is the name that is used, saved in
+# the modules' namespaces.  Currently not forced to be unique, but maybe should be.
+NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT = "_pytest_helper_module_info_320gj97trxR5GA"
+
 #
 # Config file locating and reading functions.
 #

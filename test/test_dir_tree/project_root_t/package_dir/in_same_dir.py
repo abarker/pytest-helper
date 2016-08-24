@@ -15,8 +15,8 @@ import pytest_helper
 pytest_helper.init(set_package=True)
 
 # This import *needs* the init with the set_package above in order to work.
-# Would be needed, though, with script_run run from top of file instead of
-# the bottom.
+# Would NOT be needed, though, with script_run run from top of the file 
+# as recommended instead of after the import.
 from . import dummy_module
 
 # This line is all this module really does; obviously a real, non-test module
@@ -35,6 +35,6 @@ pytest_helper.script_run("test_in_same_dir", pytest_args="-v", exit=False)
 pytest_helper.script_run("test_in_same_dir.py", pytest_args="-v", exit=False)
 
 # This sys.path call is needed to find the package root.
-pytest_helper.sys_path("..")
+#pytest_helper.sys_path("..")
 pytest_helper.script_run("package_dir.test_in_same_dir", pytest_args="-v", pyargs=True)
 
