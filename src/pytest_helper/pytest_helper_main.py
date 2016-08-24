@@ -15,6 +15,9 @@ framework.
 
 # TODO Add tests of the config file stuff.
 
+# TODO: BIZARRE bug where importing from global_settings in __init__.py causes
+# failure, but same from pytest_helper works.
+
 # Possible enhancement: It might be useful to go up the tree to find the
 # project root (the one above package root), and let that be a keyword arg to
 # sys_paths and script_run.  E.g.,
@@ -53,7 +56,7 @@ from pytest_helper.global_settings import (PytestHelperException,
                                            NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT)
 
 def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=False,
-               mod_path=True, calling_mod_name=None, calling_mod_path=None,
+               modify_syspath=False, calling_mod_name=None, calling_mod_path=None,
                exit=True, always_run=False, level=2):
     """Run pytest on the specified test files when the calling module is run as
     a script.  Using this function requires at least pytest 2.0.
@@ -89,12 +92,13 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     treated as a Python module name by using `./dirname` rather than simply
     `filename`.
 
-    If `mod_path` is set true (the default is false) the first item in the
-    `sys.path` list is deleted.  When a file is run as a script Python always
-    adds the directory of the script as the first item in `sys.path`.  This can
-    cause problems with imports when directories inside paths are inserted on
-    `sys.path`.  This flag is probably not needed because pytest seems to
-    already take care of this.
+    If `modify_syspath` is set true (the default is false) then the first item
+    in the `sys.path` list is deleted just after `script_run` is called.  When
+    a module is run as a script Python always adds the directory of the script
+    as the first item in `sys.path`.  This can sometimes cause hard-to-trace
+    import errors when directories inside paths are inserted in `sys.path`.
+    This flag should seldom be needed because pytest seems to already take care
+    of this.
 
     Using relative paths can fail in cases where Python's CWD is changed
     between the loading of the calling module and the call of this function.
@@ -130,7 +134,7 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     pytest_args = get_config_value("script_run_pytest_args", pytest_args,
                                              calling_mod_path, calling_mod_dir)
 
-    if mod_path:
+    if modify_syspath:
         del sys.path[0]
 
     if isinstance(testfile_paths, str):
@@ -405,8 +409,10 @@ def locals_to_globals(fun_locals=None, fun_globals=None, clear=False,
         if not (k[0].isalpha() or k[0] == "_"):
             continue
         if k in fun_globals and noclobber and k not in globals_copied_to_list:
-            raise LocalsToGlobalsError("Attempt to overwrite existing "
-                                       "module-global variable: " + k)
+            raise LocalsToGlobalsError("Attempt to overwrite existing"
+                      " module-global variable '{0}'.  The current value is"
+                      " {1}.  Attempted to overwrite with a value of {2}."
+                                    .format(k, str(fun_globals[k]), str(v)))
         fun_globals[k] = fun_locals[k]
         globals_copied_to_list.append(k)
     return
@@ -670,7 +676,5 @@ def get_calling_module(level=2):
 #
 
 if __name__ == "__main__": # This guard is optional, but slightly more efficient.
-    pass
-    script_run("../../test", pytest_args="-v")
-    script_run(self_test=True, pytest_args="-v -s", exit=True)
+    script_run("../../test", pytest_args="-v -s", modify_syspath=True)
 
