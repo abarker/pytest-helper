@@ -1,0 +1,49 @@
+# Note that the below tests are testing some unusual use-patterns of
+# locals_to_globals just to make sure things work as expected.  Normally you'd
+# only put the call at the end of the setup functions.
+
+def test_locals_to_globals():
+    global teststr # REQUIRED only because teststr is first used, then set to a value.
+    assert teststr == "water"
+    new_var = "car"
+    clear_locals_from_globals() # This CLEARS the global teststr, since it was copied.
+    with raises(NameError):
+        assert teststr == "water"
+
+    # Below line copies only new_var, which is saved to delete later.  But teststr is
+    # still global, and is set below.  Can causes problems calling locals_to_globals
+    # not at the end of setup functions when some are made global and later modified.
+    locals_to_globals()
+
+    with raises(LocalsToGlobalsError):
+        locals_to_globals(clear=False)
+    teststr = "house" # This now sets a global, which will NOT be cleared.
+    locals_to_globals()
+    assert teststr == "house"
+   
+class TestInClass(object):
+    def test_in_class(self):
+        # TODO DEBUG uncomment below to see nasty bug after multiple runs.
+        #assert teststr == "house" # Test the previously-set global.
+        locals_to_globals() # This clears previously-set globals as a side-effect.
+        #assert teststr == "house" # Still defined, since it was set as global.
+        with raises(NameError):
+            assert new_var == "car" # No longer defined; copied on call before last.
+
+        # Below del is NEEDED if a later test wants to copy a local of same name,
+        # unless called with noclobber set to False (as currently set below).
+        #del globals()["teststr"]
+        #with raises(NameError):
+        #    assert teststr == "house"
+
+def test_final1():
+    teststr = "water"
+    locals_to_globals(noclobber=False)
+    assert teststr == "water"
+
+def test_final2():
+    assert teststr == "water"
+    locals_to_globals(locals(), globals())
+    with raises(NameError):
+        assert teststr == "water"
+
