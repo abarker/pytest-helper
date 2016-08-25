@@ -69,15 +69,22 @@ the pytest tests for the module, as well as add tests to the file. ::
 
    import pytest_helper
 
+   #
    # Run the tests, but only when the module is invoked as a script.
+   #
+
    if __name__ == "__main__": # Guard conditional, optional but recommended.
        pytest_helper.script_run(self_test=True, pytest_args="-v")
 
+   #
    # Regular imports and program code go here.
+   #
 
    testing_var = "foo"
 
+   #
    # Test functions are below; they can easily be moved to a separate module.
+   #
    
    pytest_helper.auto_import()  # Do some basic imports automatically.
 
