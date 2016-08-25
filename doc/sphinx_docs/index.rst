@@ -339,22 +339,24 @@ conditional also makes the code more explicit in what it is doing.
       def test_skipped():
           skip()  # The skip function was also autoimported.
 
-Notice that very little needs to be changed in order to extract a separate test
-module from the testing part of a module which initially contains its own tests
-(like in the first example, in the :ref:`Introduction`).  You basically do the
-following:
+   Notice that very little needs to be changed in order to extract a separate test
+   module from the testing part of a module which initially contains its own tests
+   (like in the first example, in the :ref:`Introduction`).  You would basically
+   do the following:
 
-1. Copy the Python file to the test directory with a new name.
+   1. Copy the Python file to the test directory with a new name.
 
-2. Delete the code from one file and delete the tests from the other.
-   
-3. Change the pathname on the `script_run` call in the code file, and add a
-    self-testing `script_run` call to the test file if desired.
-    
-4. Add an import statement in the test file to import what it needs from the
-   code file.  If necessary, `sys_path` can be called in the test file so
-   that it can find the module or package to be tested.
+   2. Delete the code from one file and delete the tests from the other.  Both
+      still need to import pytest-helper if they use any of the helper functions.
 
+   3. Add an import statement in the test file to import what it needs from the
+      code file.  If necessary, `sys_path` can be called in the test file so
+      that it can find the module or package to be tested.
+
+   4. Change the pathname on the `script_run` call in the code file to point to
+      the new test file.  Add a self-testing `script_run` call to the test file,
+      if desired.
+       
 .. _Configuration:
 
 Configuration files
