@@ -1,7 +1,7 @@
 .. default-role:: code
 
-set-package-attribute
-=====================
+pytest-helper
+=============
 
 Helper functions for using the pytest testing framework.
 

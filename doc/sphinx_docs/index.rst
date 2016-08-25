@@ -307,6 +307,7 @@ conditional also makes the code more explicit in what it is doing.
    line. ::
 
       import pytest_helper
+
       if __name__ == "__main__":
           pytest_helper.script_run(self_test=True, pytest_args="-v")
 
