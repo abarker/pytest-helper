@@ -13,7 +13,10 @@ framework.
 
 """
 
-# TODO Add tests of the config file stuff.
+# TODO: the config file ALWAYS overrides the default argument... is this the
+# desired thing?  Seems like if it is set then the set value should be used,
+# otherwise the config value should be used IN PLACE OF the default.  But
+# there is a case the other way, too... How does pytest do it?
 
 # Possible enhancement: It might be useful to go up the tree to find the
 # project root (the one above package root), and let that be a keyword arg to
@@ -44,7 +47,7 @@ import inspect
 import sys
 import os
 import py.test
-from pytest_helper.config_file_handler import get_config_value
+from pytest_helper.config_file_handler import (get_config_value, get_config)
 
 from pytest_helper.global_settings import (PytestHelperException,
                                            LocalsToGlobalsError,
@@ -130,6 +133,8 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
 
     # Override arguments with any values set in the config file.
     pytest_args = get_config_value("script_run_pytest_args", pytest_args,
+                                             calling_mod, calling_mod_dir)
+    pytest_args += " " + get_config_value("script_run_extra_pytest_args", "",
                                              calling_mod, calling_mod_dir)
 
     if modify_syspath:
@@ -419,8 +424,10 @@ def clear_locals_from_globals(level=2):
     """Clear all the global variables that were added by locals_to_globals.
     This is called automatically by `locals_to_globals` unless that function
     is run with `clear` set false.  This only affects the module from
-    which the function is called.  Assumes `locals_to_globals` has been called."""
+    which the function is called."""
     g = get_calling_fun_globals_dict(level)
+    if NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT not in g:
+        return
     globals_copied_to_list = g[NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT].get(
             "list_of_globals_copied_to_locals", [])
     for k in globals_copied_to_list:
@@ -429,6 +436,7 @@ def clear_locals_from_globals(level=2):
         except KeyError:
             pass # Ignore if not there.
     del globals_copied_to_list[:] # Empty out globals_copied_to_list in-place.
+    return
 
 autoimport_DEFAULTS = [("pytest", py.test), # (<nameToImportAs>, <value>)
                         ("raises", py.test.raises),
@@ -440,8 +448,8 @@ autoimport_DEFAULTS = [("pytest", py.test), # (<nameToImportAs>, <value>)
                         ("clear_locals_from_globals", clear_locals_from_globals)
                        ]
 
-def autoimport(noclobber=True, skip=None, imports=autoimport_DEFAULTS,
-                calling_mod_name=None, calling_mod_path=None, level=2):
+def autoimport(noclobber=True, skip=None,
+              calling_mod_name=None, calling_mod_path=None, level=2):
     """This function imports some pytest-helper and pytest attributes into the
     calling module's global namespace.  This avoids having to explicitly do
     common imports.  A `PytestHelperException` will be raised if any of those
@@ -467,8 +475,6 @@ def autoimport(noclobber=True, skip=None, imports=autoimport_DEFAULTS,
     # Override arguments with any values set in the config file.
     noclobber = get_config_value("autoimport_noclobber", noclobber,
                                              calling_mod, calling_mod_dir)
-    imports = get_config_value("autoimport_imports", imports,
-                                             calling_mod, calling_mod_dir)
     skip = get_config_value("autoimport_skip", skip,
                                              calling_mod, calling_mod_dir)
 
@@ -478,11 +484,14 @@ def autoimport(noclobber=True, skip=None, imports=autoimport_DEFAULTS,
             raise PytestHelperException("The pytest_helper function autoimport"
                     "\nattempted an overwrite with noclobber set.  The attribute"
                     " is: " + name)
-        d[name] = value
+        try:
+           d[name] = value
+        except KeyError:
+            raise
 
     g = get_calling_fun_globals_dict(level=level)
 
-    for name, value in imports:
+    for name, value in autoimport_DEFAULTS:
         if skip and name in skip: continue
         insert_in_dict(g, name, value, noclobber)
 

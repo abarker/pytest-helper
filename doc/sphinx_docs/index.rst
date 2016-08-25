@@ -373,13 +373,15 @@ Configuration files
 
 Several of the pytest-helper functions have arguments which can be overridden
 by values in a configuration file.  The file must be named `pytest_helper.ini`,
-and each module separately searches for and parses a file with that name.
-(Config files are loaded per-module since many different modules across
-different packages may import and use the pytest-helper functions.)  The search
-is conducted from the directory of the module up to the root directory, taking
-the first such file encountered.  Caching is used to speed up the process.
-Locating and using config files can be disabled altogether by passing the
-argument `conf=False` to the `init` function::
+and each module separately searches for and parses a file with that name
+The files are cached by filename, so each one is only read once.
+Config files are loaded per-module since many different modules across
+different packages may import and use the pytest-helper functions.
+
+The search is conducted from the directory of the module up to the root
+directory, taking the first such file encountered.  Locating and using config
+files can be disabled altogether by passing the argument `conf=False` to the
+`init` function::
 
    import pytest_helper
    init(conf=False)
@@ -391,7 +393,7 @@ options are silently ignored.  Most of the option names are constructed from
 the name of the pytest-helper function concatenated with the name of the
 parameter of the function which they override.
 
-::
+.. code-block:: ini
 
    [pytest_helper]
 
@@ -399,21 +401,13 @@ parameter of the function which they override.
 
    init_set_package = True
 
-   script_run_pytest_args = "-v -s"
+   script_run_pytest_args = "-v -s" # These override any pytest_args setting.
+   script_run_extra_pytest_args = "-v -s" # These are appended to pytest_arg setting.
 
    sys_path_add_gn_parent = 2
 
    autoimport_noclobber = False
    autoimport_skip = ["pytest", "locals_to_globals"]
-   autoimport_imports = [("pytest", py.test),
-                         ("raises", py.test.raises),
-                         ("fail", py.test.fail),
-                         ("fixture", py.test.fixture),
-                         ("skip", py.test.skip),
-                         ("xfail", py.test.xfail),
-                         ("locals_to_globals", locals_to_globals),
-                         ("clear_locals_from_globals", clear_locals_from_globals)
-                        ]
 
 
 Package contents

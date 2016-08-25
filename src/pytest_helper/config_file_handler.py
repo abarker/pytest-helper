@@ -33,6 +33,7 @@ from __future__ import print_function, division, absolute_import
 import inspect
 import sys
 import os
+import ast
 try:
     from configparser import ConfigParser
 except ImportError: # Must be Python 2; use old names.
@@ -85,21 +86,18 @@ def get_config_file_pathname(calling_mod_dir):
                                    os.path.join(dirname, "__init__.py")):
             return None # Past the top of a package, nothing found.
 
+
 def read_and_eval_config_file(filename):
     """Return a dict of dicts containing a dict of parameter arguments for each
     section of the config file, with the evaluated value."""
 
-    # These modules and functions are imported here because this local
-    # namespace is the one that is visible to the config files when they set
-    # autoimport defaults.  The pytest_helper_main module should already
-    # be loaded by the time this function is called.
-    import py.test
-    pytest = py.test # Alias to use in config files.
-    from .pytest_helper_main import locals_to_globals
-    from .pytest_helper_main import clear_locals_from_globals
-
     config = ConfigParser()
-    config.read(filename)
+    try:
+        config.read(filename)
+    except SyntaxError:
+        print("Error in reading the pytest-helper config file named '{0}'"
+                .format(filename), file=sys.stderr)
+        raise
 
     # Convert the ConfigParser format into a regular dict of dicts.
     config_dict = {s:dict(config.items(s)) for s in config.sections()}
@@ -108,23 +106,15 @@ def read_and_eval_config_file(filename):
     for section, subdict in config_dict.items():
         for key, value in subdict.items():
             try:
-                config_dict[section][key] = eval(value, locals())
-            except NameError: # Raised when a name cannot be found in dict.
-                err_string = ("NameError in config file."
-                              "\nThe section is '{0}', the key is '{1}',"
-                              " and the value is '{2}'."
-                              .format(section, key, value))
-                print(err_string, file=sys.stderr)
-                raise
-            except SyntaxError:
-                err_string = ("SyntaxError in config file."
-                              "\nThe section is '{0}', the key is '{1}',"
-                              " and the value is '{2}'."
-                              .format(section, key, value))
-                print(err_string, file=sys.stderr)
-                raise
+                config_dict[section][key] = ast.literal_eval(value)
+            except (ValueError, SyntaxError):
+                raise PytestHelperException("Error in evaluating the config"
+                        " file '{0}'.  Error in section '{1}' on the key '{2}' with"
+                        " value '{3}'."
+                        .format(filename, section, key, value))
 
     return config_dict
+
 
 # Note the below cache precludes dynamically changing the config file, which
 # seems like a bad idea to allow anyway but might have uses.
@@ -182,7 +172,8 @@ def get_config(calling_mod, calling_mod_dir, disable=False):
 
 def get_config_value(config_key, default, calling_mod, calling_mod_dir):
     """Return the config value from the config file corresponding to the key
-    `config_key`.  Return the value `default` if no config value is set."""
+    `config_key`.  Return the value `default` if no config value is set.
+    This is called in the main functions to get defaults."""
     config_dict = get_config(calling_mod, calling_mod_dir)
 
     if CONFIG_SECTION_STRING in config_dict:
