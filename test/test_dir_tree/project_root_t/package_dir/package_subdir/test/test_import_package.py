@@ -19,7 +19,7 @@ os.chdir("..") # Causes an error if init() is not called above.
 pytest_helper.script_run(self_test=True, pytest_args="-v -s")
 # More efficient to put below two lines after script_run (won't run twice).
 pytest_helper.sys_path("../../../") # contains package_dir, to import it
-pytest_helper.auto_import()
+pytest_helper.autoimport()
 
 os.chdir(old_cwd) # Return to prev dir so as not to mess up later tests.
 

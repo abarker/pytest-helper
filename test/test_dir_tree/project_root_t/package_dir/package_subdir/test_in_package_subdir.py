@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
 from . import subdir_dummy_module
 
-pytest_helper.auto_import()
+pytest_helper.autoimport()
 def test_running_test_in_package_subdir():
     assert True
 

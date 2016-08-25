@@ -12,9 +12,9 @@ import sys
 
 import pytest_helper
 pytest_helper.script_run(self_test=True)
-pytest_helper.auto_import()
+pytest_helper.autoimport()
 
-#from py.test import raises, fail, fixture, skip  # Done by auto_import.
+#from py.test import raises, fail, fixture, skip  # Done by autoimport.
 
 def dummy_fun(): pass # just to test function objects
 

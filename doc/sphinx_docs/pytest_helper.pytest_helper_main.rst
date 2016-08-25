@@ -35,8 +35,8 @@ Functions to help with running tests
 Functions to help in writing tests
 ----------------------------------
 
-.. _auto_import:
-.. autofunction:: auto_import
+.. _autoimport:
+.. autofunction:: autoimport
 
 .. _locals_to_globals:
 .. autofunction:: locals_to_globals

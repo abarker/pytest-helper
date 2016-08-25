@@ -12,7 +12,7 @@ os.chdir("..") # Causes an error if pytest_helper.init() is not called above.
 pytest_helper.script_run(self_test=True, pytest_args="-v -s")
 # More efficient to put below two lines after script_run (won't run twice).
 pytest_helper.sys_path(["../package_dir"])
-pytest_helper.auto_import()
+pytest_helper.autoimport()
 
 # The module to be tested is in_sibling_dir.
 # The import below defines test_string="in_sibling_dir".

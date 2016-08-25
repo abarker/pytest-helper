@@ -39,7 +39,7 @@ pytest_helper.script_run(self_test=True, pytest_args="-v -s")
 
 # Put below two lines after script_run (won't be run twice).
 pytest_helper.sys_path(["../package_dir"])
-pytest_helper.auto_import()
+pytest_helper.autoimport()
 
 os.chdir(old_cwd) # Return to prev dir so as not to mess up later tests.
 

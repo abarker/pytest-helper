@@ -2,6 +2,7 @@
 #
 # These are tests run from the command line, to test the relative pathnames
 # and the directory-location lookup when called from different working directories.
+# This does not run all the tests, though, so py.test itself should still be run.
 #
 # Usage: run_tests
 #

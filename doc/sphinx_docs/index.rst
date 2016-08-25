@@ -85,7 +85,7 @@ the pytest tests for the module, as well as add tests to the file. ::
    # Test functions are below; they can easily be moved to a separate module.
    #
    
-   pytest_helper.auto_import()  # Do some basic imports automatically.
+   pytest_helper.autoimport()  # Do some basic imports automatically.
 
    def my_setup(): # Could be a pytest fixture instead of a regular function.
        setup_var = "bar"
@@ -191,8 +191,8 @@ test file.
 * :ref:`pytest_helper.init<init>`
 
    The `pytest_helper.init` function call is optional, but adds some
-   functionality.  Perhaps the most useful added feature is the ability to use a
-   configuration file.  See the section :ref:`Configuration` below.  This
+   functionality.  Perhaps the most useful added feature is the ability to use
+   a configuration file.  See the section :ref:`Configuration` below.  This
    function should be called directly after importing `pytest_helper`::
 
       import pytest_helper
@@ -224,7 +224,7 @@ their more-conventional (non-magic) equivalents.
    current tests.
 
    This function is usually called without arguments, near the end of a setup
-   function or fixture.  If `auto_import` is used then it is automatically
+   function or fixture.  If `autoimport` is used then it is automatically
    imported into the module's global namespace.
    
    Note that some linters will complain about variables being used without
@@ -236,9 +236,9 @@ their more-conventional (non-magic) equivalents.
    when `clear` is set true.  This function can also be explicitly called to do
    the clearing.
 
-* :ref:`pytest_helper.auto_import<auto_import>`
+* :ref:`pytest_helper.autoimport<autoimport>`
 
-   The `auto_import` function is a convenience function that automatically
+   The `autoimport` function is a convenience function that automatically
    imports certain pytest-helper and pytest functions into the calling module's
    global namespace.  The names can then be used essentially as builtins in the
    test code.
@@ -250,7 +250,7 @@ their more-conventional (non-magic) equivalents.
 
    This function is usually called without arguments::
 
-      pytest_helper.auto_import()
+      pytest_helper.autoimport()
 
    Note that some linters will complain about variables being used without
    being set.
@@ -263,18 +263,27 @@ Examples
 ========
 
 Below are examples of using the pytest-helper functions in different cases.
-Note that when `script_run` is called from a regular module (one which contains
-the code which is being tested) to run a test file it is best to call it from
-the beginning of the file, especially for files inside packages which do
-intra-package imports.  This avoids some potential headaches with imports.
 
-It is more traditional to run tests from the end of a Python module.  This is
-not recommended, but it works in many cases.  It can cause problems with
-explicit relative imports.  Some such problems can be fixed by importing
-`pytest_helper` near the top of the module and, before any explicit relative
-imports, calling its `init` function with the `set_package` flag set.  Putting
-the `script_run` call near the end of the module is also less efficient, since
-the module's initialization code gets run twice.
+Whenever `script_run` is called from a module to run tests it is best to call
+it from the beginning of the file, especially for files inside packages which
+do intra-package imports.  This placement is more efficient and avoids some
+potential headaches with imports.  I like put the import and `script_run` call
+directly after any `__future__` import and before all the others, but it really
+just needs to be before any imports which use package-style imports (since the
+module is being run as a script).
+
+.. note::
+
+   It is traditional to run tests from the end of a Python module, but
+   `script_run` is calling another program (pytest) to extract and run the
+   tests.  The test functions themselves can be placed anywhere, but it is not
+   recommended to place a `script_run` call near the end of a module.  In many
+   cases it works, but it can cause problems with explicit relative
+   imports.  Some such problems can be fixed by importing `pytest_helper` near
+   the top of the module and, before any explicit relative imports, calling its
+   `init` function with the `set_package` flag set.  Putting the `script_run`
+   call near the end of the module is also less efficient, since the module's
+   initialization code gets run twice.
 
 Whenever `script_run` is called in the examples below the optional `if __name__
 == "__main__"` guard conditional is used.  It can be left off, but it is
@@ -318,7 +327,7 @@ conditional also makes the code more explicit in what it is doing.
           pytest_helper.script_run(self_test=True, pytest_args="-v")
 
       # Put these pytest_helper calls AFTER the script_run call.
-      pytest_helper.auto_import()  # Do some basic imports automatically.
+      pytest_helper.autoimport()  # Do some basic imports automatically.
       pytest_helper.sys_path(add_parent=True)
       # pytest_helper.sys_path("..")  # Does the same thing as the line above.
       # pytest_helper.sys_path([".."])  # Does the same as the two lines above.
@@ -367,23 +376,26 @@ by values in a configuration file.  The file must be named `pytest_helper.ini`,
 and each module separately searches for and parses a file with that name.
 (Config files are loaded per-module since many different modules across
 different packages may import and use the pytest-helper functions.)  The search
-conducted from the directory of the module up to the root directory, taking the
-first such file encountered.  Caching is used to speed up the process.  Locating
-and using config files can be disabled altogether by passing the argument `conf=False`
-to the `init` function::
+is conducted from the directory of the module up to the root directory, taking
+the first such file encountered.  Caching is used to speed up the process.
+Locating and using config files can be disabled altogether by passing the
+argument `conf=False` to the `init` function::
 
    import pytest_helper
    init(conf=False)
 
 Below is an example `pytest_helper.ini` configuration, which sets a value for
-all the options which are settable from the config file.  Any other sections of
-the file or options are silently ignored.  The options are all constructed from
-the name of the function concatenated with the name of the parameter they
-override
+all the options which are settable from the config file.  These are only
+examples, not the default options.  Any other sections of the file or other
+options are silently ignored.  Most of the option names are constructed from
+the name of the pytest-helper function concatenated with the name of the
+parameter of the function which they override.
 
 ::
 
    [pytest_helper]
+
+   # A comment.
 
    init_set_package = True
 

@@ -14,7 +14,7 @@ pytest_helper.script_run(self_test=True, pytest_args="-v -s", pyargs=True)
 #pytest_helper.script_run(self_test=True, pytest_args="-v -s")
 
 # More efficient to put below two lines after script_run (won't run twice).
-pytest_helper.auto_import()
+pytest_helper.autoimport()
 pytest_helper.sys_path(add_self=True) # Needs to add own dir when run as test.
 
 # The module to be tested is `in_same_dir`.

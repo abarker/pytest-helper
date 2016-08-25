@@ -9,7 +9,7 @@ testing_var2 = "tvar2"
 if __name__ == "__main__":
     pytest_helper.script_run(self_test=True, pytest_args="-v")
 
-pytest_helper.auto_import()  # Do some basic imports automatically.
+pytest_helper.autoimport()  # Do some basic imports automatically.
 
 def my_setup1():
     setup_var1 = "foo"

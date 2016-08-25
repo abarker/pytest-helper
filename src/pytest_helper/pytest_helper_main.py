@@ -44,7 +44,7 @@ import inspect
 import sys
 import os
 import py.test
-pytest = py.test # Alias, usable in config files.
+#pytest = py.test # Alias, usable in config files.
 from pytest_helper.config_file_handler import get_config_value
 
 from pytest_helper.global_settings import (PytestHelperException,
@@ -306,10 +306,11 @@ def init(set_package=False, conf=True, calling_mod_name=None,
     if not conf or not ALLOW_USER_CONFIG_FILES:
         get_config(calling_mod_path, calling_mod_dir, disable=True)
 
-    # Override arguments with any values set in the config file.
+    # Override init arguments with any values set in the config file.
     set_package = get_config_value("init_set_package", set_package,
                                              calling_mod_path, calling_mod_dir)
 
+    # Handle the set_package option.
     if set_package:
         if calling_mod_name == "__main__":
             import set_package_attribute
@@ -427,7 +428,7 @@ def clear_locals_from_globals(level=2):
             pass # Ignore if not there.
     del globals_copied_to_list[:] # Empty out globals_copied_to_list in-place.
 
-AUTO_IMPORT_DEFAULTS = [("pytest", py.test), # (<nameToImportAs>, <value>)
+autoimport_DEFAULTS = [("pytest", py.test), # (<nameToImportAs>, <value>)
                         ("raises", py.test.raises),
                         ("fail", py.test.fail),
                         ("fixture", py.test.fixture),
@@ -437,7 +438,7 @@ AUTO_IMPORT_DEFAULTS = [("pytest", py.test), # (<nameToImportAs>, <value>)
                         ("clear_locals_from_globals", clear_locals_from_globals)
                        ]
 
-def auto_import(noclobber=True, skip=None, imports=AUTO_IMPORT_DEFAULTS,
+def autoimport(noclobber=True, skip=None, imports=autoimport_DEFAULTS,
                 calling_mod_name=None, calling_mod_path=None, level=2):
     """This function imports some pytest-helper and pytest attributes into the
     calling module's global namespace.  This avoids having to explicitly do
@@ -472,7 +473,7 @@ def auto_import(noclobber=True, skip=None, imports=AUTO_IMPORT_DEFAULTS,
     def insert_in_dict(d, name, value, noclobber):
         """Insert (name, value) in dict d checking for noclobber."""
         if noclobber and name in d:
-            raise PytestHelperException("The pytest_helper function auto_import"
+            raise PytestHelperException("The pytest_helper function autoimport"
                     "\nattempted an overwrite with noclobber set.  The attribute"
                     " is: " + name)
         d[name] = value
@@ -543,6 +544,7 @@ def get_calling_module_info(level=2, check_exists=True,
     # one thing that is cached.  The cache key is the calling module name.
     # TODO: note that __main__ module will not be cached the same as
     # when run from pytest with its normal name.
+    # TODO: why not put this in the module namespace pytest-helper dict, too?
 
     if module_name:
         calling_module_name = module_name

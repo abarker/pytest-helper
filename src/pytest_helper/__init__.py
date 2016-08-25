@@ -6,8 +6,10 @@ from pytest_helper.pytest_helper_main import (
         init,
         locals_to_globals,
         clear_locals_from_globals,
-        auto_import,
+        autoimport,
         )
+
+auto_import = autoimport # Allow this alias for autoimport.
 
 from pytest_helper.global_settings import (
         PytestHelperException,

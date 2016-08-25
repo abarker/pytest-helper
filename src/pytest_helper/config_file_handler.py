@@ -37,8 +37,6 @@ try:
     from configparser import ConfigParser
 except ImportError: # Must be Python 2; use old names.
     from ConfigParser import SafeConfigParser as ConfigParser
-#import py.test
-#pytest = py.test # Alias, usable in config files.
 
 from pytest_helper.global_settings import (
         CONFIG_FILE_NAMES, # Filenames for config files, searched in order.
@@ -89,6 +87,16 @@ def get_config_file_pathname(calling_mod_dir):
 def read_and_eval_config_file(filename):
     """Return a dict of dicts containing a dict of parameter arguments for each
     section of the config file, with the evaluated value."""
+
+    # These modules and functions are imported here because this local
+    # namespace is the one that is visible to the config files when they set
+    # autoimport defaults.  The pytest_helper_main module should already
+    # be loaded by the time this function is called.
+    import py.test
+    pytest = py.test # Alias to use in config files.
+    from .pytest_helper_main import locals_to_globals
+    from .pytest_helper_main import clear_locals_from_globals
+
     config = ConfigParser()
     config.read(filename)
 
@@ -99,7 +107,7 @@ def read_and_eval_config_file(filename):
     for section, subdict in config_dict.items():
         for key, value in subdict.items():
             try:
-                config_dict[section][key] = eval(value, globals())
+                config_dict[section][key] = eval(value, locals())
             except NameError: # Raised when a name cannot be found in dict.
                 err_string = ("NameError in config file."
                               "\nThe section is '{0}', the key is '{1}',"
@@ -114,13 +122,6 @@ def read_and_eval_config_file(filename):
                               .format(section, key, value))
                 print(err_string, file=sys.stderr)
                 raise
-            #except ValueError: # Raised by ast.literal_eval.
-            #    err_string = ("ValueError in config file."
-            #                  "\nThe section is '{0}', the key is '{1}',"
-            #                  " and the value is '{2}'."
-            #                  .format(section, key, value))
-            #    print(err_string, file=sys.stderr)
-            #    raise
 
     return config_dict
 

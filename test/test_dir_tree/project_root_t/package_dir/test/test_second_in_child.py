@@ -10,7 +10,7 @@ any tests that test_in_child_dir doesn't do (and it does fewer).
 
 pytest_helper.script_run(self_test=True)
 pytest_helper.sys_path(add_parent=True)
-pytest_helper.auto_import()
+pytest_helper.autoimport()
 
 from in_child_dir import * # Imported as a regular module, NOT part of a package.
 
