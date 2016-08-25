@@ -27,20 +27,19 @@ is independent of the official pytest project.
 Installation
 ============
 
-The easiest way to install is to use `pip`, which also allows for easy
-uninstallation.  Either download the zipped directory from GitHub and unzip it,
-or else use `git` to clone the GitHub repo.  Then run:
+The easiest way to install is to use `pip`, which works well with virtual
+environments and allows for easy uninstallation.  Either download the zipped
+directory from `the pytest-helper GitHub
+<https://github.com/abarker/pytest-helper>`_ and unzip it, or else use `git` to
+clone the GitHub repo.  Go to the root of the downloaded directory tree and run
+this command:
 
 .. code-block:: bash
 
-   pip install file:///path/to/the/new/pytest_helper/dir
-
-replacing the path with the one where you saved the directory.  (Run the
-command with `sudo` or equivalent administrator privileges if installing as
-a system Python package rather than as a local one.)
+   pip install .
 
 Alternately, you can run the package's `setup.py` program directly with
-`python setup.py install`.  Or, you can just add the `pytest_helper`
+`python setup.py install`.  Or, you can just add the `pytest_helper/src`
 subdirectory to your `PYTHONPATH` environment variable.
 
 .. _Introduction:
