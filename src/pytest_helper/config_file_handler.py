@@ -39,6 +39,7 @@ except ImportError: # Must be Python 2; use old names.
     from ConfigParser import SafeConfigParser as ConfigParser
 
 from pytest_helper.global_settings import (
+        PytestHelperException,
         CONFIG_FILE_NAMES, # Filenames for config files, searched in order.
         FAIL_ON_MISSING_CONFIG, # Raise exception if config enabled but not found.
         CONFIG_SECTION_STRING, # Label for active section of the config file.
@@ -101,7 +102,7 @@ def read_and_eval_config_file(filename):
     config.read(filename)
 
     # Convert the ConfigParser format into a regular dict of dicts.
-    config_dict = { s:dict(config.items(s)) for s in config.sections() }
+    config_dict = {s:dict(config.items(s)) for s in config.sections()}
 
     # Evaluate each string within each config file section.
     for section, subdict in config_dict.items():
@@ -125,63 +126,64 @@ def read_and_eval_config_file(filename):
 
     return config_dict
 
-per_module_config_dict = {} # Cache the config dict for each module by module filename.
-config_disabled_modules = {} # Save booleans for which modules look for config.
-
 # Note the below cache precludes dynamically changing the config file, which
 # seems like a bad idea to allow anyway but might have uses.
 config_dict_cache = {} # Cache config dicts by their full filenames (save space and time).
 
-def get_config(calling_mod_path, calling_mod_dir, disable=False):
-    """Return the configuration corresponding to the module with pathname
-    `calling_mod_path`.  Return an empty dict if no config is found.  Caches
-    its values based on pathnames of module (to avoid problems with `__main__`
-    when run as a script) as well as on the pathnames of config files.  If
-    nothing is found in the cache, it looks for the file and reads it in if
-    possible.  If `disable` is set for a module then it will always return an
-    empty config dict for the given module and skip searching for the file."""
+def get_config(calling_mod, calling_mod_dir, disable=False):
+    """Return the configuration corresponding to the module `calling_mod`.
+    Return an empty dict if no config is found.  Caches its values in the
+    namespace of the modules (in the pytest-helper data dict).  Also caches
+    config files based on their pathnames.  If nothing is found in the cache,
+    it looks for the file and reads it in if possible.  If `disable` is set for
+    a module then `get_config` will always return an empty config dict for the
+    given module and skip searching for the file."""
 
     # TODO, maybe: Could speed up even more by using a cache on each pathname
     # up to the config file.  A bit more space but faster.
 
-    cache_key = calling_mod_path # Use pathname to avoid __main__ problems.
-
-    # Disable config files for the module if that flag is set.
-    if disable:
-        config_disabled_modules[cache_key] = True
-
-    # If module not enabled (by current or prev call with enable=True) return empty.
-    if cache_key in config_disabled_modules:
-        return {}
-
-    if cache_key in per_module_config_dict: # Look in per-module cache.
-        config_dict = per_module_config_dict[cache_key]
-
-    else: # If not in per-module cache, look for a config file.
+    if not hasattr(calling_mod, NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT):
+        setattr(calling_mod, NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT, {})
+    module_info_dict = getattr(calling_mod, NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT)
+    
+    if "config_data_dict" not in module_info_dict:
+        # Search for a file if the key is not set.
         config_file_path = get_config_file_pathname(calling_mod_dir)
 
         if config_file_path in config_dict_cache: # Look in the config dict cache.
-            config_dict = config_dict_cache[config_file_path]
+            config_data_dict = config_dict_cache[config_file_path]
 
         elif config_file_path: # Some path was set.
-            config_dict = read_and_eval_config_file(config_file_path)
-            config_dict_cache[config_file_path] = config_dict
+            config_data_dict = read_and_eval_config_file(config_file_path)
+            config_dict_cache[config_file_path] = config_data_dict
         else: # Returned None from config_file_path.
             if FAIL_ON_MISSING_CONFIG:
                 raise PytestHelperException("Config file specified but"
                         " not found in the directory tree.  At least an"
                         " empty file must be present.")
             else:
-                config_dict = {} # Assume it is empty if not found and no fail.
+                config_data_dict = {} # Assume it is empty if not found and no fail.
+        module_info_dict["config_data_dict"] = config_data_dict
+    else:
+        config_data_dict = module_info_dict["config_data_dict"]
 
-        per_module_config_dict[cache_key] = config_dict # Put in cache for module.
+    if "config_disabled" not in config_data_dict:
+        config_data_dict["config_disabled"] = False
 
-    return config_dict
+    # Disable config files for the module if that flag is set.
+    if disable:
+        config_data_dict["config_disabled"] = True
 
-def get_config_value(config_key, default, calling_mod_path, calling_mod_dir):
+    # If module not enabled (by current or prev call with enable=True) return empty.
+    if config_data_dict["config_disabled"]:
+        return {}
+
+    return config_data_dict
+
+def get_config_value(config_key, default, calling_mod, calling_mod_dir):
     """Return the config value from the config file corresponding to the key
     `config_key`.  Return the value `default` if no config value is set."""
-    config_dict = get_config(calling_mod_path, calling_mod_dir)
+    config_dict = get_config(calling_mod, calling_mod_dir)
 
     if CONFIG_SECTION_STRING in config_dict:
         config_dict = config_dict[CONFIG_SECTION_STRING]

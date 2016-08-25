@@ -44,7 +44,6 @@ import inspect
 import sys
 import os
 import py.test
-#pytest = py.test # Alias, usable in config files.
 from pytest_helper.config_file_handler import get_config_value
 
 from pytest_helper.global_settings import (PytestHelperException,
@@ -58,18 +57,25 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     """Run pytest on the specified test files when the calling module is run as
     a script.  Using this function requires at least pytest 2.0.
     
-    The argument `testfile_paths` should be either the pathname to a file or
-    directory to run pytest on, or else a list of such file paths and directory
+    The argument `testfile_paths` should be either the pathname of a file or
+    directory to run pytest on, or else a list of such file and directory
     paths.  Any relative paths will be interpreted relative to the directory of
     the module which calls this function.
-    
+
+    The calculation of relative paths can fail in cases where Python's CWD is
+    changed between the time when the calling module is loaded and a
+    pytest-helper function is called.  (Most programs do not change the CWD
+    like that, or if they do they return it to its previous value.)  In those
+    cases the `pytest_helper.init()` function can be called just after
+    importing `pytest_helper` (or absolute pathnames can be used).
+   
     The recommended use of `script_run` is to place it inside a guard
     conditional which runs only for scripts, and to call it before doing any
     other non-system imports.  The early call avoids possible problems with
     relative imports when running it from inside modules that are part of
     packages.  The use of the guard conditional is optional, but is more
     explicit and slightly more efficient.
-    
+
     If `self_test` is `True` then pytest will be run on the file of the calling
     script itself, i.e., tests are assumed to be in the same file as the code
     to test.
@@ -97,22 +103,17 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     This flag should seldom be needed because pytest seems to already take care
     of this.
 
-    Using relative paths can fail in cases where Python's CWD is changed
-    between the loading of the calling module and the call of this function.
-    (Most programs do not change the CWD like that, or they return it to its
-    previous value.)  In those cases you can use the `pytest_helper.init()`
-    function just after importing `pytest_helper` or else use absolute pathnames
-    
     The `calling_mod_name` argument is a fallback in case the calling
     function's module is not correctly located by introspection.  It is usually
     not required (though it is slightly more efficient).  Use it as:
     `module_name=__name__`.  Similarly for `calling_mod_path`, but that should
     be passed the pathname of the calling module's file.
     
-    If `exit` is set false then `sys.exit(0)` will be called after the tests
+    If `exit` is set false `sys.exit(0)` will not be called after the tests
     finish.  The default is to exit after the tests finish (otherwise when
-    tests run from the top of a module are finished the rest of the file
-    will still be executed).
+    tests run from the top of a module are finished the rest of the file will
+    still be executed).  Setting `exit` false can be used to make several
+    separate `script_run` calls in sequence.
     
     If `always_run` is true then tests will be run regardless of whether or not
     the function was called from a script.
@@ -129,7 +130,7 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
 
     # Override arguments with any values set in the config file.
     pytest_args = get_config_value("script_run_pytest_args", pytest_args,
-                                             calling_mod_path, calling_mod_dir)
+                                             calling_mod, calling_mod_dir)
 
     if modify_syspath:
         del sys.path[0]
@@ -184,6 +185,7 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
     string representing a path can also be passed to `dirs_to_add`.  Relative
     pathnames are always interpreted relative to the directory of the calling
     module (i.e., the directory of the module that calls this function).
+    The notes about relative paths for the `script_run` function also apply here.
     
     The keyword arguments `add_parent` and `add_grandparent` are shortcuts that
     can be used instead of putting the equivalent relative path on the list
@@ -209,12 +211,12 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
     # Override arguments with any values set in the config file.
     # TODO what if you want more than one gn parent?  Could take list of numbers?
     add_gn_parent = get_config_value("sys_path_add_gn_parent", add_gn_parent,
-                                             calling_mod_path, calling_mod_dir)
+                                             calling_mod, calling_mod_dir)
     # Get the config file extra paths; note added to *end* of list above, but
     # all are inserted, so the last ones come later in the sys.path list.
     # TODO: needs more consideration, see paragraph near top.
     #config_always_add_paths = get_config_value("sys_path_always_add", [],
-    #                                         calling_mod_path, calling_mod_dir)
+    #                                         calling_mod, calling_mod_dir)
 
     if dirs_to_add is None: dirs_to_add = []
     if isinstance(dirs_to_add, str): dirs_to_add = [dirs_to_add]
@@ -296,7 +298,7 @@ def init(set_package=False, conf=True, calling_mod_name=None,
     for by any function which has an option settable in a config file
     (including the `init` function itself).
     """
-    # The get_calling_module_info function caches module info, including the
+    # The get_calling_module_info function caches the module info, including the
     # calling_mod_path, as a side effect.
     mod_info = get_calling_module_info(module_name=calling_mod_name,
                                        module_path=calling_mod_path, level=level)
@@ -304,11 +306,11 @@ def init(set_package=False, conf=True, calling_mod_name=None,
 
     # Disable the configuration file if requested.
     if not conf or not ALLOW_USER_CONFIG_FILES:
-        get_config(calling_mod_path, calling_mod_dir, disable=True)
+        get_config(calling_mod, calling_mod_dir, disable=True)
 
     # Override init arguments with any values set in the config file.
     set_package = get_config_value("init_set_package", set_package,
-                                             calling_mod_path, calling_mod_dir)
+                                             calling_mod, calling_mod_dir)
 
     # Handle the set_package option.
     if set_package:
@@ -382,15 +384,15 @@ def locals_to_globals(fun_locals=None, fun_globals=None, clear=False,
     if not fun_globals:
         fun_globals = get_calling_fun_globals_dict(level)
 
-    if NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT in fun_globals:
-        globals_copied_to_list = fun_globals[
-                NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT].get(
-                        "list_of_globals_copied_to_locals", [])
-    else:
+    if NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT not in fun_globals:
         fun_globals[NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT] = {}
+    module_info_dict = fun_globals[NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT]
+
+    if "list_of_globals_copied_to_locals" in module_info_dict:
+        globals_copied_to_list = module_info_dict["list_of_globals_copied_to_locals"]
+    else:
         globals_copied_to_list = []
-        fun_globals[NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT][
-                "list_of_globals_copied_to_locals"] = globals_copied_to_list
+        module_info_dict["list_of_globals_copied_to_locals"] = globals_copied_to_list
 
     if clear:
         clear_locals_from_globals(level=level+1) # One extra level from this fun.
@@ -417,7 +419,7 @@ def clear_locals_from_globals(level=2):
     """Clear all the global variables that were added by locals_to_globals.
     This is called automatically by `locals_to_globals` unless that function
     is run with `clear` set false.  This only affects the module from
-    which the function is called."""
+    which the function is called.  Assumes `locals_to_globals` has been called."""
     g = get_calling_fun_globals_dict(level)
     globals_copied_to_list = g[NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT].get(
             "list_of_globals_copied_to_locals", [])
@@ -464,11 +466,11 @@ def autoimport(noclobber=True, skip=None, imports=autoimport_DEFAULTS,
 
     # Override arguments with any values set in the config file.
     noclobber = get_config_value("autoimport_noclobber", noclobber,
-                                             calling_mod_path, calling_mod_dir)
+                                             calling_mod, calling_mod_dir)
     imports = get_config_value("autoimport_imports", imports,
-                                             calling_mod_path, calling_mod_dir)
+                                             calling_mod, calling_mod_dir)
     skip = get_config_value("autoimport_skip", skip,
-                                             calling_mod_path, calling_mod_dir)
+                                             calling_mod, calling_mod_dir)
 
     def insert_in_dict(d, name, value, noclobber):
         """Insert (name, value) in dict d checking for noclobber."""
