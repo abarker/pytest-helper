@@ -21,9 +21,8 @@ set up and run unit tests in Python using the `pytest <http://pytest.org>`_
 testing framework.  For example, there is a function to make files self-testing
 whenever they are executed as scripts, and a function to simplify modifying the
 search path.  One of the most useful features is that relative pathnames are
-always relative to the file they occur in, not the package root or the working
-directory.  This package makes use of pytest but is independent of the official
-pytest project.
+relative to the file in which they occur.  This package makes use of pytest but
+is independent of the official pytest project.
 
 Installation
 ============
@@ -69,6 +68,7 @@ written or modified the developer can execute the file and see the results of
 the pytest tests for the module, as well as add tests to the file. ::
 
    import pytest_helper
+
    # Run the tests, but only when the module is invoked as a script.
    if __name__ == "__main__": # Guard conditional, optional but recommended.
        pytest_helper.script_run(self_test=True, pytest_args="-v")
