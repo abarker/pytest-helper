@@ -341,13 +341,19 @@ conditional also makes the code more explicit in what it is doing.
 
 Notice that very little needs to be changed in order to extract a separate test
 module from the testing part of a module which initially contains its own tests
-(like in the first example, in the :ref:`Introduction`).  A `sys_path` function
-call would be added so the new test file can import the file to be tested, and
-then the actual import of the code is done.  If desired, the call to
-`script_run` in the original module can be modified to run pytest on the new
-test file when the original module is invoked as a script, as in the earlier
-example.  Just remove the `self_test` option and pass `script_run` the new
-pathname.
+(like in the first example, in the :ref:`Introduction`).  You basically do the
+following:
+
+1. Copy the Python file to the test directory with a new name.
+
+2. Delete the code from one file and delete the tests from the other.
+   
+3. Change the pathname on the `script_run` call in the code file, and add a
+    self-testing `script_run` call to the test file if desired.
+    
+4. Add an import statement in the test file to import what it needs from the
+   code file.  If necessary, `sys_path` can be called in the test file so
+   that it can find the module or package to be tested.
 
 .. _Configuration:
 
