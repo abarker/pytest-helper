@@ -15,9 +15,6 @@ framework.
 
 # TODO Add tests of the config file stuff.
 
-# TODO: BIZARRE bug where importing from global_settings in __init__.py causes
-# failure, but same from pytest_helper works.
-
 # Possible enhancement: It might be useful to go up the tree to find the
 # project root (the one above package root), and let that be a keyword arg to
 # sys_paths and script_run.  E.g.,
@@ -154,7 +151,6 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     if pyargs:
         testfile_paths = [expand_relative(p, calling_mod_dir)
                           if os.path.sep in p else p for p in testfile_paths]
-        print("paths are", testfile_paths)
     else:
         testfile_paths = [expand_relative(p, calling_mod_dir) for p in testfile_paths]
 
@@ -172,7 +168,6 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
             pytest_string = pytest_args + " " + pytest_string
 
         # Call pytest; this requires pytest 2.0 or greater.
-        print("args are", pytest_string)
         py.test.main(pytest_string)
 
     if exit:
@@ -638,7 +633,7 @@ def get_calling_module(level=2):
     the module and the module itself.  Note that the module name may be relative
     (to the CWD when the module was loaded) or absolute.  For some info on the
     introspection methods used, see stackoverflow.com/questions/1095543/.
-       level 0: Module for this function.
+       level 0: Module for this function (i.e., this module).
        level 1: Module for the function calling this one (what you usually want).
        level 2: Module for the function that called the one calling this one.
 

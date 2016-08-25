@@ -1,5 +1,8 @@
 #!/bin/bash
 #
+# These are tests run from the command line, to test the relative pathnames
+# and the directory-location lookup when called from different working directories.
+#
 # Usage: run_tests
 #
 # Tree diagram of the test dir structure, generated with the Unix command:
@@ -24,16 +27,31 @@ testdir="$(dirname $(readlink -f $0))" # Get this script's directory when run an
 
 function run_test {
    # Run the test.  Can swap in running from python to make sure that works, too.
-   $1 # Run using the shebang.
-   #python $1 # Run as an argument to python.
+   #$1 # Run using the shebang.  This can mess up virtualenv, so don't use.
+   echo "python \"$1\""
+   python "$1" || { echo -e "\nFailed to run test..."; exit; }
+   echo
+   echo
+   echo
 }
+
+# =================================
+# Run the non-package test. 
+# =================================
+
+cd $testdir
+run_test run_tests_not_in_package.py
+cd test_dir_tree
+run_test ../run_tests_not_in_package.py
 
 # =================================
 # Run the child dir tests. 
 # =================================
 
+cd $testdir
+
 # Run from the code file with absolute path.
-$testdir/test_dir_tree/project_root_t/package_dir/in_child_dir.py
+run_test $testdir/test_dir_tree/project_root_t/package_dir/in_child_dir.py
 
 # Run from the code file with relative path from its own dir.
 cd test_dir_tree/project_root_t/package_dir
