@@ -1,10 +1,6 @@
 pytest_helper_main module
 =========================
 
-.. .. automodule:: pytest_helper_main
-    :show-inheritance:
-
-
 .. .. automodule:: pytest_helper.pytest_helper_main
     :members:
     :undoc-members:
@@ -55,6 +51,3 @@ They are all subclasses of `PytestHelperException`.
 .. autofunction:: PytestHelperException
 .. autofunction:: LocalsToGlobalsError
 
-
-
-.. ============================================

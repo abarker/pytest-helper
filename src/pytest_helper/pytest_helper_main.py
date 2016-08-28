@@ -13,34 +13,12 @@ framework.
 
 """
 
-# TODO: the config file ALWAYS overrides the default argument... is this the
-# desired thing?  Seems like if it is set then the set value should be used,
-# otherwise the config value should be used IN PLACE OF the default.  But
-# there is a case the other way, too... How does pytest do it?
-
-# Possible enhancement: It might be useful to go up the tree to find the
-# project root (the one above package root), and let that be a keyword arg to
-# sys_paths and script_run.  E.g.,
-#
-# pytest_helper.sys_paths(from_proj_root="test")
-#
-# Is there an efficient way?  Then a top-level tests directory would be easy to
-# specify in sys_paths keywords.  BUT, how do you find that?  The top level
-# will not have an __init__.py file.  You can go up from a module in the
-# package, though, and take the first one without an __init__.py file.  It
-# could even be calculated on the fly, and probably would need to be, since
-# packages can import other packages, all using pytest-helper.
-# 
-# What about a general routine to go up the tree and save important data,
-# caching based on canonical filenames to reduce future lookup times?  This
-# could also set the __PACKAGE__ attribute fairly easily in __main__.  A module
-# could also consult the pytest_helper module to find out its own data, such as
-# current directory, saving having to look up itself.  More general-purpose
-# than just helping run pytest tests.
-#
-# Interface idea: allow all paths to start with [pkg_root] or [proj_root] and
-# fill it in for them.  Should not conflict with any sane thing. So
+# Possible future enhancement: Go up the directory tree and, in addition to
+# looking for config files, note the project root directory and the package
+# root directory (one above the project root).  Then allow relative addresses
+# such as:
 #    pytest_helper.sys_path("[proj_root]/test")
+#    pytest_helper.sys_path("[pkg_root]/pkg_subdir")
 
 from __future__ import print_function, division, absolute_import
 import inspect
@@ -213,16 +191,6 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
                                        module_path=calling_mod_path, level=level)
     calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
 
-    # Override arguments with any values set in the config file.
-    # TODO what if you want more than one gn parent?  Could take list of numbers?
-    add_gn_parent = get_config_value("sys_path_add_gn_parent", add_gn_parent,
-                                             calling_mod, calling_mod_dir)
-    # Get the config file extra paths; note added to *end* of list above, but
-    # all are inserted, so the last ones come later in the sys.path list.
-    # TODO: needs more consideration, see paragraph near top.
-    #config_always_add_paths = get_config_value("sys_path_always_add", [],
-    #                                         calling_mod, calling_mod_dir)
-
     if dirs_to_add is None: dirs_to_add = []
     if isinstance(dirs_to_add, str): dirs_to_add = [dirs_to_add]
     if add_parent:
@@ -245,8 +213,6 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
         dirs_to_add.append(parent_string)
     if add_self:
         dirs_to_add.append(".")
-
-    #dirs_to_add.extend[config_always_add_paths] # Extend with the config file list.
 
     dirs_to_add = [os.path.expanduser(p) for p in dirs_to_add]
 
@@ -550,12 +516,14 @@ def get_calling_module_info(level=2, check_exists=True,
     The module name and/or path can be supplied via the keyword arguments if
     introspection still fails for some reason (or just to slightly improve
     efficiency)."""
-    # Note that caching is done with the fully qualified module names.
-    # Not everything can be cached, but the calling_module_dir is
-    # one thing that is cached.  The cache key is the calling module name.
-    # TODO: note that __main__ module will not be cached the same as
-    # when run from pytest with its normal name.
-    # TODO: why not put this in the module namespace pytest-helper dict, too?
+
+    # Note that caching of looked-up calling module info is done using the
+    # fully-qualified module name as the key (just like sys.modules uses).  Not
+    # everything can be cached, but the calling_module_dir is one thing that is
+    # cached.
+    #
+    # Note that __main__ module will not be cached the same as when run from
+    # pytest with its normal module name.  That shouldn't be a problem though. 
 
     if module_name:
         calling_module_name = module_name
