@@ -98,20 +98,17 @@ fallback is usually provided to do the task without introspection.
 Installation
 ============
 
-The easiest way to install is to use `pip`, which works well with virtual
-environments and allows for easy uninstallation.  Either download the zipped
-directory from `the pytest-helper GitHub
-<https://github.com/abarker/pytest-helper>`_ and unzip it, or else use `git` to
-clone the GitHub repo.  Go to the root of the downloaded directory tree and run
-this command:
+The easiest way to install is to install from PyPI using pip:
 
 .. code-block:: bash
 
-   pip install .
+   pip install pytest-helper
 
-Alternately, you can run the package's `setup.py` program directly with
-`python setup.py install`.  Or, you can just add the `pytest_helper/src`
-subdirectory to your `PYTHONPATH` environment variable.
+Alternately, you can download or clone the repository directory from `the
+pytest-helper GitHub pages <https://github.com/abarker/pytest-helper>`_ and
+then install using `pip install .` or `python setup.py install` from the root
+directory (pip is preferred).  In lieu of installing you can just add the
+`pytest_helper/src` subdirectory to your `PYTHONPATH` environment variable.
 
 Functions to help in running tests
 ==================================
