@@ -227,12 +227,12 @@ their more-conventional (non-magic) equivalents.
    The `autoimport` function is a convenience function that automatically
    imports certain pytest-helper and pytest functions into the calling module's
    global namespace.  The names can then be used essentially as builtins in the
-   test code.
+   test code.  By default an exception is raised if the imports shadow any
+   existing variables.
    
-   By default this function imports the `py.test` module as `pytest`.  From
-   pytest-helper it imports `locals_to_globals`, and
-   `clear_locals_from_globals`.  From pytest it imports `raises`, `fail`,
-   `fixture`, `skip`, and `xskip`.
+   This function imports the `py.test` module as `pytest`.  From pytest-helper
+   it imports `locals_to_globals`, and `clear_locals_from_globals`.  From
+   pytest it imports `raises`, `fail`, `fixture`, `skip`, and `xskip`.
 
    This function is usually called without arguments::
 
@@ -246,7 +246,10 @@ their more-conventional (non-magic) equivalents.
 Examples
 ========
 
-Below are examples of using the pytest-helper functions in different cases.
+The :ref:`Introduction` gives an example of a self-testing module, which
+contains both the code to be tested as well as pytest test functions for that
+code.  Below are some examples of using the pytest-helper functions in other
+common cases.
 
 Whenever `script_run` is called from a module to run tests it is best to call
 it from the beginning of the file, especially for files inside packages which
@@ -351,8 +354,8 @@ initially contains its own tests (like in the first example, in the
    that it can find the module or package to import.
 
 4. Change the pathname on the `script_run` call in the code file to point to
-   the new test file.  Add a self-testing `script_run` call to the test file,
-   if desired.
+   the new test file.  If desired, a self-testing `script_run` call can also be
+   added to the test file.
 
 .. note::
 
