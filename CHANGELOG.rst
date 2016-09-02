@@ -16,6 +16,9 @@ Bug Fixes:
 
 Other Changes:
 
+* Converted to pass lists to `pytest.main` since passing strings is now
+  deprecated.
+
 * Edited documentation.
 
 0.1.0 (2016-06-11)
