@@ -110,6 +110,9 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
         if not always_run: return
 
     # Override arguments with any values set in the config file.
+    # TODO: passing string to pytest.main is deprecated now.
+    if not pytest_args:
+        pytest_args = ""
     pytest_args = get_config_value("script_run_pytest_args", pytest_args,
                                              calling_mod, calling_mod_dir)
     pytest_args += " " + get_config_value("script_run_extra_pytest_args", "",

@@ -45,9 +45,9 @@ say from your editor or IDE, to see the test results.
 Below is a simple example to illustrate the idea.  This is a Python module
 which is possibly part of a larger package.  It contains its own test functions
 at the bottom.  Whenever the module is run as a script the tests will be run
-with pytest; when the module is imported it runs normally.  So as the module is
-being written or modified the developer can execute the file and see the
-results of the pytest tests for the module, as well as add tests to the file.  ::
+with pytest; when the module is imported it runs normally.  So a developer
+can execute the file to see the results of tests as the module is
+being written or modified, and add new tests as he or she goes along. ::
 
    import pytest_helper
 
@@ -89,7 +89,7 @@ tests originally written inside the module being tested to a separate test
 file.
 
 In order to simplify the functional interface, some of these helper functions
-use very basic introspection look up the names of modules.  Others use
+use very basic introspection look up the names of modules.  Other functions use
 introspection to modify a module's global variables.  Some people might object
 to the use of introspection "magic," but the level used by these functions is
 less than what pytest itself does already.  Where introspection is used, a
@@ -106,8 +106,8 @@ The easiest way to install is to install from PyPI using pip:
 
 Alternately, you can download or clone the repository directory from `the
 pytest-helper GitHub pages <https://github.com/abarker/pytest-helper>`_ and
-then install using `pip install .` or `python setup.py install` from the root
-directory (pip is preferred).  In lieu of installing you can just add the
+then install using either `pip install .` or `python setup.py install` from the
+root directory (pip is preferred).  In lieu of installing you can just add the
 `pytest_helper/src` subdirectory to your `PYTHONPATH` environment variable.
 
 Functions to help in running tests
@@ -123,16 +123,6 @@ interface descriptions.
    list of files.  It takes a path or a list of paths and, when called from a
    script, will run pytest on all those files.
    
-   To include dotted Python package descriptors, use the `script_run` option
-   `pyargs=True`.  Then if any of the names do not contain a slash
-   (path-separator) character they are left unprocessed.  The `script_run`
-   function will also set the pytest argument `--pyargs`.
-
-   If `script_run` is not called from a script's `__main__` module then it
-   returns without doing anything.  Any relative paths passed to the function
-   are expanded relative to the directory of the module from which the
-   `script_run` function is called.
-
    The `script_run` function is useful because it allows Python modules to be
    easily made self-testing when they are run as scripts.  When working on a
    module in, say, Vim you can invoke a command to run the current file as a
@@ -146,6 +136,11 @@ interface descriptions.
    including a few tests.  As (or if) the module continues to evolve it is easy to
    extract those tests into a separate test module at some point.
 
+   If `script_run` is not called from a script's `__main__` module then it
+   returns without doing anything.  Any relative paths passed to the function
+   are expanded relative to the directory of the module from which the
+   `script_run` function is called.
+
    The example in the :ref:`Introduction` shows how to use `script_run` to run
    a self-test on a file.  The line below shows how the `script_run` function
    would be used to run pytest, with the `-v` verbose argument, on a test
@@ -155,6 +150,9 @@ interface descriptions.
 
    When the module that calls the above function is not run as a script the
    function call does nothing.
+
+   To using the pytest option `--pyargs` to include dotted Python package
+   descriptors you should also use the `script_run` option `pyargs=True`.
 
 * :ref:`pytest_helper.sys_path<sys_path>`
 
@@ -362,10 +360,12 @@ initially contains its own tests (like in the first example, in the
    `script_run` is calling another program (pytest) to extract and run the
    tests.  The test functions themselves can be placed anywhere, but it is not
    recommended to place a `script_run` call near the end of a module.  In many
-   cases it works, but it can cause problems with explicit relative
-   imports.  Some such problems can be fixed by importing `pytest_helper` near
-   the top of the module and, before any explicit relative imports, calling its
-   `init` function with the `set_package` flag set.  Putting the `script_run`
+   cases it works, but it can cause problems with explicit relative imports.
+   Some such problems can be fixed by running the script as module -- either
+   with `python -m` or by importing `pytest_helper` near the top of the module
+   and, before any explicit relative imports, calling its `init` function with
+   the `set_package` flag set.  Running the script as a module may cause pytest
+   to complain about modules being defined twice.  Putting the `script_run`
    call near the end of the module is also less efficient, since the module's
    initialization code gets run twice.
 

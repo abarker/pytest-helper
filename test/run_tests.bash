@@ -37,13 +37,20 @@ function run_test {
 }
 
 # =================================
-# Run the non-package test. 
+# Run some non-package tests.
 # =================================
 
 cd $testdir
 run_test run_tests_not_in_package.py
-cd test_dir_tree
+run_test test_pytest_helper.py
+run_test test_locals_to_globals.py
+run_test test_intro_example.py
+
+cd test_dir_tree # Test running from subdir.
 run_test ../run_tests_not_in_package.py
+run_test ../test_pytest_helper.py
+run_test ../test_locals_to_globals.py
+run_test ../test_intro_example.py
 
 # =================================
 # Run the child dir tests. 

@@ -22,8 +22,10 @@ pytest_helper.autoimport()
 
 # The module to be tested is in_child_dir.
 # The import below defines test_string="in_child_dir".
-pytest_helper.sys_path(add_parent=True)
-from in_child_dir import *  # Note imported as a regular module, NOT a package module.
+pytest_helper.sys_path(add_grandparent=True)
+from package_dir.in_child_dir import *  # Note imported as a package module.
+#pytest_helper.sys_path(add_parent=True)
+#from in_child_dir import *  # Note imported as a regular module, NOT a package module.
 
 os.chdir(old_cwd) # Return to prev dir so as not to mess up later tests.
 
@@ -36,6 +38,7 @@ def basic_setup():
 
 def test_basic_stuff(basic_setup):
     assert test_string == "in_child_dir" # This is set as a global in in_child_dir.
+    assert dummy_test_string == "dummy_module" # Imported (and renamed) by in_child_dir.
     assert teststr == "tree" # Set in the fixture basic_setup and copied to globals.
     global teststr2 # Needed because teststr2 is modified below after it is used.
     assert teststr2 == "rock" # Set in the fixture basic_setup and copied to globals.
