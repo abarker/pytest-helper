@@ -61,20 +61,26 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     script itself, i.e., tests are assumed to be in the same file as the code
     to test.
 
+    The `pytest_args` allows command-line arguments to be passed to pytest when
+    it is run.  It can be set to a string of all the options or else a list of
+    strings (with one item in the list for each flag and for each flag
+    argument).  Options containing non-separator spaces, such as whitespace in
+    quoted filenames, are currently not allowed in the string form.  In that
+    case the list form should be used.
+
     The pytest command-line argument `--pyargs` allows a mix of filenames and
     Python package names to be passed to pytest as test files.  Note that
     pytest *always* imports modules as part of a package if there is an
     `__init__.py` file in the directory; the `--pyargs` just allows
     Python-style module names.  When `pyargs` is set true pytest will be run
-    with the `--pyargs` option set (if it isn't already), and any items in
-    `testfile_paths` which contain no path-separator character (slash) will be
-    left unprocessed rather than being converted into absolute pathnames.  The
-    pytest option `--pyargs` will not work correctly unless this flag is set.
-    The default is `pyargs=False`, i.e., by default all paths are converted to
-    absolute pathnames.  It usually will not matter, but in this mode you can
-    specify a directory name relative to the current directory and not have it
-    treated as a Python module name by using `./dirname` rather than simply
-    `filename`.
+    with the `--pyargs` option set, and any items in `testfile_paths` which
+    contain no path-separator character (slash) will be left unprocessed rather
+    than being converted into absolute pathnames.  The pytest option `--pyargs`
+    will not work correctly unless this flag is set.  The default is
+    `pyargs=False`, i.e., by default all paths are converted to absolute
+    pathnames.  It usually will not matter, but in this mode you can specify a
+    directory name relative to the current directory and not have it treated as
+    a Python module name by using `./dirname` rather than simply `filename`.
 
     If `modify_syspath` is set true (the default is false) then the first item
     in the `sys.path` list is deleted just after `script_run` is called.  When
@@ -109,14 +115,26 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     if calling_mod_name != "__main__":
         if not always_run: return
 
+    # Convert string pytest_args arguments to a list.
+    def convert_arg_string_to_list(arg_list_or_string):
+        if not arg_list_or_string:
+            pytest_arglist = []
+        elif isinstance(arg_list_or_string, str):
+            pytest_arglist = ["-" + s for s in arg_list_or_string.split("-") if s]
+            pytest_arglist = [s for x in pytest_arglist for s in x.split()]
+        else:
+            pytest_arglist = arg_list_or_string
+        return pytest_arglist
+
     # Override arguments with any values set in the config file.
-    # TODO: passing string to pytest.main is deprecated now.
-    if not pytest_args:
-        pytest_args = ""
-    pytest_args = get_config_value("script_run_pytest_args", pytest_args,
-                                             calling_mod, calling_mod_dir)
-    pytest_args += " " + get_config_value("script_run_extra_pytest_args", "",
-                                             calling_mod, calling_mod_dir)
+    pytest_arglist = convert_arg_string_to_list(pytest_args)
+
+    pytest_arglist = convert_arg_string_to_list(  # These override passed-in args.
+                             get_config_value("script_run_pytest_args", pytest_arglist,
+                                             calling_mod, calling_mod_dir))
+    pytest_arglist += convert_arg_string_to_list( # These are added to passed-in args.
+                             get_config_value("script_run_extra_pytest_args", [],
+                                             calling_mod, calling_mod_dir))
 
     if modify_syspath:
         del sys.path[0]
@@ -142,20 +160,13 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
         testfile_paths = [expand_relative(p, calling_mod_dir) for p in testfile_paths]
 
     # Add "--pyargs" to arguments if not there and no flag not to.
-    if pyargs:
-        if pytest_args and "--pyargs" not in pytest_args:
-            pytest_args += " --pyargs"
-        else:
-            pytest_args = "--pyargs"
+    if pyargs and "--pyargs" not in pytest_arglist:
+        pytest_arglist.append("--pyargs")
 
     # Generate calling string and call pytest on the file.
     for t in testfile_paths:
-        pytest_string = t
-        if pytest_args:
-            pytest_string = pytest_args + " " + pytest_string
-
-        # Call pytest; this requires pytest 2.0 or greater.
-        py.test.main(pytest_string)
+        # Call pytest main; this requires pytest 2.0 or greater.
+        py.test.main(pytest_arglist + [t])
 
     if exit:
         sys.exit(0)

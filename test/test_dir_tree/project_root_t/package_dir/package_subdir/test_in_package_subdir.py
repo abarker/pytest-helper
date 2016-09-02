@@ -12,7 +12,8 @@ if __name__ == "__main__":
     #pytest_helper.script_run(self_test=True)
     pytest_helper.script_run(self_test="test_in_package_subdir", pyargs=True)
 
-from . import subdir_dummy_module
+pytest_helper.sys_path("../../..")
+from package_dir.package_subdir import subdir_dummy_module
 
 pytest_helper.autoimport()
 def test_running_test_in_package_subdir():
