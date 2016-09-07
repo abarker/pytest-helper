@@ -45,9 +45,9 @@ say from your editor or IDE, to see the test results.
 Below is a simple example to illustrate the idea.  This is a Python module
 which is possibly part of a larger package.  It contains its own test functions
 at the bottom.  Whenever the module is run as a script the tests will be run
-with pytest; when the module is imported it runs normally.  So a developer
-can execute the file to see the results of tests as the module is
-being written or modified, and add new tests as he or she goes along. ::
+with pytest; when the module is imported it runs normally.  So as the module is
+being written or modified it can be executed to see the results of tests, and
+new tests can be added as you go along. ::
 
    import pytest_helper
 
@@ -55,7 +55,7 @@ being written or modified, and add new tests as he or she goes along. ::
    # Run the tests, but only when the module is invoked as a script.
    #
 
-   if __name__ == "__main__": # Guard conditional, optional but recommended.
+   if __name__ == "__main__":  # Guard conditional, optional but recommended.
        pytest_helper.script_run(self_test=True, pytest_args="-v")
 
    #
@@ -70,7 +70,7 @@ being written or modified, and add new tests as he or she goes along. ::
    
    pytest_helper.autoimport()  # Do some basic imports automatically.
 
-   def my_setup(): # Could be a pytest fixture instead of a regular function.
+   def my_setup():  # Could be a pytest fixture instead of a regular function.
        setup_var = "bar"
        locals_to_globals()  # Copies setup_var to the module's global namespace.
 
@@ -151,8 +151,8 @@ interface descriptions.
    When the module that calls the above function is not run as a script the
    function call does nothing.
 
-   To using the pytest option `--pyargs` to include dotted Python package
-   descriptors you should also use the `script_run` option `pyargs=True`.
+   If the pytest option `--pyargs` is used to include dotted Python package
+   descriptors you should also use the `pyargs=True` option to `script_run`.
 
 * :ref:`pytest_helper.sys_path<sys_path>`
 
