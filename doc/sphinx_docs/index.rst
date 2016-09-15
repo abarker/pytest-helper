@@ -47,7 +47,9 @@ which is possibly part of a larger package.  It contains its own test functions
 at the bottom.  Whenever the module is run as a script the tests will be run
 with pytest; when the module is imported it runs normally.  So as the module is
 being written or modified it can be executed to see the results of tests, and
-new tests can be added as you go along. ::
+new tests can be added as you go along.
+
+.. code-block:: python
 
    import pytest_helper
 
@@ -271,7 +273,9 @@ conditional also makes the code more explicit in what it is doing.
    This is an example of a module with its tests in separate test files and
    directories.  When invoked as a script it the module will run all the tests
    in the subdirectory `test` and then run only the test file `test_var_set.py`
-   in a sibling-level test directory called `test2`::
+   in a sibling-level test directory called `test2`:
+
+   .. code-block:: python
 
       #
       # Run the specified test files, but only when invoked as a script.
@@ -298,7 +302,9 @@ conditional also makes the code more explicit in what it is doing.
    directory, since it is usually not recommended to have an `__init__.py` file
    in test directories).  The test file below can still be run from other files
    with `script_run` or via the usual invocation of pytest from the command
-   line. ::
+   line.
+
+   .. code-block:: python
 
       import pytest_helper
 
