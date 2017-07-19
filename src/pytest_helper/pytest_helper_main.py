@@ -37,7 +37,7 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
                exit=True, always_run=False, level=2):
     """Run pytest on the specified test files when the calling module is run as
     a script.  Using this function requires at least pytest 2.0.
-    
+
     The argument `testfile_paths` should be either the pathname of a file or
     directory to run pytest on, or else a list of such file and directory
     paths.  Any relative paths will be interpreted relative to the directory of
@@ -49,7 +49,7 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     like that, or if they do they return it to its previous value.)  In those
     cases the `pytest_helper.init()` function can be called just after
     importing `pytest_helper` (or absolute pathnames can be used).
-   
+
     The recommended use of `script_run` is to place it inside a guard
     conditional which runs only for scripts, and to call it before doing any
     other non-system imports.  The early call avoids possible problems with
@@ -95,16 +95,16 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     not required (though it is slightly more efficient).  Use it as:
     `module_name=__name__`.  Similarly for `calling_mod_path`, but that should
     be passed the pathname of the calling module's file.
-    
+
     If `exit` is set false `sys.exit(0)` will not be called after the tests
     finish.  The default is to exit after the tests finish (otherwise when
     tests run from the top of a module are finished the rest of the file will
     still be executed).  Setting `exit` false can be used to make several
     separate `script_run` calls in sequence.
-    
+
     If `always_run` is true then tests will be run regardless of whether or not
     the function was called from a script.
-    
+
     The parameter `level` is the level up the calling stack to look for the
     calling module and should not usually need to be set."""
 
@@ -175,7 +175,7 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
 previous_sys_path_list = None # Save the sys.path before modifying it, to restore it.
 
 def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
-             add_gn_parent=False, add_self=False, calling_mod_name=None, 
+             add_gn_parent=False, add_self=False, calling_mod_name=None,
              calling_mod_path=None, level=2):
     """Add the canonical absolute pathname of each directory in the list
     `dirs_to_add` to `sys.path` (but only if it isn't there already).  A single
@@ -183,7 +183,7 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
     pathnames are always interpreted relative to the directory of the calling
     module (i.e., the directory of the module that calls this function).
     The notes about relative paths for the `script_run` function also apply here.
-    
+
     The keyword arguments `add_parent` and `add_grandparent` are shortcuts that
     can be used instead of putting the equivalent relative path on the list
     `dirs_to_add`.  If the keyword argument `add_gn_parent` is set to a
@@ -191,7 +191,7 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
     path, where (grand)\ :sup:`1`\ parent is the grandparent.  If `add_self` is
     true then the directory of the calling module is added to the system
     `sys.path` list.
-    
+
     The parameters `calling_mod_name` and `calling_mod_dir` can be set as a
     fallback in case the introspection for finding the calling module's
     information fails for some reason.  The parameter `level` is the level up
@@ -268,7 +268,7 @@ def init(set_package=False, conf=True, calling_mod_name=None,
     changes the CWD and which doesn't change it back afterward.  Importing
     `pytest_helper` just after the system imports and then immediately calling
     this function should work.
-    
+
     The `init` function takes an optional keyword argument `set_package`.  If
     it is true then whenever the calling module is a script the package
     attribute of module `__main__` will be automatically set.  This allows for
@@ -277,7 +277,7 @@ def init(set_package=False, conf=True, calling_mod_name=None,
     as a script then the function call `pytest_helper.init(set_package=True)`
     will import the `set_package_attribute` package and initialize it.
     Otherwise, it will do the same as the ordinary call.
-        
+
     If the parameter `conf` is set false then no configuration files will be
     searched for or used.  Otherwise, the configuration file will be searched
     for by any function which has an option settable in a config file
@@ -309,37 +309,37 @@ def init(set_package=False, conf=True, calling_mod_name=None,
 # Functions for copying locals to globals.
 #
 
-def locals_to_globals(fun_locals=None, fun_globals=None, clear=False, 
+def locals_to_globals(fun_locals=None, fun_globals=None, clear=False,
                       noclobber=True, level=2):
     """Copy all local variables in the calling test function's local scope to
     the global scope of the module from which that function was called.  The
     test function's parameters are ignored (i.e., they are local variables but
     they are not made global).
-    
+
     This routine should generally be called near the end of a test function or
     fixture.  It allows for variables to be shared with other test functions,
     as globals.
-    
+
     Calls to `locals_to_globals` do not allow existing global variables to be
     overwritten unless they were either 1) set by a previous run of this
     function, or 2) `noclobber` is set false.  Otherwise a
     `LocalsToGlobalsError` will be raised.  This avoids accidentally
     overwriting important global attributes (especially when tests are in the
     same module being tested).
-    
+
     This routine's effect is similar to the effect of explicitly declaring each
     of a function's local variables to be `global`, or doing
     `globals().update(locals())`, except that 1) it ignores local variables
     which are function parameters, 2) it adds more error checks, and 3) it can
     clear any previously-set values.
-    
+
     Note that the globals set with `locals_to_globals` can be accessed and used
     in any other test function in the module, but they are still read-only (as
     usual with globals).  An attribute must be explicitly declared `global` in
     order to modify the global value.  (It is then no longer local to the
     function, so `locals_to_globals` will not affect it, but `clear` will still
     remember it and clear it if called.)
-    
+
     If `clear` is true (the default is false) then any variable that was set on
     the last run of this function will be automatically cleared before any new
     ones are set.  This is good to call in the first-run fixture or setup
@@ -347,16 +347,16 @@ def locals_to_globals(fun_locals=None, fun_globals=None, clear=False,
     succeeds only because of a global left over from a previous test.  Note
     globals on the saved list of globals are cleared even if their values
     were later modified.
-    
+
     The argument `fun_locals` can be used as a fallback to pass the `locals()`
     dict from the function in case the introspection technique does not work
     for some reason.  The `fun_globals` argument can similarly be passed
     globals() as a fallback.  So you could call::
 
        locals_to_globals(locals(), globals())
-       
+
     to bypass the introspection used to locate the two dicts.
-    
+
     The `level` argument is the level up the calling stack to look for the
     calling function.  In order to call an intermediate function which then
     calls this function, for example, `level` would need to be increased by
@@ -432,8 +432,10 @@ def autoimport(noclobber=True, skip=None,
               calling_mod_name=None, calling_mod_path=None, level=2):
     """This function imports some pytest-helper and pytest attributes into the
     calling module's global namespace.  This avoids having to explicitly do
-    common imports.  A `PytestHelperException` will be raised if any of those
-    globals already exist, unless `noclobber` is set false.
+    common imports.  Even if `autoimport` is called from inside a test function
+    it will still place its imports in the module's global namespace.  A
+    `PytestHelperException` will be raised if any of those globals already
+    exist, unless `noclobber` is set false.
 
     The `imports` option is a list of (name,value) pairs to import
     automatically.  Since using it each time would be as much trouble as doing
@@ -441,7 +443,7 @@ def autoimport(noclobber=True, skip=None,
     files.  In a config file the values are evaluated in the global namespace
     of `pytest_helper`.  The `skip` option is a list of names to skip in
     importing, if just one or two are causing problems locally to a file.
-    
+
     The default variables that are imported from the `pytest_helper` module are
     `locals_to_globals`, and `clear_locals_from_globals`.  The module `py.test`
     is imported as the single name `pytest`.  The functions from pytest that
@@ -477,6 +479,29 @@ def autoimport(noclobber=True, skip=None,
 
     return
 
+# TODO: Document this, add tests, put in CHANGELOG, and push new version.  Maybe also print a
+# separator between multiple pytest-helper tests...  Also consider colorama.  See
+# usage in typped test_basic_.... file.
+def unindent(unindent_level, string):
+    """This function is useful in tests where you have assertions that
+    something equals a multi-line string.  It allows the strings to be
+    represented as multi-line docstrings but indented in a way that matches the
+    surrounding code.  Calling this function on a string will 1) remove any
+    leading or trailing newlines, and 2) strip `indent_level` characters from
+    the beginning of each line.  Raises an exception if a line is not long
+    enough to strip or if attempting to strip non-whitespace."""
+    string = string.strip("\n")
+    lines = string.splitlines()
+    for l in lines:
+        if not len(l) >= unindent_level:
+            raise PytestHelperException("This line was not long enough for the"
+                    " specified unindent level:\n{0}'".format(l))
+        if not l[0:unindent_level].lstrip() == "":
+            raise PytestHelperException("Attempt to unindent non-whitespace at"
+                    " the beginning of this line:\n'{0}'".format(l))
+    stripped = "\n".join(s[unindent_level:] for s in lines)
+    return stripped
+
 #
 # Utility functions.
 #
@@ -511,11 +536,11 @@ def get_calling_module_info(level=2, check_exists=True,
         calling_module,
         calling_module_path,
         calling_module_dir)
-    
+
     Any relative paths are converted to absolute paths.  If `check_exists` is
     true then a check is made to make sure that the module actually exists at
     the path.
-    
+
     Absolute paths are cached in a dict keyed on module names so we always get
     the pathname calculated on the first call to this program from a given
     module.  This is important in cases where the CWD is changed between the
@@ -537,7 +562,7 @@ def get_calling_module_info(level=2, check_exists=True,
     # cached.
     #
     # Note that __main__ module will not be cached the same as when run from
-    # pytest with its normal module name.  That shouldn't be a problem though. 
+    # pytest with its normal module name.  That shouldn't be a problem though.
 
     if module_name:
         calling_module_name = module_name
