@@ -13,12 +13,22 @@ framework.
 
 """
 
-# Possible future enhancement: Go up the directory tree and, in addition to
+# Possible future enhancements.
+#
+# 1) Go up the directory tree and, in addition to
 # looking for config files, note the project root directory and the package
 # root directory (one above the project root).  Then allow relative addresses
 # such as:
-#    pytest_helper.sys_path("[proj_root]/test")
-#    pytest_helper.sys_path("[pkg_root]/pkg_subdir")
+#    pytest_helper.sys_path("{proj_root}/test")
+#    pytest_helper.sys_path("{pkg_root}/pkg_subdir")
+#
+# 2) Print some kind of separator between the separate pytest calls in multi-call
+# or at least use a bigger banner at the beginning of a full multi-run.
+#
+# 3) Have some way to quickly switch off script_run, such as setting some variable
+# in the local scope.  Could help in some debugging situations on self-test files
+# where you want to run the file directly (but load the package still or run as
+# using the __package__ attribute).
 
 from __future__ import print_function, division, absolute_import
 import inspect
@@ -483,20 +493,18 @@ def autoimport(noclobber=True, skip=None,
 # separator between multiple pytest-helper tests...  Also consider colorama.  See
 # usage in typped test_basic_.... file.
 def unindent(unindent_level, string):
-    """This function is useful in tests where you have assertions that
-    something equals a multi-line string.  It allows the strings to be
-    represented as multi-line docstrings but indented in a way that matches the
-    surrounding code.  Calling this function on a string will 1) remove any
-    leading or trailing newlines, and 2) strip `indent_level` characters from
-    the beginning of each line.  Raises an exception if a line is not long
-    enough to strip or if attempting to strip non-whitespace."""
+    """Strip indentation from a docstring.  This function is useful in tests
+    where you have assertions that something equals a multi-line string.  It
+    allows the strings to be represented as multi-line docstrings but indented
+    in a way that matches the surrounding code.  Calling this function on a
+    string will 1) remove any leading or trailing newlines, and 2) strip
+    `indent_level` characters from the beginning of each line.  Raises an
+    exception on an attempt to strip non-whitespace."""
     string = string.strip("\n")
     lines = string.splitlines()
     for l in lines:
-        if not len(l) >= unindent_level:
-            raise PytestHelperException("This line was not long enough for the"
-                    " specified unindent level:\n{0}'".format(l))
-        if not l[0:unindent_level].lstrip() == "":
+        string_to_strip = l[0:unindent_level]
+        if not string_to_strip.lstrip() == "":
             raise PytestHelperException("Attempt to unindent non-whitespace at"
                     " the beginning of this line:\n'{0}'".format(l))
     stripped = "\n".join(s[unindent_level:] for s in lines)
