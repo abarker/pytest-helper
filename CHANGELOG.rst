@@ -3,6 +3,17 @@
 History
 =======
 
+0.2.0 (??)
+------------------
+
+New features:
+
+* Added the unindent function for unindenting multi-line strings.
+
+Bug fixes:
+
+* Fixed handling of arguments to command-line arguments passed as a string.
+
 0.1.1 (2016-07-11)
 ------------------
 

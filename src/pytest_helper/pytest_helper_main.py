@@ -23,12 +23,17 @@ framework.
 #    pytest_helper.sys_path("{pkg_root}/pkg_subdir")
 #
 # 2) Print some kind of separator between the separate pytest calls in multi-call
-# or at least use a bigger banner at the beginning of a full multi-run.
+# or at least use a bigger banner at the beginning of a full multi-run.  Use
+# colorama like pytest.
 #
-# 3) Have some way to quickly switch off script_run, such as setting some variable
-# in the local scope.  Could help in some debugging situations on self-test files
-# where you want to run the file directly (but load the package still or run as
-# using the __package__ attribute).
+# 3) Have some way to quickly switch off script_run, such as setting some
+# variable in the local scope or a kwarg.  Could help in some debugging
+# situations on self-test files where you want to run the file directly (but
+# load the package still or run as using the __package__ attribute).
+#
+# 4) Integrate with pudb debugger, maybe via a kwarg to script_run.  Without pudb plugin
+# it works like this, but could be a single kwarg:
+#       pytest_args="--pdbcls pudb.debugger:Debugger --pdb -s")
 
 from __future__ import print_function, division, absolute_import
 import inspect
@@ -125,13 +130,12 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     if calling_mod_name != "__main__":
         if not always_run: return
 
-    # Convert string pytest_args arguments to a list.
     def convert_arg_string_to_list(arg_list_or_string):
+        """Convert string pytest_args arguments to a list, keeping lists unchanged."""
         if not arg_list_or_string:
             pytest_arglist = []
         elif isinstance(arg_list_or_string, str):
-            pytest_arglist = ["-" + s for s in arg_list_or_string.split("-") if s]
-            pytest_arglist = [s for x in pytest_arglist for s in x.split()]
+            pytest_arglist = arg_list_or_string.split()
         else:
             pytest_arglist = arg_list_or_string
         return pytest_arglist
@@ -174,9 +178,9 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
         pytest_arglist.append("--pyargs")
 
     # Generate calling string and call pytest on the file.
-    for t in testfile_paths:
+    for testfile in testfile_paths:
         # Call pytest main; this requires pytest 2.0 or greater.
-        py.test.main(pytest_arglist + [t])
+        py.test.main(pytest_arglist + [testfile])
 
     if exit:
         sys.exit(0)
@@ -489,9 +493,7 @@ def autoimport(noclobber=True, skip=None,
 
     return
 
-# TODO: Document this, add tests, put in CHANGELOG, and push new version.  Maybe also print a
-# separator between multiple pytest-helper tests...  Also consider colorama.  See
-# usage in typped test_basic_.... file.
+# TODO: Document this, add tests, and push new version.
 def unindent(unindent_level, string):
     """Strip indentation from a docstring.  This function is useful in tests
     where you have assertions that something equals a multi-line string.  It
