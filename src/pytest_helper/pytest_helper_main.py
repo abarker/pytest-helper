@@ -34,12 +34,18 @@ framework.
 # 4) Integrate with pudb debugger, maybe via a kwarg to script_run.  Without pudb plugin
 # it works like this, but could be a single kwarg:
 #       pytest_args="--pdbcls pudb.debugger:Debugger --pdb -s")
+#
+# 5) Note autoimport fails in the Python interpreter, no attribute __file__.
+# Not a big deal, but might be nice to cover this case, too, if an easy mod.
 
 from __future__ import print_function, division, absolute_import
 import inspect
 import sys
 import os
-import py.test
+try:
+    import pytest
+except ImportError:
+    import py.test as pytest # Old pytest versions before 3.0.
 from pytest_helper.config_file_handler import (get_config_value, get_config)
 
 from pytest_helper.global_settings import (PytestHelperException,
@@ -180,7 +186,7 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     # Generate calling string and call pytest on the file.
     for testfile in testfile_paths:
         # Call pytest main; this requires pytest 2.0 or greater.
-        py.test.main(pytest_arglist + [testfile])
+        pytest.main(pytest_arglist + [testfile])
 
     if exit:
         sys.exit(0)
@@ -432,12 +438,12 @@ def clear_locals_from_globals(level=2):
     del globals_copied_to_list[:] # Empty out globals_copied_to_list in-place.
     return
 
-autoimport_DEFAULTS = [("pytest", py.test), # (<nameToImportAs>, <value>)
-                        ("raises", py.test.raises),
-                        ("fail", py.test.fail),
-                        ("fixture", py.test.fixture),
-                        ("skip", py.test.skip),
-                        ("xfail", py.test.xfail),
+autoimport_DEFAULTS = [("pytest", pytest), # (<nameToImportAs>, <value>)
+                        ("raises", pytest.raises),
+                        ("fail", pytest.fail),
+                        ("fixture", pytest.fixture),
+                        ("skip", pytest.skip),
+                        ("xfail", pytest.xfail),
                         ("locals_to_globals", locals_to_globals),
                         ("clear_locals_from_globals", clear_locals_from_globals)
                        ]
@@ -459,10 +465,9 @@ def autoimport(noclobber=True, skip=None,
     importing, if just one or two are causing problems locally to a file.
 
     The default variables that are imported from the `pytest_helper` module are
-    `locals_to_globals`, and `clear_locals_from_globals`.  The module `py.test`
-    is imported as the single name `pytest`.  The functions from pytest that
-    are imported by default are `raises`, `fail`, `fixture`, and `skip`, and
-    `xfail`."""
+    `locals_to_globals`, and `clear_locals_from_globals`.  The module `pytest`
+    is imported as `pytest`.  The functions from pytest that are imported by
+    default are `raises`, `fail`, `fixture`, and `skip`, and `xfail`."""
 
     mod_info = get_calling_module_info(module_name=calling_mod_name,
                                        module_path=calling_mod_path, level=level)
