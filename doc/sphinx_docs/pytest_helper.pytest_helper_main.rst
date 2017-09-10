@@ -40,6 +40,9 @@ Functions to help in writing tests
 .. _clear_locals_from_globals:
 .. autofunction:: clear_locals_from_globals
 
+.. _unindent:
+.. autofunction:: unindent
+
 .. _exceptions:
 
 Exceptions
