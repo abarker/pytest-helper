@@ -11,6 +11,14 @@ New features:
 * Added the ``unindent`` function for unindenting multi-line strings.  The
   function is also made a default import for ``autoimport``.
 
+* The ``approx`` function of pytest is now autoimported by default.
+
+* The ``script-run`` function now passes all the test files to a single run of
+  pytest by default.  For the old behavior of looping over them separately use
+  ``single_run=False``.
+
+* New keyword option ``skip`` to temporarily turn off ``script_run``.
+
 Bug fixes:
 
 * Fixed handling of arguments to command-line arguments passed to

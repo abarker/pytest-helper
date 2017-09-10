@@ -155,6 +155,8 @@ interface descriptions.
 
    If the pytest option `--pyargs` is used to include dotted Python package
    descriptors you should also use the `pyargs=True` option to `script_run`.
+   Setting the pytest-helper argument automatically passes the argument to
+   pytest.
 
 * :ref:`pytest_helper.sys_path<sys_path>`
 
@@ -232,9 +234,10 @@ their more-conventional (non-magic) equivalents.
    test code.  By default an exception is raised if the imports shadow any
    existing variables.
    
-   This function imports the `py.test` module as `pytest`.  From pytest-helper
-   it imports `locals_to_globals`, and `clear_locals_from_globals`.  From
-   pytest it imports `raises`, `fail`, `fixture`, `skip`, and `xskip`.
+   This function imports the `pytest` module as `pytest`.  From pytest-helper
+   it imports `locals_to_globals`, `clear_locals_from_globals`, and `unindent`.
+   From pytest it imports `raises`, `fail`, `fixture`, `skip`, `xfail`, and
+   `approx`.
 
    This function is usually called without arguments::
 

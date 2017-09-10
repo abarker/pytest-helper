@@ -22,23 +22,16 @@ framework.
 #    pytest_helper.sys_path("{proj_root}/test")
 #    pytest_helper.sys_path("{pkg_root}/pkg_subdir")
 #
-# 2) Print some kind of separator between the separate pytest calls in multi-call
-# or at least use a bigger banner at the beginning of a full multi-run.  Use
-# colorama like pytest.
-#
-# 3) Have some way to quickly switch off script_run, such as setting some
-# variable in the local scope or a kwarg.  Could help in some debugging
-# situations on self-test files where you want to run the file directly (but
-# load the package still or run as using the __package__ attribute).
-#
-# 4) Integrate with pudb debugger, maybe via a kwarg to script_run.  Without pudb plugin
+# 2) Integrate with pudb debugger, maybe via a kwarg to script_run.  Without pudb plugin
 # it works like this, but could be a single kwarg:
 #       pytest_args="--pdbcls pudb.debugger:Debugger --pdb -s")
 #
-# 5) Note autoimport fails in the Python interpreter, no attribute __file__.
-# Not a big deal, but might be nice to cover this case, too, if an easy mod.
-
-# TODO: Formal tests for unindent function.
+# 3) Note autoimport fails in the Python interactive interpreter, since
+# no attribute __file__ is found.  Not a big deal, but it might be nice to
+# cover this case, too, if it is an easy mod.
+#
+# 4) Autoimport the "match" builtin, but note it is new since Version 3.1.  So either
+# require at least that version or do a try-except that isn't done now.
 
 from __future__ import print_function, division, absolute_import
 import inspect
@@ -57,7 +50,7 @@ from pytest_helper.global_settings import (PytestHelperException,
 
 def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=False,
                modify_syspath=False, calling_mod_name=None, calling_mod_path=None,
-               exit=True, always_run=False, level=2):
+               single_call=True, exit=True, always_run=False, skip=False, level=2):
     """Run pytest on the specified test files when the calling module is run as
     a script.  Using this function requires at least pytest 2.0.
 
@@ -119,6 +112,11 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     `module_name=__name__`.  Similarly for `calling_mod_path`, but that should
     be passed the pathname of the calling module's file.
 
+    By default the script-run program passes all the user-specified testfile
+    paths to a single run of pytest.  If `single_call` is set false then
+    instead the paths are looped over, one by one, with a separate call to
+    pytest on each one.
+
     If `exit` is set false `sys.exit(0)` will not be called after the tests
     finish.  The default is to exit after the tests finish (otherwise when
     tests run from the top of a module are finished the rest of the file will
@@ -128,15 +126,22 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     If `always_run` is true then tests will be run regardless of whether or not
     the function was called from a script.
 
+    If `skip` is set to true from the default false then the function returns
+    immediately without doing anything.  This is just keyword argument switch
+    that can be used to temporarily turn off test-running without large changes
+    to the code.
+
     The parameter `level` is the level up the calling stack to look for the
     calling module and should not usually need to be set."""
+    if skip:
+        return
 
     mod_info = get_calling_module_info(module_name=calling_mod_name,
                                        module_path=calling_mod_path, level=level)
     calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
 
-    if calling_mod_name != "__main__":
-        if not always_run: return
+    if calling_mod_name != "__main__" and not always_run:
+        return
 
     def convert_arg_string_to_list(arg_list_or_string):
         """Convert string pytest_args arguments to a list, keeping lists unchanged."""
@@ -186,13 +191,15 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
         pytest_arglist.append("--pyargs")
 
     # Generate calling string and call pytest on the file.
-    for testfile in testfile_paths:
-        # Call pytest main; this requires pytest 2.0 or greater.
-        pytest.main(pytest_arglist + [testfile])
+    if single_call:
+        pytest.main(pytest_arglist + testfile_paths)
+    else:
+        for testfile in testfile_paths:
+            # Call pytest main; this requires pytest 2.0 or greater.
+            pytest.main(pytest_arglist + [testfile])
 
     if exit:
         sys.exit(0)
-    return
 
 previous_sys_path_list = None # Save the sys.path before modifying it, to restore it.
 
@@ -264,7 +271,6 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
             joined_path = expand_relative(path, calling_mod_dir)
             if joined_path not in sys.path:
                 sys.path.insert(0, joined_path)
-
     return
 
 def restore_previous_sys_path():
@@ -324,7 +330,6 @@ def init(set_package=False, conf=True, calling_mod_name=None,
         if calling_mod_name == "__main__":
             import set_package_attribute
             set_package_attribute.init()
-
     return
 
 #
@@ -438,7 +443,6 @@ def clear_locals_from_globals(level=2):
         except KeyError:
             pass # Ignore if not there.
     del globals_copied_to_list[:] # Empty out globals_copied_to_list in-place.
-    return
 
 def unindent(unindent_level, string):
     """Strip indentation from a docstring.  This function is useful in tests
@@ -475,6 +479,7 @@ autoimport_DEFAULTS = [("pytest", pytest), # (<nameToImportAs>, <value>)
                         ("fixture", pytest.fixture),
                         ("skip", pytest.skip),
                         ("xfail", pytest.xfail),
+                        ("approx", pytest.approx),
                         ("locals_to_globals", locals_to_globals),
                         ("clear_locals_from_globals", clear_locals_from_globals),
                         ("unindent", unindent),
@@ -500,7 +505,7 @@ def autoimport(noclobber=True, skip=None,
     `locals_to_globals`, `clear_locals_from_globals`, and `unindent`.  The
     module `pytest` is imported as `pytest`.  The functions from pytest that
     are imported by default are `raises`, `fail`, `fixture`, and `skip`,
-    `xfail`."""
+    `xfail`, and `approx`."""
 
     mod_info = get_calling_module_info(module_name=calling_mod_name,
                                        module_path=calling_mod_path, level=level)
@@ -528,8 +533,6 @@ def autoimport(noclobber=True, skip=None,
     for name, value in autoimport_DEFAULTS:
         if skip and name in skip: continue
         insert_in_dict(g, name, value, noclobber)
-
-    return
 
 #
 # Utility functions.
