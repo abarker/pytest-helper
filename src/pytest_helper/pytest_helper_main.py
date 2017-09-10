@@ -38,6 +38,8 @@ framework.
 # 5) Note autoimport fails in the Python interpreter, no attribute __file__.
 # Not a big deal, but might be nice to cover this case, too, if an easy mod.
 
+# TODO: Formal tests for unindent function.
+
 from __future__ import print_function, division, absolute_import
 import inspect
 import sys
@@ -45,7 +47,7 @@ import os
 try:
     import pytest
 except ImportError:
-    import py.test as pytest # Old pytest versions before 3.0.
+    import py.test as pytest # Old pytest versions, before 3.0.
 from pytest_helper.config_file_handler import (get_config_value, get_config)
 
 from pytest_helper.global_settings import (PytestHelperException,
@@ -438,6 +440,35 @@ def clear_locals_from_globals(level=2):
     del globals_copied_to_list[:] # Empty out globals_copied_to_list in-place.
     return
 
+def unindent(unindent_level, string):
+    """Strip indentation from a docstring.  This function is useful in tests
+    where you have assertions that something equals a multi-line string.  It
+    allows the strings to be represented as multi-line docstrings but indented
+    in a way that matches the surrounding code.
+
+    Calling this function on a string 1) splits it into lines (keeping any
+    trailing newlines), 2) discards the first and last line, and 3) removes
+    `indent_level` characters from the beginning of each line.  Then 4) the
+    modified lines are joined with newline and returned.  Raises an exception
+    on an attempt to strip non-whitespace or if there are fewer than two
+    lines."""
+    # Use split instead of splitlines because splitlines drops an single trailing
+    # newline if any are there.
+    lines = string.split("\n")
+    if len(lines) < 2:
+        raise PytestHelperException("String argument to unindent must have at least"
+                " two lines, since the first and last lines are discarded.  The string"
+                " argument was: '{0}'".format(string))
+
+    lines = lines[1:-1] # Discard first and last line.
+    for line in lines:
+        string_to_strip = line[0:unindent_level]
+        if not string_to_strip.lstrip() == "":
+            raise PytestHelperException("Attempt to unindent non-whitespace at"
+                    " the beginning of this line:\n'{0}'".format(line))
+    stripped = "\n".join(s[unindent_level:] for s in lines)
+    return stripped
+
 autoimport_DEFAULTS = [("pytest", pytest), # (<nameToImportAs>, <value>)
                         ("raises", pytest.raises),
                         ("fail", pytest.fail),
@@ -445,7 +476,8 @@ autoimport_DEFAULTS = [("pytest", pytest), # (<nameToImportAs>, <value>)
                         ("skip", pytest.skip),
                         ("xfail", pytest.xfail),
                         ("locals_to_globals", locals_to_globals),
-                        ("clear_locals_from_globals", clear_locals_from_globals)
+                        ("clear_locals_from_globals", clear_locals_from_globals),
+                        ("unindent", unindent),
                        ]
 
 def autoimport(noclobber=True, skip=None,
@@ -465,9 +497,10 @@ def autoimport(noclobber=True, skip=None,
     importing, if just one or two are causing problems locally to a file.
 
     The default variables that are imported from the `pytest_helper` module are
-    `locals_to_globals`, and `clear_locals_from_globals`.  The module `pytest`
-    is imported as `pytest`.  The functions from pytest that are imported by
-    default are `raises`, `fail`, `fixture`, and `skip`, and `xfail`."""
+    `locals_to_globals`, `clear_locals_from_globals`, and `unindent`.  The
+    module `pytest` is imported as `pytest`.  The functions from pytest that
+    are imported by default are `raises`, `fail`, `fixture`, and `skip`,
+    `xfail`."""
 
     mod_info = get_calling_module_info(module_name=calling_mod_name,
                                        module_path=calling_mod_path, level=level)
@@ -497,25 +530,6 @@ def autoimport(noclobber=True, skip=None,
         insert_in_dict(g, name, value, noclobber)
 
     return
-
-# TODO: Document this, add tests, and push new version.
-def unindent(unindent_level, string):
-    """Strip indentation from a docstring.  This function is useful in tests
-    where you have assertions that something equals a multi-line string.  It
-    allows the strings to be represented as multi-line docstrings but indented
-    in a way that matches the surrounding code.  Calling this function on a
-    string will 1) remove any leading or trailing newlines, and 2) strip
-    `indent_level` characters from the beginning of each line.  Raises an
-    exception on an attempt to strip non-whitespace."""
-    string = string.strip("\n")
-    lines = string.splitlines()
-    for l in lines:
-        string_to_strip = l[0:unindent_level]
-        if not string_to_strip.lstrip() == "":
-            raise PytestHelperException("Attempt to unindent non-whitespace at"
-                    " the beginning of this line:\n'{0}'".format(l))
-    stripped = "\n".join(s[unindent_level:] for s in lines)
-    return stripped
 
 #
 # Utility functions.

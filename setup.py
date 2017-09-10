@@ -25,7 +25,7 @@ with codecs.open(os.path.join(current_dir, "README.rst"), encoding="utf-8") as f
 
 setup(
     name="pytest-helper",
-    version="0.1.1", # major version, minor version, patch (see PEP440)
+    version="0.2.0", # major version, minor version, patch (see PEP440)
     description="Functions to help in using the pytest testing framework",
     keywords=["pytest", "py.test", "unit tests", "testing", "running tests"],
     install_requires=["wheel", "pytest>=2.0", "set-package-attribute"],

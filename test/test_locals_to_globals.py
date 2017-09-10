@@ -51,3 +51,33 @@ def test_var_values():
     with raises(NameError):
         x = setup_var3
 
+def test_unindent():
+    assert "    Hello." == unindent(8, """
+            Hello.
+        """)
+    assert "Hello." == unindent(12, """
+            Hello.
+        """)
+
+    assert "unindented line 1\n    indented line 2\nunindented line 3" == unindent(8, """
+        unindented line 1
+            indented line 2
+        unindented line 3
+        """)
+
+    with raises(pytest_helper.PytestHelperException):
+        assert unindent(3, "   One line") == "FAIL"
+
+    assert unindent(3, "   Two\nlines") == ""
+
+    with raises(pytest_helper.PytestHelperException):
+        assert unindent(3, "\n  Hello\nthere.") # Try to unindent non-whitespace.
+
+    with raises(pytest_helper.PytestHelperException):
+        assert unindent(1, "\nHello\nthere.\n") # Try to unindent non-whitespace.
+
+    # Test handling trailing newlines.
+    assert unindent(0, "\nHello\nthere.\n\n") == "Hello\nthere.\n"
+    assert unindent(0, "\nHello\nthere.\n") == "Hello\nthere."
+    assert unindent(0, "\nHello\nthere.") == "Hello"
+

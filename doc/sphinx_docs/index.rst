@@ -243,6 +243,29 @@ their more-conventional (non-magic) equivalents.
    Note that some linters will complain about variables being used without
    being set.
 
+* :ref:`pytest_helper.unindent<unindent>`
+
+  The `unindent` function allows for cleaner formatting of multi-line strings,
+  for example to compare with in a pytest assertion.  The first argument,
+  `unindent_level`, gives the number of characters to unindent.  The second
+  argument is the string (typically a triple-quote string).  The string is
+  split into lines, keeping all empty lines, and then the first and last line
+  are discarded.  Each line is then unindented by the `unindent_level` argument
+  number of characters and the lines are re-joined with newlines.  An exception
+  is raised on trying to unindent non-whitespace on a line or if there are
+  fewer than two lines.
+
+  Here is a simple example usage, comparing a parse result with an expression
+  tree of tokens in a multi-line string.  The ``unindent`` function is assumed
+  to be called from inside a pytest testing function (already indented four
+  spaces), and the parse result is assumed to start on the first column::
+
+     assert result_tree.tree_repr() == unindent(12, """
+             <k_plus,'+'>
+                 <k_identifier,'x'>
+                 <k_float,'0.22'>
+             """)
+
 .. _Examples:
 
 Examples

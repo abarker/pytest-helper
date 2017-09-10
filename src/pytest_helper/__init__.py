@@ -9,7 +9,8 @@ __all__ = [
           "autoimport",
           "auto_import",
           "PytestHelperException",
-          "LocalsToGlobalsError"
+          "LocalsToGlobalsError",
+          "unindent",
           ]
 
 from pytest_helper.pytest_helper_main import (
@@ -19,6 +20,7 @@ from pytest_helper.pytest_helper_main import (
         init,
         locals_to_globals,
         clear_locals_from_globals,
+        unindent,
         autoimport,
         )
 
