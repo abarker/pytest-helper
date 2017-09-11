@@ -11,11 +11,12 @@ pytest-helper
 
 The pytest-helper package provides several functions which make it easier to
 set up and run unit tests in Python using the `pytest <http://pytest.org>`_
-testing framework.  For example, there is a function to make files self-testing
-whenever they are executed as scripts, and a function to simplify modifying the
-Python search path.  One of the most useful features is that relative pathnames
-are relative to the file in which they occur.  This package makes use of pytest
-but is independent of the official pytest project.
+testing framework.  For example, there is a function to make modules
+self-testing whenever they are executed as scripts, and a function to simplify
+making modifications to the Python search path.  One of the most useful
+features is that relative pathnames are relative to the file in which they
+occur.  This package makes use of pytest but is independent of the official
+pytest project.
 
 Two kinds of helper functions are provided.  The first kind are intended to
 make it easier to run pytest on a test file or files, and the second kind are
@@ -254,14 +255,14 @@ their more-conventional (non-magic) equivalents.
    argument is the string (typically a triple-quote string).  The string is
    split into lines, keeping all empty lines, and then the first and last line
    are discarded.  Each line is then unindented by the `unindent_level` argument
-   number of characters and the lines are re-joined with newlines.  An exception
+   number of characters, and the lines are re-joined with newlines.  An exception
    is raised on trying to unindent non-whitespace on a line or if there are
    fewer than two lines.
  
    Here is a simple example usage, comparing a parse result with an expression
-   tree of tokens in a multi-line string.  The ``unindent`` function is assumed
-   to be called from inside a pytest testing function (already indented four
-   spaces), and the parse result is assumed to start on the first column::
+   tree of tokens in a multi-line string.  The assertion is assumed
+   to be inside a pytest testing function, already indented four
+   spaces.  The parse result is assumed to start on the first column::
  
       assert result_tree.tree_repr() == unindent(12, """
               <k_plus,'+'>
