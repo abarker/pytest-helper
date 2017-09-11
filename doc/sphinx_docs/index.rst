@@ -269,6 +269,7 @@ their more-conventional (non-magic) equivalents.
                  <k_float,'0.22'>
              """)
 
+
 .. _Examples:
 
 Examples

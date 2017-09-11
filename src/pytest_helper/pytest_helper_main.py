@@ -450,9 +450,9 @@ def unindent(unindent_level, string):
     allows the strings to be represented as multi-line docstrings but indented
     in a way that matches the surrounding code.
 
-    Calling this function on a string 1) splits it into lines (keeping any
-    trailing newlines), 2) discards the first and last line, and 3) removes
-    `indent_level` characters from the beginning of each line.  Then 4) the
+    Calling this function on a string 1) splits it into lines (keeping
+    empty lines, too), 2) discards the first and last line, and 3) removes
+    `unindent_level` characters from the beginning of each line.  Then 4) the
     modified lines are joined with newline and returned.  Raises an exception
     on an attempt to strip non-whitespace or if there are fewer than two
     lines."""
