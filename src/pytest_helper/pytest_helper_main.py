@@ -13,6 +13,20 @@ framework.
 
 """
 
+# TODO: Made modify_syspath the default.  Not using it caused a nasty error situation.
+# Ran the program trie_dict.py, which invoked pytest-helper.  That then ran the test
+# ../../test/test_pytest_helper.py, which then imported the full regex_trie_dict package.
+# But, during the import it came across a relative import
+#    from .trie_dict import TrieDict, TrieDictNode
+# which then raised the error
+#    SystemError: Parent module '' not loaded, cannot perform relative import
+# Could not find the problem versus another project that worked fine doing seemingly
+# the same thing.  Then I set modify_syspath option to script_run, and the problem went
+# away.
+#
+# Updated the code and the docs in this file, but the CHANGELOG needs to note it,
+# and it should be tested.
+
 # Possible future enhancements.
 #
 # 1) Go up the directory tree and, in addition to
@@ -49,7 +63,7 @@ from pytest_helper.global_settings import (PytestHelperException,
                                            NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT)
 
 def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=False,
-               modify_syspath=False, calling_mod_name=None, calling_mod_path=None,
+               modify_syspath=True, calling_mod_name=None, calling_mod_path=None,
                single_call=True, exit=True, always_run=False, skip=False, level=2):
     """Run pytest on the specified test files when the calling module is run as
     a script.  Using this function requires at least pytest 2.0.
@@ -98,13 +112,15 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     directory name relative to the current directory and not have it treated as
     a Python module name by using `./dirname` rather than simply `filename`.
 
-    If `modify_syspath` is set true (the default is false) then the first item
-    in the `sys.path` list is deleted just after `script_run` is called.  When
-    a module is run as a script Python always adds the directory of the script
-    as the first item in `sys.path`.  This can sometimes cause hard-to-trace
+    If `modify_syspath` is set true (the default) then the first item in the
+    `sys.path` list is deleted just after `script_run` is called.  When a
+    module is run as a script Python always adds the directory of the script as
+    the first item in `sys.path`.  This can sometimes cause hard-to-trace
     import errors when directories inside paths are inserted in `sys.path`.
-    This flag should seldom be needed because pytest seems to already take care
-    of this.
+    Deleting it first prevents those errors.  If `script_run` does not exit at
+    the end (because `exit`=False), and the `modify_path` option is true, then
+    before returning the path is restored to a saved copy of its full, original
+    condition.
 
     The `calling_mod_name` argument is a fallback in case the calling
     function's module is not correctly located by introspection.  It is usually
@@ -164,6 +180,7 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
                                              calling_mod, calling_mod_dir))
 
     if modify_syspath:
+        old_sys_path = sys.path
         del sys.path[0]
 
     if isinstance(testfile_paths, str):
@@ -200,6 +217,9 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
 
     if exit:
         sys.exit(0)
+
+    if modify_syspath: # Not exiting, so restore the system path if modified.
+        sys.path = old_sys_path
 
 previous_sys_path_list = None # Save the sys.path before modifying it, to restore it.
 
