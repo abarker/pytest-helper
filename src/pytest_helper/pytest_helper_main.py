@@ -13,19 +13,37 @@ framework.
 
 """
 
-# TODO: Made modify_syspath the default.  Not using it caused a nasty error situation.
-# Ran the program trie_dict.py, which invoked pytest-helper.  That then ran the test
-# ../../test/test_pytest_helper.py, which then imported the full regex_trie_dict package.
-# But, during the import it came across a relative import
-#    from .trie_dict import TrieDict, TrieDictNode
-# which then raised the error
-#    SystemError: Parent module '' not loaded, cannot perform relative import
-# Could not find the problem versus another project that worked fine doing seemingly
-# the same thing.  Then I set modify_syspath option to script_run, and the problem went
-# away.
+# TODO: Make modify_syspath the default for packages.  Not using it caused a nasty error
+# situation.  Ran the program trie_dict.py, which invoked pytest-helper.  That
+# then ran the test ../../test/test_pytest_helper.py, which then imported the
+# full regex_trie_dict package.  But, during the import it came across a
+# relative import from .trie_dict import TrieDict, TrieDictNode which then
+# raised the error SystemError: Parent module '' not loaded, cannot perform
+# relative import Could not find the problem versus another project that worked
+# fine doing seemingly the same thing.  Then I set modify_syspath option to
+# script_run, and the problem went away.
 #
-# Updated the code and the docs in this file, but the CHANGELOG needs to note it,
-# and it should be tested.
+# Updated the code and the docs in this file, but the CHANGELOG needs to note
+# it, and it should be tested.
+#
+# Also, add modify_syspath to the init method, in case people want to apply it
+# before script_run for imports to work.  Keep flag a set, so don't do it again
+# in script_run or another init.  Be sure that it is only run once for a
+# module, wherever it is called from.  Only do it from __main__, not any other
+# module.  Or maybe add a new function to run it and keep track.  (Script-run
+# only runs for __main__, but not the init function.  It has options for
+# several helper funs, so it needs to always run.)  It might be called twice,
+# so make sure it handles that.
+#
+# NOTE: Can ONLY modify the syspath when the file is part of a package!!!
+# Otherwise non-package imports will fail.  Set it as None for auto-mode and
+# true and false for explicit.
+#
+# --> added in_pkg to module info, so can base on whether in pkg or not.
+# TODO: if calling module is __main__ AND in_pkg is true then script_run
+# should modify the path.
+#
+# --> Implemented.  Review and update CHANGELOG.
 
 # Possible future enhancements.
 #
@@ -46,6 +64,15 @@ framework.
 #
 # 4) Autoimport the "match" builtin, but note it is new since Version 3.1.  So either
 # require at least that version or do a try-except that isn't done now.
+#
+# 5) Consider using pytest-helper-namespace to put the helper function into the
+#    pytest namespace.  Might be more convenient, or might be overkill.  May not
+#    buy you much, just pytest.helpers.script_run after still importing the
+#    pytest_helper package (or putting it into some config file).  Or maybe
+#    consider making into a plugin (probably overkill).
+#
+# 6) Consider if struct-like class instances should be saved in the dict keyed by
+#    dict keyed by module name, so more info can be stored per-module.
 
 from __future__ import print_function, division, absolute_import
 import inspect
@@ -63,10 +90,12 @@ from pytest_helper.global_settings import (PytestHelperException,
                                            NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT)
 
 def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=False,
-               modify_syspath=True, calling_mod_name=None, calling_mod_path=None,
+               modify_syspath=None, calling_mod_name=None, calling_mod_path=None,
                single_call=True, exit=True, always_run=False, skip=False, level=2):
     """Run pytest on the specified test files when the calling module is run as
-    a script.  Using this function requires at least pytest 2.0.
+    a script.  Using this function requires at least pytest 2.0.  If the module
+    from which this script is called is not `__main__` then this script
+    immediately returns and does nothing (unless `always_run` is set true).
 
     The argument `testfile_paths` should be either the pathname of a file or
     directory to run pytest on, or else a list of such file and directory
@@ -112,15 +141,16 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     directory name relative to the current directory and not have it treated as
     a Python module name by using `./dirname` rather than simply `filename`.
 
-    If `modify_syspath` is set true (the default) then the first item in the
-    `sys.path` list is deleted just after `script_run` is called.  When a
-    module is run as a script Python always adds the directory of the script as
-    the first item in `sys.path`.  This can sometimes cause hard-to-trace
-    import errors when directories inside paths are inserted in `sys.path`.
-    Deleting it first prevents those errors.  If `script_run` does not exit at
-    the end (because `exit`=False), and the `modify_path` option is true, then
-    before returning the path is restored to a saved copy of its full, original
-    condition.
+    If `modify_syspath` is explicitly set `True` then the first item in the
+    `sys.path` list is deleted just after `script_run` is called.  The default
+    is `None`, which modifies the system path if the calling module is part of
+    a package and otherwise does not.  When a module is run as a script Python
+    always adds the directory of the script as the first item in `sys.path`.
+    This can sometimes cause hard-to-trace import errors when directories
+    inside paths are inserted in `sys.path`.  Deleting it first prevents those
+    errors.  If `script_run` does not call exit at the end (because
+    `exit==False`), then before returning any modified system path is restored
+    to a saved copy of its full, original condition.
 
     The `calling_mod_name` argument is a fallback in case the calling
     function's module is not correctly located by introspection.  It is usually
@@ -154,7 +184,7 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
 
     mod_info = get_calling_module_info(module_name=calling_mod_name,
                                        module_path=calling_mod_path, level=level)
-    calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
+    calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir, in_pkg = mod_info
 
     if calling_mod_name != "__main__" and not always_run:
         return
@@ -179,7 +209,9 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
                              get_config_value("script_run_extra_pytest_args", [],
                                              calling_mod, calling_mod_dir))
 
-    if modify_syspath:
+    syspath_modified = False
+    if modify_syspath is True or modify_syspath is None and in_pkg:
+        syspath_modified = True
         old_sys_path = sys.path
         del sys.path[0]
 
@@ -218,7 +250,7 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     if exit:
         sys.exit(0)
 
-    if modify_syspath: # Not exiting, so restore the system path if modified.
+    if syspath_modified: # Not exiting, so restore the system path if modified.
         sys.path = old_sys_path
 
 previous_sys_path_list = None # Save the sys.path before modifying it, to restore it.
@@ -252,7 +284,7 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
     # is looked up and saved per-module.
     mod_info = get_calling_module_info(module_name=calling_mod_name,
                                        module_path=calling_mod_path, level=level)
-    calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
+    calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir, in_pkg = mod_info
 
     if dirs_to_add is None: dirs_to_add = []
     if isinstance(dirs_to_add, str): dirs_to_add = [dirs_to_add]
@@ -304,7 +336,7 @@ def restore_previous_sys_path():
 
 
 def init(set_package=False, conf=True, calling_mod_name=None,
-                                        calling_mod_path=None, level=2):
+                                       calling_mod_path=None, level=2):
     """A function to initialize the `pytest_helper` module just after importing
     it.  This function is currently only necessary in rare cases where Python's
     current working directory (CWD) is changed between the time when the
@@ -329,13 +361,14 @@ def init(set_package=False, conf=True, calling_mod_name=None,
     If the parameter `conf` is set false then no configuration files will be
     searched for or used.  Otherwise, the configuration file will be searched
     for by any function which has an option settable in a config file
-    (including the `init` function itself).
+    (including the `init` function itself).  The configuration information
+    for modules is cached, and so is only looked up once.
     """
     # The get_calling_module_info function caches the module info, including the
     # calling_mod_path, as a side effect.
     mod_info = get_calling_module_info(module_name=calling_mod_name,
                                        module_path=calling_mod_path, level=level)
-    calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
+    calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir, in_pkg = mod_info
 
     # Disable the configuration file if requested.
     if not conf or not ALLOW_USER_CONFIG_FILES:
@@ -529,7 +562,7 @@ def autoimport(noclobber=True, skip=None,
 
     mod_info = get_calling_module_info(module_name=calling_mod_name,
                                        module_path=calling_mod_path, level=level)
-    calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir = mod_info
+    calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir, in_pkg = mod_info
 
     # Override arguments with any values set in the config file.
     noclobber = get_config_value("autoimport_noclobber", noclobber,
@@ -643,8 +676,10 @@ def get_calling_module_info(level=2, check_exists=True,
                 " necessary you can set `module_name` and\n`module_path`"
                 " explicitly from keyword arguments.".format(calling_module_dir))
 
+    in_pkg = os.path.exists(os.path.join(calling_module_dir, "__init__.py"))
+
     module_info = (calling_module_name, calling_module,
-                   calling_module_path, calling_module_dir)
+                   calling_module_path, calling_module_dir, in_pkg)
 
     module_info_cache[calling_module_name] = module_info
     return module_info
