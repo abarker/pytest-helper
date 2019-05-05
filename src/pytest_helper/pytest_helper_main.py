@@ -79,7 +79,9 @@ framework.
 #    dict keyed by module name, so more info can be stored per-module.
 #
 # 7) Add a `set_package` attribute to `script_run`, which might sometimes be
-#    convenient without having to run `init`.
+#    convenient without having to run `init`.  Careful not to conflict with
+#    the same option in set_package_attribute... maybe give set_package_attribute
+#    that functionality as a separate function that this package can call.
 
 from __future__ import print_function, division, absolute_import
 import inspect
@@ -149,15 +151,17 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     a Python module name by using `./dirname` rather than simply `filename`.
 
     If `modify_syspath` is explicitly set `True` then the first item in the
-    `sys.path` list is deleted just after `script_run` is called.  The default
-    is `None`, which modifies the system path if the calling module is part of
-    a package and otherwise does not.  When a module is run as a script Python
-    always adds the directory of the script as the first item in `sys.path`.
-    This can sometimes cause hard-to-trace import errors when directories
-    inside paths are inserted in `sys.path`.  Deleting it first prevents those
-    errors.  If `script_run` does not call exit at the end (because
-    `exit==False`), then before returning any modified system path is restored
-    to a saved copy of its full, original condition.
+    `sys.path` list is always deleted just after `script_run` is called.  If it
+    is set `False` than the system path is not modified.  The default is
+    `None`, which modifies the system path if the calling module is part of a
+    package and otherwise does not.  The reason for this option is that when a
+    module is run as a script Python always adds the directory of the script as
+    the first item in `sys.path`.  This can sometimes cause hard-to-trace
+    import errors when directories inside paths are inserted in `sys.path`.
+    Deleting that added directory first prevents those errors.  If `script_run`
+    does not call exit at the end (because `exit==False`) then, before
+    returning, any modified system path is restored to a saved copy of its
+    full, original condition.
 
     The `calling_mod_name` argument is a fallback in case the calling
     function's module is not correctly located by introspection.  It is usually
