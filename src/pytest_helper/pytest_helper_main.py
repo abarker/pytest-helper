@@ -13,15 +13,15 @@ framework.
 
 """
 
-# TODO: Make modify_syspath the default for packages.  Not using it caused a nasty error
-# situation.  Ran the program trie_dict.py, which invoked pytest-helper.  That
-# then ran the test ../../test/test_pytest_helper.py, which then imported the
-# full regex_trie_dict package.  But, during the import it came across a
-# relative import from .trie_dict import TrieDict, TrieDictNode which then
-# raised the error SystemError: Parent module '' not loaded, cannot perform
-# relative import Could not find the problem versus another project that worked
-# fine doing seemingly the same thing.  Then I set modify_syspath option to
-# script_run, and the problem went away.
+# DONE: Make modify_syspath the default for packages.  Not using it caused a
+# nasty error situation.  Ran the program trie_dict.py, which invoked
+# pytest-helper.  That then ran the test ../../test/test_pytest_helper.py,
+# which then imported the full regex_trie_dict package.  But, during the import
+# it came across a relative import from .trie_dict import TrieDict,
+# TrieDictNode which then raised the error SystemError: Parent module '' not
+# loaded, cannot perform relative import Could not find the problem versus
+# another project that worked fine doing seemingly the same thing.  Then I set
+# modify_syspath option to script_run, and the problem went away.
 #
 # Updated the code and the docs in this file, but the CHANGELOG needs to note
 # it, and it should be tested.
@@ -35,15 +35,17 @@ framework.
 # several helper funs, so it needs to always run.)  It might be called twice,
 # so make sure it handles that.
 #
-# NOTE: Can ONLY modify the syspath when the file is part of a package!!!
+# Note: Can ONLY modify the syspath when the file is part of a package!!!
 # Otherwise non-package imports will fail.  Set it as None for auto-mode and
 # true and false for explicit.
 #
-# --> added in_pkg to module info, so can base on whether in pkg or not.
-# TODO: if calling module is __main__ AND in_pkg is true then script_run
-# should modify the path.
+# --> added in_pkg flag to module info return, so now can base on whether in
+# pkg or not.
 #
-# --> Implemented.  Review and update CHANGELOG.
+# Done: if calling module is __main__ AND in_pkg is true then
+# script_run should modify the path.
+#
+# --> Implemented.  TODO: Review and update CHANGELOG.
 
 # Possible future enhancements.
 #
@@ -53,6 +55,8 @@ framework.
 # such as:
 #    pytest_helper.sys_path("{proj_root}/test")
 #    pytest_helper.sys_path("{pkg_root}/pkg_subdir")
+# As a simpler related enhancement, just allow globs in paths by passing through
+# the python glob function.
 #
 # 2) Integrate with pudb debugger, maybe via a kwarg to script_run.  Without pudb plugin
 # it works like this, but could be a single kwarg:
@@ -73,6 +77,9 @@ framework.
 #
 # 6) Consider if struct-like class instances should be saved in the dict keyed by
 #    dict keyed by module name, so more info can be stored per-module.
+#
+# 7) Add a `set_package` attribute to `script_run`, which might sometimes be
+#    convenient without having to run `init`.
 
 from __future__ import print_function, division, absolute_import
 import inspect
