@@ -80,8 +80,11 @@ framework.
 #
 # 7) Add a `set_package` attribute to `script_run`, which might sometimes be
 #    convenient without having to run `init`.  Careful not to conflict with
-#    the same option in set_package_attribute... maybe give set_package_attribute
-#    that functionality as a separate function that this package can call.
+#    the same option in set_package_attribute.
+#    Call `set_package_attribute._delete_sys_path_0()` to do such deletion.
+#    Just go ahead and import set_package_attribute, and call init if requested.
+#
+# 8) See the notes in q-dir about usage, etc.  Add snippet file to docs.
 
 from __future__ import print_function, division, absolute_import
 import inspect
@@ -393,7 +396,7 @@ def init(set_package=False, conf=True, calling_mod_name=None,
     if set_package:
         if calling_mod_name == "__main__":
             import set_package_attribute
-            set_package_attribute.init()
+            set_package_attribute.init(mod_path=False)
     return
 
 #
