@@ -3,6 +3,26 @@
 History
 =======
 
+0.2.1 (2019-05-27)
+------------------
+
+New features:
+
+* Now pytest > 3.1 version is required.
+ 
+* The new ``modify_syspath`` argument is passed to the ``init`` of
+  ``set_package_attribute`` if it is called to implement ``set_package``.
+  The defaults for ``modify_syspath`` in both ``script_run`` and 
+  ``init`` are now to apply it when run from inside a package, but not
+  otherwise.
+
+* The ``sys_path`` function now appends to the ``sys.path`` list by default,
+  to avoid conflicts with ``modify_syspath``.   Setting ``append=False``
+  will revert to inserting at the beginning.
+
+* If ``modify_syspath`` was chosen and ``exit=False`` the system path is no
+  longer automatically restored after the exit.
+
 0.2.0 (2017-10-11)
 ------------------
 

@@ -28,7 +28,7 @@ NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT = "_pytest_helper_module_info_320gj97
 #
 
 class PytestHelperException(Exception):
-    """Raised by the routines to help with running tests."""
+    """The base exception raised by all exceptions in the package."""
     pass
 
 class LocalsToGlobalsError(PytestHelperException):
