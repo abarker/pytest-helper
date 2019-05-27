@@ -16,9 +16,8 @@ New features:
   ``init`` are now to apply it when run from inside a package, but not
   otherwise.
 
-* The ``sys_path`` function now appends to the ``sys.path`` list by default,
-  to avoid conflicts with ``modify_syspath``.   Setting ``append=False``
-  will revert to inserting at the beginning.
+* The ``sys_path`` function now takes an argument ``insert_position`` that
+  determines where in ``sys.path`` the paths are inserted.
 
 * If ``modify_syspath`` was chosen and ``exit=False`` the system path is no
   longer automatically restored after the exit.

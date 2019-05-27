@@ -245,7 +245,7 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
 previous_sys_path_list = None # Save the sys.path before modifying it, to restore it.
 
 def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
-             add_gn_parent=False, add_self=False, append=True,
+             add_gn_parent=False, add_self=False, insert_position=1,
              calling_mod_name=None, calling_mod_path=None, level=2):
     """Add the canonical absolute pathname of each directory in the list
     `dirs_to_add` to `sys.path` (but only if it isn't there already).  A single
@@ -262,10 +262,10 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
     true then the directory of the calling module is added to the system
     `sys.path` list.
 
-    The keyword argument `append` determines whether the pathnames are appended
-    to the end of `sys.path` or are inserted at the beginning.  The default is
-    to append.  If inserting at the beginning be careful of interactions with
-    the `modify_syspath` option to `script_run` if it is called later.
+    The keyword argument `insert_position` determines where in `sys.path` the
+    the pathnames are placed (using `insert`).  The default is 1.  If inserting
+    at 0 watch for conflicts with the `modify_syspath` options to `script_run`
+    and `init`.
 
     The parameters `calling_mod_name` and `calling_mod_dir` can be set as a
     fallback in case the introspection for finding the calling module's
@@ -280,8 +280,10 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
                                        module_path=calling_mod_path, level=level)
     calling_mod_name, calling_mod, calling_mod_path, calling_mod_dir, in_pkg = mod_info
 
-    if dirs_to_add is None: dirs_to_add = []
-    if isinstance(dirs_to_add, str): dirs_to_add = [dirs_to_add]
+    if dirs_to_add is None:
+        dirs_to_add = []
+    if isinstance(dirs_to_add, str):
+        dirs_to_add = [dirs_to_add]
     if add_parent:
         dirs_to_add.append("..")
     if add_grandparent:
@@ -308,21 +310,15 @@ def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
     global previous_sys_path_list
     previous_sys_path_list = sys.path[:]
 
-    for path in dirs_to_add:
+    for path in reversed(dirs_to_add): # Reverse since all inserted at insert_position.
         if os.path.isabs(path):
             path = os.path.realpath(path) # Convert to canonical path.
             if path not in sys.path:
-                if append:
-                    sys.path.append(path)
-                else:
-                    sys.path.insert(0, path)
+                sys.path.insert(insert_position, path)
         else:
             joined_path = expand_relative(path, calling_mod_dir)
             if joined_path not in sys.path:
-                if append:
-                    sys.path.append(0, joined_path)
-                else:
-                    sys.path.insert(0, joined_path)
+                sys.path.insert(insert_position, joined_path)
     return
 
 def restore_previous_sys_path():

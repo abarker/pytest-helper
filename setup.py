@@ -28,7 +28,7 @@ setup(
     version="0.2.1", # major version, minor version, patch (see PEP440)
     description="Functions to help in using the pytest testing framework",
     keywords=["pytest", "py.test", "unit tests", "testing", "running tests"],
-    install_requires=["wheel", "pytest>=3.1", "set-package-attribute>=0.2.1"],
+    install_requires=["wheel", "pytest>=3.1", "set-package-attribute>=0.2.3"],
     url="https://github.com/abarker/pytest-helper",
 
     license="MIT",
