@@ -13,8 +13,9 @@ framework.
 
 """
 
-# Note that inspect.getargvalues is deprecated, so replace with signature as
-# described below.
+# Replaced the depricated inspect.getargvalues fun, but the code is still commented out.
+# Delete it after more testing.  Also ignored kwargs in locals_to_globals, too, and added
+# an option to do those copies.
 # https://www2.cs.duke.edu/acm-docs/python/python-3.5.2-docs-html/library/inspect.html#inspect.getargvalues
 
 # Possible future enhancements.
@@ -376,11 +377,11 @@ def init(modify_syspath=None, conf=True,
 #
 
 def locals_to_globals(fun_locals=None, fun_globals=None, clear=False,
-                      noclobber=True, level=2):
+                      noclobber=True, ignore_params=True, level=2):
     """Copy all local variables in the calling test function's local scope to
     the global scope of the module from which that function was called.  The
     test function's parameters are ignored (i.e., they are local variables but
-    they are not made global).
+    they are not made global).  Setting `ignore_params` false copies them, too.
 
     This routine should generally be called near the end of a test function or
     fixture.  It allows for variables to be shared with other test functions,
@@ -449,11 +450,18 @@ def locals_to_globals(fun_locals=None, fun_globals=None, clear=False,
         clear_locals_from_globals(level=level+1) # One extra level from this fun.
 
     # Get the function's parameters so we can ignore them as locals.
-    params, values = get_calling_fun_parameters(level)
+    #params, values = get_calling_fun_parameters(level)
+    args, varargs, varkw, defaults, kwonlyargs, kwonlydefaults, annotations = \
+                                            get_calling_fun_parameters(level)
+    params = list(args) if args else []
+    params = params + varargs if varargs else params
+    params = params + varkw if varkw else params
+    params = params + kwonlyargs if kwonlyargs else params
 
     # Do the actual copies.
     for k, v in fun_locals.items():
-        if k in params: continue
+        if k in params and ignore_params:
+            continue
         # The following line filters out some weird pytest vars starting with @.
         if not (k[0].isalpha() or k[0] == "_"):
             continue
@@ -698,8 +706,11 @@ def get_calling_fun_parameters(level=2):
        level 1: The frame of the function that called this function.
        level 2: The frame of the function that called the calling function."""
     calling_fun_frame = inspect.stack()[level][0]
-    params, _, _, values = inspect.getargvalues(calling_fun_frame)
-    return (params, values)
+    #params, _, _, values = inspect.getargvalues(calling_fun_frame)
+    #return (params, values)
+    args, varargs, varkw, defaults, kwonlyargs, kwonlydefaults, annotations = (
+            inspect.getfullargspec(calling_fun_frame))
+    return args, varargs, varkw, defaults, kwonlyargs, kwonlydefaults, annotations
 
 def get_calling_fun_locals_dict(level=2):
     """Note that in calling this function you have to increase the level by
