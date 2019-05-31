@@ -13,6 +13,10 @@ framework.
 
 """
 
+# Note that inspect.getargvalues is deprecated, so replace with signature as
+# described below.
+# https://www2.cs.duke.edu/acm-docs/python/python-3.5.2-docs-html/library/inspect.html#inspect.getargvalues
+
 # Possible future enhancements.
 #
 # 1) Go up the directory tree and, in addition to
@@ -41,19 +45,13 @@ framework.
 # 5) See the notes in q-dir about usage, etc.  Add a snippet file to the docs.
 
 # Consider the different use-cases for choosing the defaults.
-# Note current defaults make set_package=False but modify_syspath=None, the
-# latter of which does it only if inside a package.
+# Note current defaults make modify_syspath=None, which
+# which does removal it only if inside a package.
 #   - test-calling scripts, meant to be in package module
-#   - test-calling scripts, meant to be in package outside module
-# But note that pytest itself will load a module if necessary.
-#
-# The there are general scripts, just using the set_package_attribute stuff:
-#   - scripts meant to live inside a package and be called there
-#   - scripts in packages meant to be moved outside later
-# In the former case you'd want to call set_package automatically whenever inside
-# a package.  In the latter, you would want to import the package itself,
-# or mimic that somehow.  Using script-style imports inside a package is not
-# a good idea in either case (and they will not work if sys.path[0] is removed).
+#   - test-calling scripts, meant to be in module outside the package, but
+#        maybe being developed there first
+#   - self-test scripts inside and outside a package
+# But note that pytest itself will load a package if necessary.
 
 from __future__ import print_function, division, absolute_import
 import inspect
@@ -73,9 +71,9 @@ from pytest_helper.global_settings import (PytestHelperException,
                                            NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT)
 
 def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=False,
-               set_package=False, modify_syspath=None,
-               calling_mod_name=None, calling_mod_path=None,
-               single_call=True, exit=True, always_run=False, skip=False, level=2):
+               modify_syspath=None, calling_mod_name=None, calling_mod_path=None,
+               single_call=True, exit=True, always_run=False, skip=False, pskip=False,
+               level=2):
     """Run pytest on the specified test files when the calling module is run as
     a script.  Using this function requires at least pytest 2.0.  If the module
     from which this script is called is not `__main__` then this script
@@ -125,9 +123,6 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     directory name relative to the current directory and not have it treated as
     a Python module name by using `./dirname` rather than simply `filename`.
 
-    The `set_package` option is an alternative way to call
-    `set_package_attribute` in order to use relative imports in a script.
-
     If `modify_syspath` is explicitly set `True` then the first item in the
     `sys.path` list is deleted, but only if it has not been deleted before (by
     this package or by the `set_package_attribute` package).  If
@@ -165,11 +160,18 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     If `skip` is set to true from the default false then the function returns
     immediately without doing anything.  This is just keyword argument switch
     that can be used to temporarily turn off test-running without large changes
-    to the code.
+    to the code.  The `pskip` option is the same, but it also sets the package
+    attribute via `set_package_attribute`.  This option is useful if the script
+    is being run inside a package, since it allows relative imports to be used.
+    The `modify_syspath` argument is passed to the `init` function of
+    `set_package_attribute` in this case.
 
     The parameter `level` is the level up the calling stack to look for the
     calling module and should not usually need to be set."""
     if skip:
+        return
+    if pskip:
+        set_package_attribute.init(modify_syspath)
         return
 
     mod_info = get_calling_module_info(module_name=calling_mod_name,
@@ -199,9 +201,7 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
                              get_config_value("script_run_extra_pytest_args", [],
                                              calling_mod, calling_mod_dir))
 
-    if set_package:
-        set_package_attribute.init(modify_syspath)
-    elif modify_syspath or (modify_syspath is None and in_pkg):
+    if modify_syspath or (modify_syspath is None and in_pkg):
         set_package_attribute._delete_sys_path_0()
 
     if isinstance(testfile_paths, str):
@@ -247,7 +247,7 @@ previous_sys_path_list = None # Save the sys.path before modifying it, to restor
 def sys_path(dirs_to_add=None, add_parent=False, add_grandparent=False,
              add_gn_parent=False, add_self=False, insert_position=1,
              calling_mod_name=None, calling_mod_path=None, level=2):
-    """Add the canonical absolute pathname of each directory in the list
+    r"""Add the canonical absolute pathname of each directory in the list
     `dirs_to_add` to `sys.path` (but only if it isn't there already).  A single
     string representing a path can also be passed to `dirs_to_add`.  Relative
     pathnames are always interpreted relative to the directory of the calling
@@ -329,7 +329,7 @@ def restore_previous_sys_path():
         sys.path = previous_sys_path_list
         previous_sys_path_list = None
 
-def init(set_package=False, modify_syspath=None, conf=True,
+def init(modify_syspath=None, conf=True,
          calling_mod_name=None, calling_mod_path=None, level=2):
     """A function to initialize the `pytest_helper` module just after importing
     it.  This function is useful, for example, in rare cases where Python's
@@ -343,21 +343,10 @@ def init(set_package=False, modify_syspath=None, conf=True,
     `pytest_helper` just after the system imports and then immediately calling
     this function should work.
 
-    The `init` function takes an optional keyword argument `set_package`.  If
-    it is set true then whenever the calling module is a script the package
-    attribute of module `__main__` will be automatically set.  This allows for
-    using explicit relative imports from scripts, but it must be called before
-    any explicit relative imports are attempted.  If the calling module was run
-    as a script then the function call `pytest_helper.init(set_package=True)`
-    will call the `set_package_attribute` package `init` function.  This
-    feature is really only useful as an alternative interface to
-    `set_package_attribute`.
-
-    The `modify_syspath` option is passed directly to `set_package_attribute`
-    if that option is chosen.  It can also be used alone.  It affects whether
-    or not the `sys.path[0]` element is removed.  The default `None` is to
-    remove it for scripts run from inside packages since that can mess up the
-    imports of modules running as packages.
+    The `modify_syspath` option affects whether or not the `sys.path[0]`
+    element is removed.  The default `None` is to remove it for scripts run
+    from inside packages since that can mess up the imports of modules running
+    as packages.
 
     If the parameter `conf` is set false then no configuration files will be
     searched for or used.  Otherwise, the configuration file will be searched
@@ -378,17 +367,9 @@ def init(set_package=False, modify_syspath=None, conf=True,
         if not conf or not ALLOW_USER_CONFIG_FILES:
             get_config(calling_mod, calling_mod_dir, disable=True)
 
-        # Override init arguments with any values set in the config file.
-        set_package = get_config_value("init_set_package", set_package,
-                                                 calling_mod, calling_mod_dir)
-
-        # Handle the set_package and modify_syspath options.
-        if set_package:
-            set_package_attribute.init(modify_syspath=modify_syspath)
-        elif modify_syspath or (modify_syspath is None and in_pkg):
+        # Handle the modify_syspath options.
+        if modify_syspath or (modify_syspath is None and in_pkg):
             set_package_attribute._delete_sys_path_0()
-
-
 
 #
 # Functions for copying locals to globals.

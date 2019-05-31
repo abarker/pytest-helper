@@ -3,6 +3,20 @@
 History
 =======
 
+0.2.2 (2019-05-30)
+------------------
+
+New features:
+
+* Added a new option ``pskip`` to ``script_run`` which is the same as ``skip`` but
+  it first calls ``set_package_attribute`` to cause the script to run as a package.
+  Useful normally-running a script inside a package.
+
+Changes:
+
+* Removed the ``set_package`` options to ``script_run`` and ``init`` because they
+  did not interact well with pytest.  It handles package initialization itself.
+
 0.2.1 (2019-05-27)
 ------------------
 
