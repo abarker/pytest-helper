@@ -9,14 +9,20 @@ pytest-helper
 
 .. default-role:: code
 
-The pytest-helper package provides several functions which make it easier to
-set up and run unit tests in Python using the `pytest <http://pytest.org>`_
-testing framework.  For example, there is a function to make modules
-self-testing whenever they are executed as scripts, and a function to simplify
-making modifications to the Python search path.  One of the most useful
-features is that relative pathnames are relative to the file in which they
-occur.  This package makes use of pytest but is independent of the official
-pytest project.
+The pytest-helper package allows modules, both inside and outside of packages,
+to be made self-testing with `pytest <http://pytest.org>`_ when the module
+itself is executed as a script.  The test functions that are run can be in the
+same module or they can be in a module in a separate test directory.
+Standalone testing modules can also set up so that pytest actually runs them
+when they are executed.
+
+Several additional utility functions are provided to make it easier to set up
+and run unit tests.  For example, there is a function to simplify making
+modifications to the Python search path so tests are discovered.  One of the
+useful features of the package is that relative pathnames are always
+interpreted relative to the directory of the file in which they occur (i.e.,
+not relative to the Python CWD which can vary depending on how the python
+interpreter is invoked).
 
 Two kinds of helper functions are provided.  The first kind are intended to
 make it easier to run pytest on a test file or files, and the second kind are
