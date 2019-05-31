@@ -104,8 +104,8 @@ pygments_style = 'sphinx'
 # a list of builtin themes.
 #html_theme = 'default'
 #html_theme = "alabaster"
-html_theme = "sphinxdoc"
-#html_theme = "nature"
+#html_theme = "sphinxdoc"
+html_theme = "nature"
 #html_theme = "bizstyle"
 #html_theme = "traditional"
 
