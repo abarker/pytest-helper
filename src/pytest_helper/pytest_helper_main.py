@@ -33,17 +33,13 @@ framework.
 #    it works like this, but could be a single kwarg:
 #       pytest_args="--pdbcls pudb.debugger:Debugger --pdb -s")
 #
-# 3) Note autoimport fails in the Python interactive interpreter, since
-#    no attribute __file__ is found.  Not a big deal, but it might be nice to
-#    cover this case, too, if it is an easy mod.
-#
-# 4) Consider using pytest-helper-namespace to put the helper function into the
+# 3) Consider using pytest-helper-namespace to put the helper function into the
 #    pytest namespace.  Might be more convenient, or might be overkill.  May not
 #    buy you much, just pytest.helpers.script_run after still importing the
 #    pytest_helper package (or putting it into some config file).  Or maybe
 #    consider making into a plugin (probably overkill).
 #
-# 5) See the notes in q-dir about usage, etc.  Add a snippet file to the docs.
+# 4) See the notes in q-dir about usage, etc.  Add a snippet file to the docs.
 
 # Consider the different use-cases for choosing the defaults.
 # Note current defaults make modify_syspath=None, which
@@ -655,9 +651,13 @@ def get_calling_module_info(level=2, check_exists=True,
         calling_module_path = module_path
     elif calling_module_name in module_info_cache:
         return module_info_cache[calling_module_name]
-    else:
+    elif hasattr(calling_module, "__file__"):
         calling_module_path = os.path.realpath(
                                    os.path.abspath(calling_module.__file__))
+    else: # No __file__ attribute in __main__ (probably interactive running).
+        # Workaround, see: https://bugs.python.org/issue12920
+        frame = inspect.stack()[level][0]
+        calling_module_path = os.path.realpath(os.path.abspath(inspect.getfile(frame)))
 
     calling_module_dir = os.path.dirname(calling_module_path)
 
