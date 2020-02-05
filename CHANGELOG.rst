@@ -9,9 +9,12 @@ History
 New features:
 
 * Added an option ``ignore_params`` to ``locals_to_globals``.  Setting it false
-  causes the function's parameters to be copied to globals along with the rest
-  of its locals.  Also, keyword arguments are now ignored by default in addition
-  to positional parameters.
+  (default is true) causes the function's parameters to be copied to globals
+  along with the rest of its locals.  Also, keyword arguments are now included
+  as parameters (to be ignored or not).
+
+* Try to workaround cases where no `__file__` attribute is present on `__main__`.
+  Works in vim pymode for self-tests, at least.
 
 0.2.2 (2019-05-30)
 ------------------

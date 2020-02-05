@@ -11,15 +11,15 @@ pytest-helper
 
 The pytest-helper package allows modules, both inside and outside of packages,
 to be made self-testing with `pytest <http://pytest.org>`_ when the module
-itself is executed as a script.  The test functions that are run can be in the
-same module or they can be in a module in a separate test directory.
-Standalone testing modules can also set up so that pytest actually runs them
-when they are executed.
+itself is executed as a script.  The test functions that are run can be located
+in the same module as the code being tested or they can be located in a module
+in a separate test directory.  Standalone testing modules can also be easily
+set up so that they are self-testing with pytest when they are executed.
 
 Several additional utility functions are provided to make it easier to set up
 and run unit tests.  For example, there is a function to simplify making
-modifications to the Python search path so tests are discovered.  One of the
-useful features of the package is that relative pathnames are always
+modifications to the Python search path so that tests are discovered.  One of
+the useful features of the package is that relative pathnames are always
 interpreted relative to the directory of the file in which they occur (i.e.,
 not relative to the Python CWD which can vary depending on how the python
 interpreter is invoked).
@@ -28,9 +28,9 @@ Two kinds of helper functions are provided.  The first kind are intended to
 make it easier to run pytest on a test file or files, and the second kind are
 meant to be used in writing tests, inside test files.  Some of the provided
 helper functions are general-purpose, but several are specific to the `pytest
-<http://pytest.org>`_ testing framework.  The functions are independent of each
-other and can be used (or not used) as desired.  These functions are all
-compatible with the ordinary uses and invocations of pytest.
+<http://pytest.org>`_ testing framework.  These helper functions are
+independent of each other and can be used (or not used) as desired.  The
+functions are all compatible with the ordinary uses and invocations of pytest.
 
 .. _Introduction:
 
@@ -98,11 +98,11 @@ tests originally written inside the module being tested to a separate test
 file.
 
 In order to simplify the functional interface, some of these helper functions
-use very basic introspection look up the names of modules.  Other functions use
-introspection to modify a module's global variables.  Some people might object
-to the use of introspection "magic," but the level used by these functions is
-less than what pytest itself does already.  Where introspection is used, a
-fallback is usually provided to do the task without introspection.
+use basic introspection look up the names of modules.  Other functions use
+introspection to modify a module's global variables.  Where introspection is
+used, a fallback is usually provided to do the task without introspection.
+(Some people might object to the use of introspection "magic," but the level
+used by these functions is less than what pytest itself does already.)  
 
 Installation
 ============
