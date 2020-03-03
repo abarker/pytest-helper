@@ -123,7 +123,7 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     If `modify_syspath` is explicitly set `True` then the first item in the
     `sys.path` list is deleted, but only if it has not been deleted before (by
     this package or by the `set_package_attribute` package).  If
-    `modify_syspath` is set false than the system path is not modified.  The
+    `modify_syspath` is set false then the system path is not modified.  The
     default is `None`, which modifies the system path if the calling module is
     part of a package and otherwise does not.  The reason for this option is
     that when a module is run as a script Python always adds the directory of
@@ -155,13 +155,14 @@ def script_run(testfile_paths=None, self_test=False, pytest_args=None, pyargs=Fa
     the function was called from a script.
 
     If `skip` is set to true from the default false then the function returns
-    immediately without doing anything.  This is just keyword argument switch
+    immediately without doing anything.  This is just a keyword argument switch
     that can be used to temporarily turn off test-running without large changes
-    to the code.  The `pskip` option is the same, but it also sets the package
-    attribute via `set_package_attribute`.  This option is useful if the script
-    is being run inside a package, since it allows relative imports to be used.
-    The `modify_syspath` argument is passed to the `init` function of
-    `set_package_attribute` in this case.
+    to the code.  The module runs normally without pytest being invoked.  The
+    `pskip` option is the same, except that it also sets the package attribute
+    via `set_package_attribute`.  This option is useful if the script is being
+    run inside a package, since it allows relative imports to be used in the
+    script.  (In this case the `modify_syspath` argument is passed to the `init`
+    function of `set_package_attribute`).
 
     The parameter `level` is the level up the calling stack to look for the
     calling module and should not usually need to be set."""
