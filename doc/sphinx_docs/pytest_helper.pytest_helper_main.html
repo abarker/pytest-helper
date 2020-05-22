@@ -1,0 +1,386 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>pytest_helper_main module &#8212; pytest-helper  documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="global_settings module" href="pytest_helper.global_settings.html" />
+    <link rel="prev" title="pytest_helper package" href="pytest_helper.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pytest_helper.global_settings.html" title="global_settings module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pytest_helper.html" title="pytest_helper package"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pytest-helper  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="pytest_helper.html" accesskey="U">pytest_helper package</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pytest-helper-main-module">
+<h1>pytest_helper_main module<a class="headerlink" href="#pytest-helper-main-module" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-pytest_helper.pytest_helper_main"></span><div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>This module contains helper functions for using the pytest unit testing
+framework.</p>
+</div>
+<div class="section" id="functions-to-help-with-running-tests">
+<span id="help-running"></span><h2>Functions to help with running tests<a class="headerlink" href="#functions-to-help-with-running-tests" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="script-run"></span><dl class="function">
+<dt id="pytest_helper.pytest_helper_main.script_run">
+<code class="descclassname">pytest_helper.pytest_helper_main.</code><code class="descname">script_run</code><span class="sig-paren">(</span><em>testfile_paths=None</em>, <em>self_test=False</em>, <em>pytest_args=None</em>, <em>pyargs=False</em>, <em>modify_syspath=None</em>, <em>calling_mod_name=None</em>, <em>calling_mod_path=None</em>, <em>single_call=True</em>, <em>exit=True</em>, <em>always_run=False</em>, <em>skip=False</em>, <em>pskip=False</em>, <em>level=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pytest_helper/pytest_helper_main.html#script_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.pytest_helper_main.script_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run pytest on the specified test files when the calling module is run as
+a script.  Using this function requires at least pytest 2.0.  If the module
+from which this script is called is not <code class="code docutils literal notranslate"><span class="pre">__main__</span></code> then this script
+immediately returns and does nothing (unless <code class="code docutils literal notranslate"><span class="pre">always_run</span></code> is set true).</p>
+<p>The argument <code class="code docutils literal notranslate"><span class="pre">testfile_paths</span></code> should be either the pathname of a file or
+directory to run pytest on, or else a list of such file and directory
+paths.  Any relative paths will be interpreted relative to the directory of
+the module which calls this function.</p>
+<p>The calculation of relative paths can fail in cases where Python’s CWD is
+changed between the time when the calling module is loaded and a
+pytest-helper function is called.  (Most programs do not change the CWD
+like that, or if they do they return it to its previous value.)  In those
+cases the <code class="code docutils literal notranslate"><span class="pre">pytest_helper.init()</span></code> function can be called just after
+importing <code class="code docutils literal notranslate"><span class="pre">pytest_helper</span></code> (or absolute pathnames can be used).</p>
+<p>The recommended use of <code class="code docutils literal notranslate"><span class="pre">script_run</span></code> is to place it inside a guard
+conditional which runs only for scripts, and to call it before doing any
+other non-system imports.  The early call avoids possible problems with
+relative imports when running it from inside modules that are part of
+packages.  The use of the guard conditional is optional, but is more
+explicit and slightly more efficient.</p>
+<p>If <code class="code docutils literal notranslate"><span class="pre">self_test</span></code> is <code class="code docutils literal notranslate"><span class="pre">True</span></code> then pytest will be run on the file of the calling
+script itself, i.e., tests are assumed to be in the same file as the code
+to test.</p>
+<p>The <code class="code docutils literal notranslate"><span class="pre">pytest_args</span></code> allows command-line arguments to be passed to pytest when
+it is run.  It can be set to a string of all the options or else a list of
+strings (with one item in the list for each flag and for each flag
+argument).  Options containing non-separator spaces, such as whitespace in
+quoted filenames, are currently not allowed in the string form.  In that
+case the list form should be used.</p>
+<p>The pytest command-line argument <code class="code docutils literal notranslate"><span class="pre">--pyargs</span></code> allows a mix of filenames and
+Python package names to be passed to pytest as test files.  Note that
+pytest <em>always</em> imports modules as part of a package if there is an
+<code class="code docutils literal notranslate"><span class="pre">__init__.py</span></code> file in the directory; the <code class="code docutils literal notranslate"><span class="pre">--pyargs</span></code> just allows
+Python-style module names.  When <code class="code docutils literal notranslate"><span class="pre">pyargs</span></code> is set true pytest will be run
+with the <code class="code docutils literal notranslate"><span class="pre">--pyargs</span></code> option set, and any items in <code class="code docutils literal notranslate"><span class="pre">testfile_paths</span></code> which
+contain no path-separator character (slash) will be left unprocessed rather
+than being converted into absolute pathnames.  The pytest option <code class="code docutils literal notranslate"><span class="pre">--pyargs</span></code>
+will not work correctly unless this flag is set.  The default is
+<code class="code docutils literal notranslate"><span class="pre">pyargs=False</span></code>, i.e., by default all paths are converted to absolute
+pathnames.  It usually will not matter, but in this mode you can specify a
+directory name relative to the current directory and not have it treated as
+a Python module name by using <code class="code docutils literal notranslate"><span class="pre">./dirname</span></code> rather than simply <code class="code docutils literal notranslate"><span class="pre">filename</span></code>.</p>
+<p>If <code class="code docutils literal notranslate"><span class="pre">modify_syspath</span></code> is explicitly set <code class="code docutils literal notranslate"><span class="pre">True</span></code> then the first item in the
+<code class="code docutils literal notranslate"><span class="pre">sys.path</span></code> list is deleted, but only if it has not been deleted before (by
+this package or by the <code class="code docutils literal notranslate"><span class="pre">set_package_attribute</span></code> package).  If
+<code class="code docutils literal notranslate"><span class="pre">modify_syspath</span></code> is set false then the system path is not modified.  The
+default is <code class="code docutils literal notranslate"><span class="pre">None</span></code>, which modifies the system path if the calling module is
+part of a package and otherwise does not.  The reason for this option is
+that when a module is run as a script Python always adds the directory of
+the script as the first item in <code class="code docutils literal notranslate"><span class="pre">sys.path</span></code>.  This can sometimes cause
+hard-to-trace import errors when directories inside paths are inserted in
+<code class="code docutils literal notranslate"><span class="pre">sys.path</span></code>.  Deleting that added directory first prevents those errors.  If
+<code class="code docutils literal notranslate"><span class="pre">script_run</span></code> does not call exit at the end (because <code class="code docutils literal notranslate"><span class="pre">exit==False</span></code>) then,
+before returning, any modified system path is restored to a saved copy of
+its full, original condition.</p>
+<p>The <code class="code docutils literal notranslate"><span class="pre">calling_mod_name</span></code> argument is a fallback in case the calling
+function’s module is not correctly located by introspection.  It is usually
+not required (though it is slightly more efficient).  Use it as:
+<code class="code docutils literal notranslate"><span class="pre">module_name=__name__</span></code>.  Similarly for <code class="code docutils literal notranslate"><span class="pre">calling_mod_path</span></code>, but that should
+be passed the pathname of the calling module’s file.</p>
+<p>By default the script-run program passes all the user-specified testfile
+paths to a single run of pytest.  If <code class="code docutils literal notranslate"><span class="pre">single_call</span></code> is set false then
+instead the paths are looped over, one by one, with a separate call to
+pytest on each one.</p>
+<p>If <code class="code docutils literal notranslate"><span class="pre">exit</span></code> is set false <code class="code docutils literal notranslate"><span class="pre">sys.exit(0)</span></code> will not be called after the tests
+finish.  The default is to exit after the tests finish (otherwise when
+tests run from the top of a module are finished the rest of the file will
+still be executed).  Setting <code class="code docutils literal notranslate"><span class="pre">exit</span></code> false can be used to make several
+separate <code class="code docutils literal notranslate"><span class="pre">script_run</span></code> calls in sequence.</p>
+<p>If <code class="code docutils literal notranslate"><span class="pre">always_run</span></code> is true then tests will be run regardless of whether or not
+the function was called from a script.</p>
+<p>If <code class="code docutils literal notranslate"><span class="pre">skip</span></code> is set to true from the default false then the function returns
+immediately without doing anything.  This is just a keyword argument switch
+that can be used to temporarily turn off test-running without large changes
+to the code.  The module runs normally without pytest being invoked.  The
+<code class="code docutils literal notranslate"><span class="pre">pskip</span></code> option is the same, except that it also sets the package attribute
+via <code class="code docutils literal notranslate"><span class="pre">set_package_attribute</span></code>.  This option is useful if the script is being
+run inside a package, since it allows relative imports to be used in the
+script.  (In this case the <code class="code docutils literal notranslate"><span class="pre">modify_syspath</span></code> argument is passed to the <code class="code docutils literal notranslate"><span class="pre">init</span></code>
+function of <code class="code docutils literal notranslate"><span class="pre">set_package_attribute</span></code>).</p>
+<p>The parameter <code class="code docutils literal notranslate"><span class="pre">level</span></code> is the level up the calling stack to look for the
+calling module and should not usually need to be set.</p>
+</dd></dl>
+
+<span class="target" id="sys-path"></span><dl class="function">
+<dt id="pytest_helper.pytest_helper_main.sys_path">
+<code class="descclassname">pytest_helper.pytest_helper_main.</code><code class="descname">sys_path</code><span class="sig-paren">(</span><em>dirs_to_add=None</em>, <em>add_parent=False</em>, <em>add_grandparent=False</em>, <em>add_gn_parent=False</em>, <em>add_self=False</em>, <em>insert_position=1</em>, <em>calling_mod_name=None</em>, <em>calling_mod_path=None</em>, <em>level=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pytest_helper/pytest_helper_main.html#sys_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.pytest_helper_main.sys_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the canonical absolute pathname of each directory in the list
+<code class="code docutils literal notranslate"><span class="pre">dirs_to_add</span></code> to <code class="code docutils literal notranslate"><span class="pre">sys.path</span></code> (but only if it isn’t there already).  A single
+string representing a path can also be passed to <code class="code docutils literal notranslate"><span class="pre">dirs_to_add</span></code>.  Relative
+pathnames are always interpreted relative to the directory of the calling
+module (i.e., the directory of the module that calls this function).
+The notes about relative paths for the <code class="code docutils literal notranslate"><span class="pre">script_run</span></code> function also apply here.</p>
+<p>The keyword arguments <code class="code docutils literal notranslate"><span class="pre">add_parent</span></code> and <code class="code docutils literal notranslate"><span class="pre">add_grandparent</span></code> are shortcuts that
+can be used instead of putting the equivalent relative path on the list
+<code class="code docutils literal notranslate"><span class="pre">dirs_to_add</span></code>.  If the keyword argument <code class="code docutils literal notranslate"><span class="pre">add_gn_parent</span></code> is set to a
+non-negative integer <code class="code docutils literal notranslate"><span class="pre">n</span></code> then the (grand)<sup>n</sup>parent is added to the
+path, where (grand)<sup>1</sup>parent is the grandparent.  If <code class="code docutils literal notranslate"><span class="pre">add_self</span></code> is
+true then the directory of the calling module is added to the system
+<code class="code docutils literal notranslate"><span class="pre">sys.path</span></code> list.</p>
+<p>The keyword argument <code class="code docutils literal notranslate"><span class="pre">insert_position</span></code> determines where in <code class="code docutils literal notranslate"><span class="pre">sys.path</span></code> the
+the pathnames are placed (using <code class="code docutils literal notranslate"><span class="pre">insert</span></code>).  The default is 1.  If inserting
+at 0 watch for conflicts with the <code class="code docutils literal notranslate"><span class="pre">modify_syspath</span></code> options to <code class="code docutils literal notranslate"><span class="pre">script_run</span></code>
+and <code class="code docutils literal notranslate"><span class="pre">init</span></code>.</p>
+<p>The parameters <code class="code docutils literal notranslate"><span class="pre">calling_mod_name</span></code> and <code class="code docutils literal notranslate"><span class="pre">calling_mod_dir</span></code> can be set as a
+fallback in case the introspection for finding the calling module’s
+information fails for some reason.  The parameter <code class="code docutils literal notranslate"><span class="pre">level</span></code> is the level up
+the calling stack to look for the calling module and should not usually
+need to be set.</p>
+</dd></dl>
+
+<span class="target" id="restore-previous-sys-path"></span><dl class="function">
+<dt id="pytest_helper.pytest_helper_main.restore_previous_sys_path">
+<code class="descclassname">pytest_helper.pytest_helper_main.</code><code class="descname">restore_previous_sys_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pytest_helper/pytest_helper_main.html#restore_previous_sys_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.pytest_helper_main.restore_previous_sys_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function undoes the effect of the last call to <code class="code docutils literal notranslate"><span class="pre">sys_path</span></code>, returning
+<code class="code docutils literal notranslate"><span class="pre">sys.path</span></code> to its previous, saved value.  This can be useful at times.</p>
+</dd></dl>
+
+<span class="target" id="init"></span><dl class="function">
+<dt id="pytest_helper.pytest_helper_main.init">
+<code class="descclassname">pytest_helper.pytest_helper_main.</code><code class="descname">init</code><span class="sig-paren">(</span><em>modify_syspath=None</em>, <em>conf=True</em>, <em>calling_mod_name=None</em>, <em>calling_mod_path=None</em>, <em>level=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pytest_helper/pytest_helper_main.html#init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.pytest_helper_main.init" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function to initialize the <code class="code docutils literal notranslate"><span class="pre">pytest_helper</span></code> module just after importing
+it.  This function is useful, for example, in rare cases where Python’s
+current working directory (CWD) is changed between the time when the
+executing module is first loaded and when <code class="code docutils literal notranslate"><span class="pre">script_run</span></code> or <code class="code docutils literal notranslate"><span class="pre">sys_path</span></code> is
+called from that module.  In those cases the module’s pathname relative to
+the previous CWD will be incorrectly expanded relative to the new CWD.
+Calling this function causes the earlier-expanded pathname to be cached.
+This function should be called before any function call or import which
+changes the CWD and which doesn’t change it back afterward.  Importing
+<code class="code docutils literal notranslate"><span class="pre">pytest_helper</span></code> just after the system imports and then immediately calling
+this function should work.</p>
+<p>The <code class="code docutils literal notranslate"><span class="pre">modify_syspath</span></code> option affects whether or not the <code class="code docutils literal notranslate"><span class="pre">sys.path[0]</span></code>
+element is removed.  The default <code class="code docutils literal notranslate"><span class="pre">None</span></code> is to remove it for scripts run
+from inside packages since that can mess up the imports of modules running
+as packages.</p>
+<p>If the parameter <code class="code docutils literal notranslate"><span class="pre">conf</span></code> is set false then no configuration files will be
+searched for or used.  Otherwise, the configuration file will be searched
+for by any function which has an option settable in a config file
+(including the <code class="code docutils literal notranslate"><span class="pre">init</span></code> function itself).  The configuration information
+for modules is cached, and so is only looked up once.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="functions-to-help-in-writing-tests">
+<span id="help-writing"></span><h2>Functions to help in writing tests<a class="headerlink" href="#functions-to-help-in-writing-tests" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="autoimport"></span><dl class="function">
+<dt id="pytest_helper.pytest_helper_main.autoimport">
+<code class="descclassname">pytest_helper.pytest_helper_main.</code><code class="descname">autoimport</code><span class="sig-paren">(</span><em>noclobber=True</em>, <em>skip=None</em>, <em>calling_mod_name=None</em>, <em>calling_mod_path=None</em>, <em>level=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pytest_helper/pytest_helper_main.html#autoimport"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.pytest_helper_main.autoimport" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function imports some pytest-helper and pytest attributes into the
+calling module’s global namespace.  This avoids having to explicitly do
+common imports.  Even if <code class="code docutils literal notranslate"><span class="pre">autoimport</span></code> is called from inside a test function
+it will still place its imports in the module’s global namespace.  A
+<code class="code docutils literal notranslate"><span class="pre">PytestHelperException</span></code> will be raised if any of those globals already
+exist, unless <code class="code docutils literal notranslate"><span class="pre">noclobber</span></code> is set false.</p>
+<p>The <code class="code docutils literal notranslate"><span class="pre">imports</span></code> option is a list of (name,value) pairs to import
+automatically.  Since using it each time would be as much trouble as doing
+the imports, explicitly, it is mainly meant to be set in configuration
+files.  In a config file the values are evaluated in the global namespace
+of <code class="code docutils literal notranslate"><span class="pre">pytest_helper</span></code>.  The <code class="code docutils literal notranslate"><span class="pre">skip</span></code> option is a list of names to skip in
+importing, if just one or two are causing problems locally to a file.</p>
+<p>The default variables that are imported from the <code class="code docutils literal notranslate"><span class="pre">pytest_helper</span></code> module are
+<code class="code docutils literal notranslate"><span class="pre">locals_to_globals</span></code>, <code class="code docutils literal notranslate"><span class="pre">clear_locals_from_globals</span></code>, and <code class="code docutils literal notranslate"><span class="pre">unindent</span></code>.  The
+module <code class="code docutils literal notranslate"><span class="pre">pytest</span></code> is imported as <code class="code docutils literal notranslate"><span class="pre">pytest</span></code>.  The functions from pytest that
+are imported by default are <code class="code docutils literal notranslate"><span class="pre">raises</span></code>, <code class="code docutils literal notranslate"><span class="pre">fail</span></code>, <code class="code docutils literal notranslate"><span class="pre">fixture</span></code>, and <code class="code docutils literal notranslate"><span class="pre">skip</span></code>,
+<code class="code docutils literal notranslate"><span class="pre">xfail</span></code>, and <code class="code docutils literal notranslate"><span class="pre">approx</span></code>.</p>
+</dd></dl>
+
+<span class="target" id="locals-to-globals"></span><dl class="function">
+<dt id="pytest_helper.pytest_helper_main.locals_to_globals">
+<code class="descclassname">pytest_helper.pytest_helper_main.</code><code class="descname">locals_to_globals</code><span class="sig-paren">(</span><em>fun_locals=None</em>, <em>fun_globals=None</em>, <em>clear=False</em>, <em>noclobber=True</em>, <em>ignore_params=True</em>, <em>level=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pytest_helper/pytest_helper_main.html#locals_to_globals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.pytest_helper_main.locals_to_globals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy all local variables in the calling test function’s local scope to
+the global scope of the module from which that function was called.  The
+test function’s parameters are ignored (i.e., they are local variables but
+they are not made global).  Setting <code class="code docutils literal notranslate"><span class="pre">ignore_params</span></code> false copies them, too.</p>
+<p>This routine should generally be called near the end of a test function or
+fixture.  It allows for variables to be shared with other test functions,
+as globals.</p>
+<p>Calls to <code class="code docutils literal notranslate"><span class="pre">locals_to_globals</span></code> do not allow existing global variables to be
+overwritten unless they were either 1) set by a previous run of this
+function, or 2) <code class="code docutils literal notranslate"><span class="pre">noclobber</span></code> is set false.  Otherwise a
+<code class="code docutils literal notranslate"><span class="pre">LocalsToGlobalsError</span></code> will be raised.  This avoids accidentally
+overwriting important global attributes (especially when tests are in the
+same module being tested).</p>
+<p>This routine’s effect is similar to the effect of explicitly declaring each
+of a function’s local variables to be <code class="code docutils literal notranslate"><span class="pre">global</span></code>, or doing
+<code class="code docutils literal notranslate"><span class="pre">globals().update(locals())</span></code>, except that 1) it ignores local variables
+which are function parameters, 2) it adds more error checks, and 3) it can
+clear any previously-set values.</p>
+<p>Note that the globals set with <code class="code docutils literal notranslate"><span class="pre">locals_to_globals</span></code> can be accessed and used
+in any other test function in the module, but they are still read-only (as
+usual with globals).  An attribute must be explicitly declared <code class="code docutils literal notranslate"><span class="pre">global</span></code> in
+order to modify the global value.  (It is then no longer local to the
+function, so <code class="code docutils literal notranslate"><span class="pre">locals_to_globals</span></code> will not affect it, but <code class="code docutils literal notranslate"><span class="pre">clear</span></code> will still
+remember it and clear it if called.)</p>
+<p>If <code class="code docutils literal notranslate"><span class="pre">clear</span></code> is true (the default is false) then any variable that was set on
+the last run of this function will be automatically cleared before any new
+ones are set.  This is good to call in the first-run fixture or setup
+function, since it helps avoid “false positives” where a later test
+succeeds only because of a global left over from a previous test.  Note
+globals on the saved list of globals are cleared even if their values
+were later modified.</p>
+<p>The argument <code class="code docutils literal notranslate"><span class="pre">fun_locals</span></code> can be used as a fallback to pass the <code class="code docutils literal notranslate"><span class="pre">locals()</span></code>
+dict from the function in case the introspection technique does not work
+for some reason.  The <code class="code docutils literal notranslate"><span class="pre">fun_globals</span></code> argument can similarly be passed
+globals() as a fallback.  So you could call:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">locals_to_globals</span><span class="p">(</span><span class="nb">locals</span><span class="p">(),</span> <span class="nb">globals</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>to bypass the introspection used to locate the two dicts.</p>
+<p>The <code class="code docutils literal notranslate"><span class="pre">level</span></code> argument is the level up the calling stack to look for the
+calling function.  In order to call an intermediate function which then
+calls this function, for example, <code class="code docutils literal notranslate"><span class="pre">level</span></code> would need to be increased by
+one.</p>
+</dd></dl>
+
+<span class="target" id="clear-locals-from-globals"></span><dl class="function">
+<dt id="pytest_helper.pytest_helper_main.clear_locals_from_globals">
+<code class="descclassname">pytest_helper.pytest_helper_main.</code><code class="descname">clear_locals_from_globals</code><span class="sig-paren">(</span><em>level=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pytest_helper/pytest_helper_main.html#clear_locals_from_globals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.pytest_helper_main.clear_locals_from_globals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear all the global variables that were added by locals_to_globals.
+This is called automatically by <code class="code docutils literal notranslate"><span class="pre">locals_to_globals</span></code> unless that function
+is run with <code class="code docutils literal notranslate"><span class="pre">clear</span></code> set false.  This only affects the module from
+which the function is called.</p>
+</dd></dl>
+
+<span class="target" id="unindent"></span><dl class="function">
+<dt id="pytest_helper.pytest_helper_main.unindent">
+<code class="descclassname">pytest_helper.pytest_helper_main.</code><code class="descname">unindent</code><span class="sig-paren">(</span><em>unindent_level</em>, <em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pytest_helper/pytest_helper_main.html#unindent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.pytest_helper_main.unindent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Strip indentation from a docstring.  This function is useful in tests
+where you have assertions that something equals a multi-line string.  It
+allows the strings to be represented as multi-line docstrings but indented
+in a way that matches the surrounding code.</p>
+<p>Calling this function on a string 1) splits it into lines (keeping
+empty lines, too), 2) discards the first and last line, and 3) removes
+<code class="code docutils literal notranslate"><span class="pre">unindent_level</span></code> characters from the beginning of each line.  Then 4) the
+modified lines are joined with newline and returned.  Raises an exception
+on an attempt to strip non-whitespace or if there are fewer than two
+lines.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="exceptions">
+<span id="id1"></span><h2>Exceptions<a class="headerlink" href="#exceptions" title="Permalink to this headline">¶</a></h2>
+<p>These are exceptions which can be raised by the <code class="code docutils literal notranslate"><span class="pre">pytest_helper</span></code> module.
+They are all subclasses of <code class="code docutils literal notranslate"><span class="pre">PytestHelperException</span></code>.</p>
+<dl class="function">
+<dt id="pytest_helper.pytest_helper_main.PytestHelperException">
+<code class="descclassname">pytest_helper.pytest_helper_main.</code><code class="descname">PytestHelperException</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pytest_helper/global_settings.html#PytestHelperException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.pytest_helper_main.PytestHelperException" title="Permalink to this definition">¶</a></dt>
+<dd><p>The base exception raised by all exceptions in the package.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pytest_helper.pytest_helper_main.LocalsToGlobalsError">
+<code class="descclassname">pytest_helper.pytest_helper_main.</code><code class="descname">LocalsToGlobalsError</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pytest_helper/global_settings.html#LocalsToGlobalsError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pytest_helper.pytest_helper_main.LocalsToGlobalsError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised only when there is an error related to the <code class="code docutils literal notranslate"><span class="pre">locals_to_globals</span></code>
+operations.  Inherits from <code class="code docutils literal notranslate"><span class="pre">PytestHelperException</span></code>.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">pytest_helper_main module</a><ul>
+<li><a class="reference internal" href="#description">Description</a></li>
+<li><a class="reference internal" href="#functions-to-help-with-running-tests">Functions to help with running tests</a></li>
+<li><a class="reference internal" href="#functions-to-help-in-writing-tests">Functions to help in writing tests</a></li>
+<li><a class="reference internal" href="#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pytest_helper.html"
+                        title="previous chapter">pytest_helper package</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pytest_helper.global_settings.html"
+                        title="next chapter">global_settings module</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/pytest_helper.pytest_helper_main.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pytest_helper.global_settings.html" title="global_settings module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pytest_helper.html" title="pytest_helper package"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pytest-helper  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="pytest_helper.html" >pytest_helper package</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Allen Barker.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.0.1.
+    </div>
+  </body>
+</html>
