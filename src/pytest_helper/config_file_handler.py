@@ -21,13 +21,12 @@ config files.
 # TODO, maybe: Add an option to the pytest-helper.conf file which allows for an
 # arbitrary directory to be added to the sys.path.  So, in test dir at root of
 # repo you can just put in that file for the distribution directory and not
-# have to use any other sys_paths command!!!!!!!  LATER when you want to use
-# pip local install (when setup.py is set up and you are ready to package) you
-# can just delete that line from the file!!!!!!!!!!!!!!!!!!  BUT, the
-# difficulty is that any relative files should be relative to that file itself,
-# NOT the importing file... should be a fairly easy conversion barring the
-# problems with changing the local python directory (needs to be done early, if
-# possible).
+# have to use any other sys_paths command.  LATER when you want to use pip
+# local install (when setup.py is set up and you are ready to package) you can
+# just delete that line from the file.  BUT, the difficulty is that any
+# relative files should be relative to that file itself, NOT the importing
+# file... should be a fairly easy conversion barring the problems with changing
+# the local python directory (needs to be done early, if possible).
 
 from __future__ import print_function, division, absolute_import
 import inspect
@@ -135,7 +134,7 @@ def get_config(calling_mod, calling_mod_dir, disable=False):
     if not hasattr(calling_mod, NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT):
         setattr(calling_mod, NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT, {})
     module_info_dict = getattr(calling_mod, NAME_OF_PYTEST_HELPER_PER_MODULE_INFO_DICT)
-    
+
     if "config_data_dict" not in module_info_dict:
         # Search for a file if the key is not set.
         config_file_path = get_config_file_pathname(calling_mod_dir)

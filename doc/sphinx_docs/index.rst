@@ -402,14 +402,9 @@ initially contains its own tests (like in the first example, in the
    `script_run` is calling another program (pytest) to extract and run the
    tests.  The test functions themselves can be placed anywhere, but it is not
    recommended to place a `script_run` call near the end of a module.  In many
-   cases it works, but it can cause problems with explicit relative imports.
-   Some such problems can be fixed by running the script as module -- either
-   invoking with `python -m` or else by importing `pytest_helper` near the top of the
-   module and, before any explicit relative imports, calling its `init`
-   function with the `set_package` flag set.  Running the script as a module
-   may cause pytest to complain about modules being defined twice.  Putting the
-   `script_run` call near the end of the module is also less efficient, since
-   the module's initialization code gets run twice.
+   cases it works, but it causes problems with explicit relative imports.
+   Putting the `script_run` call near the end of the module is also less
+   efficient, since the module's initialization code gets run twice.
 
 .. _Configuration:
 
@@ -443,8 +438,6 @@ parameter of the function which they override.
    [pytest_helper]
 
    # A comment.
-
-   init_set_package = True
 
    script_run_pytest_args = "-v -s" # These override any pytest_args setting.
    script_run_extra_pytest_args = "-v -s" # Appended to pytest_args setting.
