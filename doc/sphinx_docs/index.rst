@@ -1,8 +1,3 @@
-.. pytest-helper documentation master file, created by
-   sphinx-quickstart on Wed Jul 20 11:47:54 2016.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 ===============================
 pytest-helper
 ===============================
@@ -18,11 +13,11 @@ set up so that they are self-testing with pytest when they are executed.
 
 Several additional utility functions are provided to make it easier to set up
 and run unit tests.  For example, there is a function to simplify making
-modifications to the Python search path so that tests are discovered.  One of
-the useful features of the package is that relative pathnames are always
-interpreted relative to the directory of the file in which they occur (i.e.,
-not relative to the Python CWD which can vary depending on how the python
-interpreter is invoked).
+modifications to the Python search path so that test modules will be
+discovered.  One of the useful features of the package is that relative
+pathnames are always interpreted relative to the directory of the file in which
+they occur (i.e., not relative to the Python CWD which can vary depending on
+how the python interpreter is invoked).
 
 Two kinds of helper functions are provided.  The first kind are intended to
 make it easier to run pytest on a test file or files, and the second kind are
@@ -398,13 +393,14 @@ initially contains its own tests (like in the first example, in the
 
 .. note::
 
-   It is traditional to run tests from the end of a Python module, but
-   `script_run` is calling another program (pytest) to extract and run the
-   tests.  The test functions themselves can be placed anywhere, but it is not
-   recommended to place a `script_run` call near the end of a module.  In many
-   cases it works, but it causes problems with explicit relative imports.
-   Putting the `script_run` call near the end of the module is also less
-   efficient, since the module's initialization code gets run twice.
+   In script-based Python (i.e., not using packages) it is common to run simple
+   module tests at the end of a module, in an `if __name__ == "__main__":`
+   conditional section.  Here, though, `script_run` is calling another program
+   (pytest) to extract and run the tests, and it must work inside packages
+   which can have explicit relative imports.  In this case it is better to call
+   the `script_run` near the beginning of the module.  (This is also more
+   efficient than calling `script_run` at the end of the module since in the
+   latter case the module's initialization code gets run twice.)
 
 .. _Configuration:
 
